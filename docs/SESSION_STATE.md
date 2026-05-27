@@ -22,6 +22,7 @@
 - Implemented runtime tools: `freecad_session_status`, `freecad_python_exec`.
 - Typed CAD tools are implemented for document, object, Part, Sketcher, import/export, mesh, and Assembly basics.
 - `freecad_part_extrude` now converts closed wire/sketch profiles to a planar `Part.Face` before extrusion, so closed Sketcher rectangles produce solid Part extrusions instead of shell-only results.
+- `freecad_mesh_repair` repairs a mesh copy and assigns it back to avoid immutable mesh errors on imported `Mesh::Feature` objects.
 - Current MCP tool count is 40.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.

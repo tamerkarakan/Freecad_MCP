@@ -15,3 +15,4 @@
 ## Closed
 
 - Closed Sketcher/profile extrusion previously produced a shell-only `Part::Feature`; `freecad_part_extrude` now builds a planar face from closed wires before extrusion so rectangle profiles become solids.
+- `freecad_mesh_repair` previously attempted to mutate `Mesh::Feature.Mesh` directly and could hit immutable mesh errors; it now repairs a copy and assigns it back, with replacement-object fallback.

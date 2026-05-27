@@ -565,16 +565,32 @@ def action_mesh_repair(args):
     doc.openTransaction("MCP mesh repair")
     for name in names:
         obj = get_object(doc, name)
-        mesh = obj.Mesh
+        mesh = obj.Mesh.copy()
         done = []
+        errors = []
         for action in actions:
             if action == "harmonize_normals" and hasattr(mesh, "harmonizeNormals"):
-                mesh.harmonizeNormals()
-                done.append(action)
+                try:
+                    mesh.harmonizeNormals()
+                    done.append(action)
+                except Exception as exc:
+                    errors.append({"action": action, "error": str(exc)})
             elif action == "remove_duplicated_points" and hasattr(mesh, "removeDuplicatedPoints"):
-                mesh.removeDuplicatedPoints()
-                done.append(action)
-        reports.append({"object": obj.Name, "actions": done})
+                try:
+                    mesh.removeDuplicatedPoints()
+                    done.append(action)
+                except Exception as exc:
+                    errors.append({"action": action, "error": str(exc)})
+            else:
+                errors.append({"action": action, "error": "unsupported action"})
+        assigned_to = obj.Name
+        try:
+            obj.Mesh = mesh
+        except Exception:
+            replacement = doc.addObject("Mesh::Feature", args.get("result_name") or (obj.Name + "_Repaired"))
+            replacement.Mesh = mesh
+            assigned_to = replacement.Name
+        reports.append({"object": obj.Name, "assigned_to": assigned_to, "actions": done, "errors": errors})
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)

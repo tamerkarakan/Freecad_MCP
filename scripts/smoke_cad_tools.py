@@ -81,6 +81,20 @@ def main() -> int:
         if mesh["document"]["object_count"] < 1:
             raise RuntimeError(f"mesh import empty: {mesh}")
 
+        repaired = assert_ok(
+            service.definition_map()["freecad_mesh_repair"].handler(
+                {
+                    "document_path": str(imported),
+                    "actions": ["harmonize_normals", "remove_duplicated_points"],
+                    "output_path": str(imported),
+                    "overwrite": True,
+                }
+            ),
+            "mesh_repair",
+        )
+        if not repaired["reports"] or repaired["reports"][0]["errors"]:
+            raise RuntimeError(f"mesh repair reported errors: {repaired}")
+
         sketch_doc = temp / "sketch.FCStd"
         sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
