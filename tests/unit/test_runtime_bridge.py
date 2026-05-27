@@ -5,7 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from freecad_mcp.runtime_bridge import FreeCadCmdBridge, FreeCadDiscovery, parse_prefixed_json
+from freecad_mcp.runtime_bridge import (
+    FreeCadCmdBridge,
+    FreeCadDiscovery,
+    FreeCadExecutionResult,
+    parse_prefixed_json,
+)
 
 
 class RuntimeBridgeTests(unittest.TestCase):
@@ -58,6 +63,36 @@ class RuntimeBridgeTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(result.timed_out)
         self.assertIsNone(result.returncode)
+
+    def test_execute_python_launch_error_is_structured(self) -> None:
+        missing = Path("C:/__definitely_missing__/FreeCADCmd.exe")
+        result = FreeCadCmdBridge(missing).execute_python("print('x')", timeout_sec=1)
+
+        self.assertFalse(result.ok)
+        self.assertFalse(result.timed_out)
+        self.assertIsNotNone(result.launch_error)
+        self.assertIsNone(result.returncode)
+
+    def test_to_dict_truncates_large_fields(self) -> None:
+        long_arg = "a" * 6000
+        long_stream = "s" * 20000
+        result = FreeCadExecutionResult(
+            executable=Path(sys.executable),
+            argv=[sys.executable, "-c", long_arg],
+            timeout_sec=10,
+            duration_ms=1,
+            returncode=0,
+            stdout=long_stream,
+            stderr=long_stream,
+            timed_out=False,
+        )
+        payload = result.to_dict()
+
+        self.assertTrue(payload["argv_truncated"])
+        self.assertTrue(payload["stdout_truncated"])
+        self.assertTrue(payload["stderr_truncated"])
+        self.assertEqual(payload["stdout_total_chars"], len(long_stream))
+        self.assertEqual(payload["stderr_total_chars"], len(long_stream))
 
     def test_parse_prefixed_json_ignores_noise(self) -> None:
         parsed = parse_prefixed_json('noise\n__FREECAD_MCP_JSON__{"version": ["1"]}\n')

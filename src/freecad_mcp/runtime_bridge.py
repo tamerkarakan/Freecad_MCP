@@ -13,6 +13,8 @@ from typing import Any
 
 
 FREECAD_JSON_PREFIX = "__FREECAD_MCP_JSON__"
+MAX_EXEC_ARG_CHARS = 2_000
+MAX_EXEC_STREAM_CHARS = 12_000
 
 
 @dataclass(frozen=True)
@@ -57,22 +59,32 @@ class FreeCadExecutionResult:
     stdout: str
     stderr: str
     timed_out: bool
+    launch_error: str | None = None
 
     @property
     def ok(self) -> bool:
-        return self.returncode == 0 and not self.timed_out
+        return self.returncode == 0 and not self.timed_out and self.launch_error is None
 
     def to_dict(self) -> dict[str, Any]:
+        argv, argv_truncated = summarize_argv(self.argv, MAX_EXEC_ARG_CHARS)
+        stdout, stdout_truncated = truncate_text(self.stdout, MAX_EXEC_STREAM_CHARS)
+        stderr, stderr_truncated = truncate_text(self.stderr, MAX_EXEC_STREAM_CHARS)
         return {
             "ok": self.ok,
             "executable": str(self.executable),
-            "argv": self.argv,
+            "argv": argv,
+            "argv_truncated": argv_truncated,
             "timeout_sec": self.timeout_sec,
             "duration_ms": self.duration_ms,
             "returncode": self.returncode,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
+            "stdout": stdout,
+            "stdout_truncated": stdout_truncated,
+            "stdout_total_chars": len(self.stdout),
+            "stderr": stderr,
+            "stderr_truncated": stderr_truncated,
+            "stderr_total_chars": len(self.stderr),
             "timed_out": self.timed_out,
+            "launch_error": self.launch_error,
         }
 
 
@@ -201,6 +213,19 @@ class FreeCadCmdBridge:
                 stderr=stderr,
                 timed_out=True,
             )
+        except OSError as exc:
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            return FreeCadExecutionResult(
+                executable=self.executable,
+                argv=argv,
+                timeout_sec=timeout_sec,
+                duration_ms=duration_ms,
+                returncode=None,
+                stdout="",
+                stderr=f"{type(exc).__name__}: {exc}",
+                timed_out=False,
+                launch_error=str(exc),
+            )
 
     def probe(self, *, timeout_sec: int = 30) -> dict[str, Any]:
         code = (
@@ -231,3 +256,27 @@ def parse_prefixed_json(text: str) -> dict[str, Any] | None:
                 return None
             return parsed if isinstance(parsed, dict) else None
     return None
+
+
+def truncate_text(value: str, max_chars: int) -> tuple[str, bool]:
+    if len(value) <= max_chars:
+        return value, False
+    head = max_chars // 2
+    tail = max_chars - head
+    omitted = len(value) - (head + tail)
+    clipped = (
+        value[:head]
+        + f"\n...<truncated {omitted} chars>...\n"
+        + value[-tail:]
+    )
+    return clipped, True
+
+
+def summarize_argv(argv: list[str], max_arg_chars: int) -> tuple[list[str], bool]:
+    preview: list[str] = []
+    truncated = False
+    for arg in argv:
+        clipped, arg_truncated = truncate_text(arg, max_arg_chars)
+        preview.append(clipped)
+        truncated = truncated or arg_truncated
+    return preview, truncated

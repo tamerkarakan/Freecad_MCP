@@ -4,6 +4,7 @@
 
 - Add richer persistent bridge implementation when interactive GUI workflows become necessary.
 - Replace placeholder assembly joint metadata with real connector-aware joint creation.
+- Validate Codex-on-Windows behavior under very large runtime outputs and add an opt-in compact execution mode toggle if transport instability still appears.
 
 ## Next
 

@@ -23,6 +23,10 @@
 - Typed CAD tools are implemented for document, object, Part, Sketcher, import/export, mesh, and Assembly basics.
 - `freecad_part_extrude` now converts closed wire/sketch profiles to a planar `Part.Face` before extrusion, so closed Sketcher rectangles produce solid Part extrusions instead of shell-only results.
 - `freecad_mesh_repair` repairs a mesh copy and assigns it back to avoid immutable mesh errors on imported `Mesh::Feature` objects.
+- Runtime execution payloads now truncate oversized `argv`/`stdout`/`stderr` previews with total-length metadata to reduce oversized MCP responses.
+- `FreeCadCmdBridge.execute_python` now returns structured launch failures (`launch_error`) for process start errors instead of propagating raw OS exceptions.
+- Stdio server response writing now has a serialization fallback so non-JSON-serializable tool payloads return a structured internal error instead of terminating the server loop.
+- MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
 - Current MCP tool count is 40.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.
@@ -33,4 +37,5 @@
 2. Run `scripts\verify.ps1`.
 3. Read `docs/BACKLOG.md` and `docs/BUGS.md`.
 4. Re-run a Sketcher profile smoke if extrude behavior changes again.
-5. Push only after verification passes.
+5. Run unit tests for `runtime_bridge` and `mcp_stdio` when touching transport/serialization code.
+6. Push only after verification passes.

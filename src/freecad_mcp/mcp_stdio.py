@@ -88,6 +88,8 @@ class McpServer:
             return self._tools_call(params)
         if method == "resources/list":
             return self._resources_list()
+        if method == "resources/templates/list":
+            return self._resource_templates_list()
         if method == "resources/read":
             return self._resources_read(params)
         if method == "prompts/list":
@@ -172,6 +174,9 @@ class McpServer:
                 },
             ]
         }
+
+    def _resource_templates_list(self) -> JsonObject:
+        return {"resourceTemplates": []}
 
     def _resources_read(self, params: JsonObject) -> JsonObject:
         uri = params.get("uri")
@@ -323,8 +328,23 @@ def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO |
             response = error_response(None, exc.code, exc.message, exc.data)
 
         if response is not None:
-            output_stream.write(json.dumps(response, ensure_ascii=False, separators=(",", ":")) + "\n")
-            output_stream.flush()
+            try:
+                encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
+            except Exception as exc:  # pragma: no cover - defensive protocol guard
+                response_id = response.get("id") if isinstance(response, dict) else None
+                fallback = error_response(
+                    response_id,
+                    -32603,
+                    "Internal error",
+                    {"detail": f"failed to encode response: {exc}"},
+                )
+                encoded = json.dumps(fallback, ensure_ascii=False, separators=(",", ":"))
+
+            try:
+                output_stream.write(encoded + "\n")
+                output_stream.flush()
+            except Exception:  # pragma: no cover - transport already closed
+                return 0
     return 0
 
 
