@@ -77,8 +77,22 @@ class McpStdioTests(unittest.TestCase):
         self.assertEqual(payload["error"]["code"], -32603)
         self.assertIn("failed to encode response", payload["error"]["data"]["detail"])
 
+    def test_serve_stdio_shuts_down_tool_service_on_eof(self) -> None:
+        service = FakeToolService()
+        server = McpServer(service)
+        stdin = StringIO("")
+        stdout = StringIO()
+
+        exit_code = serve_stdio(server, stdin=stdin, stdout=stdout)
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(service.was_shutdown)
+
 
 class FakeToolService:
+    def __init__(self):
+        self.was_shutdown = False
+
     def definitions(self):
         return [
             ToolDefinition(
@@ -92,6 +106,9 @@ class FakeToolService:
 
     def definition_map(self):
         return {definition.name: definition for definition in self.definitions()}
+
+    def shutdown(self):
+        self.was_shutdown = True
 
 
 class BrokenResponseServer:

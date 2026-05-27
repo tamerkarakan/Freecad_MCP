@@ -13,6 +13,11 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_source_symbol_index` | Return indexed command/class/module records. | Generated inventory |
 | `freecad_session_start` | Start or attach to a FreeCAD Python runtime. | FreeCAD process |
 | `freecad_session_status` | Report process, document, and bridge state. | FreeCAD process |
+| `freecad_session_list` | List persistent FreeCAD worker sessions. | FreeCAD process |
+| `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
+| `freecad_worker_document_new/open/save/recompute/close` | Manage in-memory worker documents by document id. | FreeCAD process |
+| `freecad_worker_part_create_primitive` | Create primitives in persistent worker documents. | Part workbench commands |
+| `freecad_worker_object_list/get` | Inspect in-memory worker document objects. | FreeCAD process |
 | `freecad_python_exec` | Execute controlled Python snippets for diagnostics. | FreeCAD process |
 | `freecad_document_new` | Create a new FreeCAD document. | FreeCAD API |
 | `freecad_document_open` | Open `.FCStd` or importable CAD file. | FreeCAD API |
@@ -68,4 +73,3 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 - Every mutating runtime tool should return a structured document/object diff.
 - Source tools can work without FreeCAD installed; runtime tools require a configured FreeCAD executable.
 - The next implementation step is the MCP scaffold plus a local FreeCAD bridge process.
-

@@ -105,6 +105,8 @@ def main() -> int:
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
     assert "freecad_command_describe" in tool_names
     assert "freecad_session_status" in tool_names
+    assert "freecad_session_start" in tool_names
+    assert "freecad_worker_document_new" in tool_names
     assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]

@@ -2,8 +2,9 @@
 
 ## Open
 
-- Runtime bridge is process-per-call only; it is not a persistent FreeCAD session yet.
-- Assembly joint creation currently writes placeholder metadata; full connector solving needs persistent GUI/workbench bridge mode.
+- Persistent worker mode currently covers session/document/object basics and primitive creation; most typed CAD operations still use process-per-call tools.
+- GUI selection, active view, and selected edge/face state are not exposed yet.
+- Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.
 - Mesh boolean support depends on the actual FreeCAD build and may return tool errors on unsupported operations.
 - File reads/imports accept caller-provided paths; write paths are workspace-gated by default.
 - Generated inventory is static; dynamically named commands can be missed.
@@ -21,3 +22,4 @@
 - Response serialization errors in `serve_stdio` previously could terminate the stdio loop; they now fall back to a structured `-32603` error response.
 - Large runtime envelopes could grow excessively because raw `argv`/`stdout`/`stderr` were returned verbatim; execution payloads now return truncated previews plus total-length metadata.
 - Some MCP clients call `resources/templates/list` even when no resource templates are exposed; the server now returns an empty `resourceTemplates` list instead of `-32601`.
+- Persistent worker processes could survive MCP server EOF if sessions were not explicitly closed; stdio shutdown now calls service cleanup.

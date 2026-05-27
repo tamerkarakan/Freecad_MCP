@@ -333,6 +333,22 @@ def main() -> int:
         if assembly["assembly"]["type_id"] != "Assembly::AssemblyObject":
             raise RuntimeError(f"assembly type mismatch: {assembly}")
 
+        joint = assert_ok(
+            service.definition_map()["freecad_assembly_create_joint"].handler(
+                {
+                    "document_path": str(assembly_doc),
+                    "assembly_name": "Assembly",
+                    "joint_type": "Fixed",
+                    "joint_name": "FixedJoint",
+                    "output_path": str(assembly_doc),
+                    "overwrite": True,
+                }
+            ),
+            "assembly_create_joint",
+        )
+        if not joint["joint_fields"]["has_proxy"] or joint["joint_fields"]["joint_type"] != "Fixed":
+            raise RuntimeError(f"assembly joint proxy mismatch: {joint}")
+
     print("typed CAD smoke OK")
     return 0
 

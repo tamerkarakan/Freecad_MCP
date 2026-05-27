@@ -647,23 +647,56 @@ def action_assembly_insert(args):
 
 
 def action_assembly_create_joint(args):
+    import sys
+
     doc = App.openDocument(args["document_path"])
     assembly = get_object(doc, args["assembly_name"])
-    joint_group = None
-    for child in assembly.Group:
-        if child.TypeId == "Assembly::JointGroup":
-            joint_group = child
-            break
-    if joint_group is None:
-        joint_group = assembly.newObject("Assembly::JointGroup", "Joints")
-    doc.openTransaction("MCP assembly joint placeholder")
-    joint = joint_group.newObject("App::FeaturePython", args.get("joint_name") or "Joint")
-    joint.addProperty("App::PropertyString", "JointType", "Joint")
-    joint.JointType = args.get("joint_type", "Fixed")
-    doc.commitTransaction()
+    try:
+        import JointObject
+        import UtilsAssembly
+    except ImportError:
+        assembly_mod = os.path.join(App.getResourceDir(), "Mod", "Assembly")
+        if assembly_mod not in sys.path:
+            sys.path.append(assembly_mod)
+        import JointObject
+        import UtilsAssembly
+
+    joint_type = args.get("joint_type", "Fixed")
+    if joint_type not in JointObject.JointTypes:
+        raise ValueError("unsupported joint_type: " + str(joint_type))
+    refs = []
+    for ref in args.get("references") or []:
+        obj = get_object(doc, ref["object_name"])
+        sub = ref.get("sub_element") or ""
+        vertex = ref.get("vertex") or sub
+        refs.append([obj, [sub, vertex]])
+    if refs and len(refs) != 2:
+        raise ValueError("references must contain exactly two connector references")
+    doc.openTransaction("MCP assembly joint")
+    try:
+        joint_group = UtilsAssembly.getJointGroup(assembly)
+        joint = joint_group.newObject("App::FeaturePython", args.get("joint_name") or "Joint")
+        JointObject.Joint(joint, JointObject.JointTypes.index(joint_type))
+        if refs:
+            joint.Proxy.setJointConnectors(joint, refs)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
     doc.recompute()
     saved = save_if_requested(doc, args)
-    return {"saved_path": saved, "joint": object_summary(joint), "document": document_summary(doc), "note": "Placeholder joint metadata; full connector solving requires GUI/workbench bridge."}
+    return {
+        "saved_path": saved,
+        "joint": object_summary(joint),
+        "joint_fields": {
+            "joint_type": joint.JointType,
+            "has_proxy": joint.Proxy is not None,
+            "has_reference1": hasattr(joint, "Reference1") and joint.Reference1 is not None,
+            "has_reference2": hasattr(joint, "Reference2") and joint.Reference2 is not None,
+        },
+        "document": document_summary(doc),
+        "note": "Created a native Assembly JointObject proxy. Connector-aware solving still depends on valid Assembly references and persistent GUI/workbench workflows.",
+    }
 
 
 def action_assembly_solve(args):
@@ -769,7 +802,7 @@ class CadToolService:
             self._tool("freecad_mesh_boolean", "Mesh Boolean", "Run mesh boolean operation when supported by FreeCAD build.", {"document_path": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "operation": {"type": "string", "enum": ["union", "difference", "intersection"]}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "object_names"], "mesh_boolean"),
             self._tool("freecad_assembly_create", "Create Assembly", "Create an Assembly object.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "assembly_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, [], "assembly_create"),
             self._tool("freecad_assembly_insert", "Insert Assembly Link", "Insert an existing object into an assembly as an App::Link.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}, "object_name": {"type": "string"}, "link_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "assembly_name", "object_name"], "assembly_insert"),
-            self._tool("freecad_assembly_create_joint", "Create Assembly Joint", "Create placeholder joint metadata under an assembly joint group.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}, "joint_type": {"type": "string"}, "joint_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "assembly_name"], "assembly_create_joint"),
+            self._tool("freecad_assembly_create_joint", "Create Assembly Joint", "Create a native Assembly JointObject proxy under an assembly joint group.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}, "joint_type": {"type": "string", "enum": ["Fixed", "Revolute", "Cylindrical", "Slider", "Ball", "Distance", "Parallel", "Perpendicular", "Angle", "RackPinion", "Screw", "Gears", "Belt"]}, "joint_name": {"type": "string"}, "references": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "assembly_name"], "assembly_create_joint"),
             self._tool("freecad_assembly_solve", "Solve Assembly", "Recompute an assembly document.", {"document_path": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "assembly_solve"),
             self._tool("freecad_assembly_bom", "Assembly BOM", "Return a simple assembly bill of materials.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}}, ["document_path"], "assembly_bom"),
         ]
@@ -820,6 +853,8 @@ class CadToolService:
         code = CAD_ACTION_SCRIPT.replace("__ARGS_B64__", encoded_args)
         result = FreeCadCmdBridge(Path(discovery.executable)).execute_python(code, timeout_sec=timeout_sec)
         payload = parse_prefixed_json(result.stdout)
+        if result.ok and payload is None:
+            raise ToolInputError("FreeCAD response did not include a valid MCP JSON payload")
         return {
             "discovery": discovery.to_dict(),
             "execution": result.to_dict(),

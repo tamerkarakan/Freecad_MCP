@@ -61,6 +61,14 @@ Available Phase 2 runtime tools:
 - `freecad_session_status`
 - `freecad_python_exec`
 
+Available persistent worker tools:
+
+- `freecad_session_start`, `freecad_session_list`, `freecad_session_close`
+- `freecad_worker_session_start/list/status/close`
+- `freecad_worker_document_new/open/save/recompute/close`
+- `freecad_worker_part_create_primitive`
+- `freecad_worker_object_list/get`
+
 Typed CAD tool groups are also available:
 
 - document: new/open/save/recompute/export
@@ -68,7 +76,7 @@ Typed CAD tool groups are also available:
 - Part: primitives, boolean, extrude, revolve, fillet, chamfer, geometry check
 - Sketcher: create/add geometry/add constraints/validate
 - import/export and mesh tools
-- Assembly: create/insert/link placeholder joints/recompute/BOM
+- Assembly: create/insert/link native JointObject proxies/recompute/BOM
 
 The server also exposes MCP resources for architecture, session state, testing, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
 

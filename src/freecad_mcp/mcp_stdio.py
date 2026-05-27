@@ -10,6 +10,7 @@ from typing import Any, TextIO
 
 from freecad_mcp import __version__
 from freecad_mcp.cad_tools import CadToolService
+from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
 from freecad_mcp.tooling import ToolDefinition, ToolInputError
@@ -41,6 +42,12 @@ class CompositeToolService:
 
     def definition_map(self) -> dict[str, ToolDefinition]:
         return {definition.name: definition for definition in self.definitions()}
+
+    def shutdown(self) -> None:
+        for service in self.services:
+            shutdown = getattr(service, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
 
 
 class McpServer:
@@ -113,7 +120,7 @@ class McpServer:
             },
             "instructions": (
                 "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
-                "and typed process-per-call CAD operations."
+                "typed process-per-call CAD operations, and persistent FreeCADCmd worker sessions."
             ),
         }
 
@@ -313,45 +320,56 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
 def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO | None = None) -> int:
     input_stream = stdin or sys.stdin
     output_stream = stdout or sys.stdout
-    for raw_line in input_stream:
-        line = raw_line.strip()
-        if not line:
-            continue
-        try:
-            message = json.loads(line)
-            if not isinstance(message, dict):
-                raise JsonRpcError(-32600, "Invalid request")
-            response = server.handle_message(message)
-        except json.JSONDecodeError as exc:
-            response = error_response(None, -32700, "Parse error", {"detail": str(exc)})
-        except JsonRpcError as exc:
-            response = error_response(None, exc.code, exc.message, exc.data)
-
-        if response is not None:
+    try:
+        for raw_line in input_stream:
+            line = raw_line.strip()
+            if not line:
+                continue
             try:
-                encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
-            except Exception as exc:  # pragma: no cover - defensive protocol guard
-                response_id = response.get("id") if isinstance(response, dict) else None
-                fallback = error_response(
-                    response_id,
-                    -32603,
-                    "Internal error",
-                    {"detail": f"failed to encode response: {exc}"},
-                )
-                encoded = json.dumps(fallback, ensure_ascii=False, separators=(",", ":"))
+                message = json.loads(line)
+                if not isinstance(message, dict):
+                    raise JsonRpcError(-32600, "Invalid request")
+                response = server.handle_message(message)
+            except json.JSONDecodeError as exc:
+                response = error_response(None, -32700, "Parse error", {"detail": str(exc)})
+            except JsonRpcError as exc:
+                response = error_response(None, exc.code, exc.message, exc.data)
 
-            try:
-                output_stream.write(encoded + "\n")
-                output_stream.flush()
-            except Exception:  # pragma: no cover - transport already closed
-                return 0
-    return 0
+            if response is not None:
+                try:
+                    encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
+                except Exception as exc:  # pragma: no cover - defensive protocol guard
+                    response_id = response.get("id") if isinstance(response, dict) else None
+                    fallback = error_response(
+                        response_id,
+                        -32603,
+                        "Internal error",
+                        {"detail": f"failed to encode response: {exc}"},
+                    )
+                    encoded = json.dumps(fallback, ensure_ascii=False, separators=(",", ":"))
+
+                try:
+                    output_stream.write(encoded + "\n")
+                    output_stream.flush()
+                except Exception:  # pragma: no cover - transport already closed
+                    return 0
+        return 0
+    finally:
+        tool_service = getattr(server, "tool_service", None)
+        shutdown = getattr(tool_service, "shutdown", None)
+        if callable(shutdown):
+            shutdown()
 
 
 def build_server(repo_root: Path | None = None) -> McpServer:
     root = (repo_root or Path.cwd()).resolve()
     store = InventoryStore(root)
-    tools = CompositeToolService(StaticToolService(store), RuntimeToolService(), CadToolService())
+    tools = CompositeToolService(
+        StaticToolService(store),
+        RuntimeToolService(),
+        PersistentToolService(workspace_root=root),
+        CadToolService(),
+    )
     return McpServer(tools)
 
 

@@ -209,6 +209,448 @@ Run a low-level Python snippet through FreeCADCmd and return stdout/stderr.
 }
 ```
 
+## `freecad_session_start`
+
+Alias for starting a long-lived FreeCADCmd worker session.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    }
+  }
+}
+```
+
+## `freecad_session_list`
+
+Alias for listing persistent FreeCADCmd worker sessions.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+## `freecad_session_close`
+
+Alias for closing a persistent FreeCADCmd worker session.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_worker_session_start`
+
+Start a long-lived FreeCADCmd worker process and return a session id.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    }
+  }
+}
+```
+
+## `freecad_worker_session_list`
+
+List running persistent FreeCADCmd worker sessions.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+## `freecad_worker_session_status`
+
+Return worker process state and in-memory document summaries.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_worker_session_close`
+
+Close a persistent FreeCADCmd worker session and clean up the process.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_worker_document_new`
+
+Create a document inside a persistent worker session.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_worker_document_open`
+
+Open a FreeCAD document inside a persistent worker session.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_path": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_path"
+  ]
+}
+```
+
+## `freecad_worker_document_save`
+
+Save a worker document by document id.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_document_recompute`
+
+Recompute a worker document by document id.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_document_close`
+
+Close an in-memory worker document by document id.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_part_create_primitive`
+
+Create a Part primitive in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "primitive": {
+      "type": "string",
+      "enum": [
+        "box",
+        "cylinder",
+        "sphere",
+        "cone",
+        "torus"
+      ]
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "properties": {
+      "type": "object"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_object_list`
+
+List objects from an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_object_get`
+
+Inspect an object from an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "object_name"
+  ]
+}
+```
+
 ## `freecad_document_new`
 
 Create a new FreeCAD document.
@@ -1675,7 +2117,7 @@ Insert an existing object into an assembly as an App::Link.
 
 ## `freecad_assembly_create_joint`
 
-Create placeholder joint metadata under an assembly joint group.
+Create a native Assembly JointObject proxy under an assembly joint group.
 
 ```json
 {
@@ -1688,10 +2130,31 @@ Create placeholder joint metadata under an assembly joint group.
       "type": "string"
     },
     "joint_type": {
-      "type": "string"
+      "type": "string",
+      "enum": [
+        "Fixed",
+        "Revolute",
+        "Cylindrical",
+        "Slider",
+        "Ball",
+        "Distance",
+        "Parallel",
+        "Perpendicular",
+        "Angle",
+        "RackPinion",
+        "Screw",
+        "Gears",
+        "Belt"
+      ]
     },
     "joint_name": {
       "type": "string"
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     },
     "output_path": {
       "type": "string"

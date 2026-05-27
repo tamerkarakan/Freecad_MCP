@@ -29,9 +29,12 @@
 - MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
 - `scripts/smoke_static_mcp.py` now smoke-checks `resources/templates/list`.
 - `scripts/smoke_cad_tools.py` now covers STEP export/import roundtrip, Part boolean fuse + BOP geometry check, unsupported mesh repair action reporting, open-sketch extrusion, and current solid-shape extrude failure behavior.
-- Current MCP tool count is 40.
+- Persistent `freecadcmd-worker` mode is implemented for session lifecycle, in-memory document lifecycle, object list/get, and primitive creation.
+- Persistent worker tools include roadmap aliases `freecad_session_start`, `freecad_session_list`, `freecad_session_close` plus explicit `freecad_worker_*` tools.
+- `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
+- Current MCP tool count is 55.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
-- Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.
+- GUI attach and Workbench-hosted bridge modes remain planned in `docs/PERSISTENT_BRIDGE_PLAN.md`.
 
 ## Next Session Checklist
 
@@ -40,4 +43,5 @@
 3. Read `docs/BACKLOG.md` and `docs/BUGS.md`.
 4. Re-run a Sketcher profile smoke if extrude behavior changes again.
 5. Run unit tests for `runtime_bridge` and `mcp_stdio` when touching transport/serialization code.
-6. Push only after verification passes.
+6. Run persistent worker smoke when touching session lifecycle or worker tools.
+7. Push only after verification passes.

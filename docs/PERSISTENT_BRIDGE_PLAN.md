@@ -1,6 +1,6 @@
 # Persistent Bridge Plan
 
-Current runtime mode is `freecadcmd-process-per-call`. It is reliable for file-scoped tools and CI-like smoke tests, but it cannot preserve an in-memory document or GUI selection between MCP calls.
+Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`. Process-per-call remains reliable for file-scoped tools and CI-like smoke tests. Worker mode preserves in-memory documents across MCP calls, but it still does not expose GUI selection or active view state.
 
 ## Target Modes
 
@@ -19,7 +19,16 @@ Current runtime mode is `freecadcmd-process-per-call`. It is reliable for file-s
 - GUI selection tools must return stable object/subelement references.
 - Low-level Python execution remains opt-in and audited.
 
-## Current Decision
+## Implemented Worker Slice
 
-Typed tools are implemented over process-per-call first because they are deterministic and easy to verify. Persistent modes should reuse the same tool schemas where possible and only add session/document identifiers.
+- Session lifecycle: start/list/status/close.
+- Document lifecycle: new/open/save/recompute/close.
+- Object basics: list/get.
+- Part basics: primitive creation.
+- Tests: unit worker lifecycle/framing tests and real FreeCAD worker smoke.
 
+## Remaining Persistent Work
+
+- Broaden worker tools to reuse more typed CAD operations.
+- Add crash injection and automatic unhealthy-session cleanup coverage.
+- Add GUI attach and Workbench-hosted bridge modes for live selection/view workflows.
