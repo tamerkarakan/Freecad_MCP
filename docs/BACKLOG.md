@@ -2,8 +2,6 @@
 
 ## Now
 
-- Scaffold MCP stdio server.
-- Add source tools backed by `docs/freecad_tool_inventory.json`.
 - Add runtime bridge discovery for `FreeCADCmd.exe` and GUI bridge modes.
 
 ## Next
@@ -19,4 +17,3 @@
 - Add mesh import/export/evaluate/repair tools.
 - Add Assembly typed tools.
 - Add Workbench-hosted bridge mode.
-

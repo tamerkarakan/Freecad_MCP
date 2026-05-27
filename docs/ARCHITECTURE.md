@@ -10,10 +10,22 @@ The server is hybrid in two ways:
 | Component | Responsibility |
 | --- | --- |
 | `freecad_mcp.source_inventory` | Static scanner for FreeCAD workbenches, commands, and source references. |
-| `server.py` | Future MCP stdio entrypoint. |
+| `freecad_mcp.static_tools` | Source-backed Phase 1 tool implementations. |
+| `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
+| `server.py` | MCP stdio entrypoint. |
 | `bridge/` | Future FreeCAD runtime process/session bridge. |
 | `policy/` | Future transaction, recompute, geometry-check, and result-shaping rules. |
 | `docs/` | Architecture, backlog, bugs, testing, and session continuity. |
+
+## Phase 1 Static MCP Tools
+
+| Tool | Status |
+| --- | --- |
+| `freecad_command_list` | Implemented |
+| `freecad_command_describe` | Implemented |
+| `freecad_source_symbol_index` | Implemented |
+| `freecad_source_search` | Implemented |
+| `freecad_source_open` | Implemented |
 
 ## Runtime Policy Target
 
@@ -25,4 +37,3 @@ Mutating runtime tools should follow this shape:
 4. Recompute.
 5. Optionally run geometry checks for shape-producing tools.
 6. Return structured before/after document and object summaries.
-

@@ -27,3 +27,37 @@ Generated files:
 - `docs/freecad_tool_inventory.json`
 - `docs/mcp_tool_plan.md`
 
+## Phase 1 Static MCP
+
+Run the local stdio MCP server:
+
+```powershell
+python server.py
+```
+
+Example MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "freecad": {
+      "command": "python",
+      "args": ["C:/path/to/Freecad_MCP/server.py"]
+    }
+  }
+}
+```
+
+Available Phase 1 tools:
+
+- `freecad_command_list`
+- `freecad_command_describe`
+- `freecad_source_symbol_index`
+- `freecad_source_search`
+- `freecad_source_open`
+
+Smoke test:
+
+```powershell
+scripts\verify.ps1
+```

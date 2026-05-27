@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""Export Phase 1 MCP tool schemas as reviewable docs."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from freecad_mcp.mcp_stdio import build_server
+
+
+def main() -> int:
+    server = build_server(ROOT)
+    tools = [tool.to_mcp() for tool in server.tools.values()]
+
+    docs = ROOT / "docs"
+    docs.mkdir(exist_ok=True)
+    json_path = docs / "phase1_tool_schemas.json"
+    md_path = docs / "phase1_tool_schemas.md"
+
+    json_path.write_text(json.dumps({"tools": tools}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    lines = ["# Phase 1 Tool Schemas", ""]
+    for tool in tools:
+        lines.extend(
+            [
+                f"## `{tool['name']}`",
+                "",
+                tool["description"],
+                "",
+                "```json",
+                json.dumps(tool["inputSchema"], ensure_ascii=False, indent=2),
+                "```",
+                "",
+            ]
+        )
+    md_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"wrote {json_path.relative_to(ROOT)}")
+    print(f"wrote {md_path.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

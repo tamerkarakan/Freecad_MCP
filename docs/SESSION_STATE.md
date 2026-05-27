@@ -11,6 +11,10 @@
 - Static inventory currently scans 1112 GUI command registrations from FreeCAD commit `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 - MCP plan favors typed document/object/Part/Sketch tools plus lower-level command and Python escape hatches.
 - Verification command: `scripts\verify.ps1`.
+- Phase 1 static MCP server entrypoint exists at `server.py`.
+- Implemented static tools: `freecad_command_list`, `freecad_command_describe`, `freecad_source_symbol_index`, `freecad_source_search`, `freecad_source_open`.
+- MCP client config example exists at `docs/MCP_CLIENT_CONFIG.md`.
+- Phase 1 tool schema snapshots are generated at `docs/phase1_tool_schemas.json` and `docs/phase1_tool_schemas.md`.
 
 ## Next Session Checklist
 

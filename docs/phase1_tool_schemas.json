@@ -1,0 +1,137 @@
+{
+  "tools": [
+    {
+      "name": "freecad_command_list",
+      "title": "List FreeCAD Commands",
+      "description": "List statically scanned FreeCAD GUI commands with optional filtering.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "description": "Optional module/workbench name."
+          },
+          "language": {
+            "type": "string",
+            "description": "Optional source language filter.",
+            "enum": [
+              "python",
+              "cpp"
+            ]
+          },
+          "query": {
+            "type": "string",
+            "description": "Case-insensitive substring search over command name, menu text, and tooltip."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_command_describe",
+      "title": "Describe FreeCAD Command",
+      "description": "Return source-backed metadata for a scanned FreeCAD command.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact command name."
+          },
+          "module": {
+            "type": "string",
+            "description": "Optional module/workbench filter."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_source_symbol_index",
+      "title": "FreeCAD Source Symbol Index",
+      "description": "Return a compact summary of scanned workbenches, command counts, and MCP tool families.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "module": {
+            "type": "string",
+            "description": "Optional module/workbench to summarize."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_source_search",
+      "title": "Search FreeCAD Source",
+      "description": "Search the local FreeCAD checkout for text matches.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Literal text or regex pattern."
+          },
+          "module": {
+            "type": "string",
+            "description": "Optional module under src/Mod."
+          },
+          "glob": {
+            "type": "string",
+            "description": "Optional filename glob, for example '*.py' or 'Command*.cpp'."
+          },
+          "regex": {
+            "type": "boolean",
+            "description": "Treat query as a regular expression."
+          },
+          "case_sensitive": {
+            "type": "boolean"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "freecad_source_open",
+      "title": "Open FreeCAD Source",
+      "description": "Read a bounded line range from a source file in the local FreeCAD checkout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path relative to the FreeCAD root, for example src/Mod/Part/Gui/Command.cpp."
+          },
+          "start_line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "line_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 400
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    }
+  ]
+}
