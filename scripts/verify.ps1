@@ -11,8 +11,9 @@ try {
     $env:PYTHONPATH = Join-Path $Root "src"
     & $Python -m compileall -q server.py scripts src tests
     & $Python -m unittest discover -s tests\unit -p "test_*.py"
-    & $Python scripts\export_phase1_schemas.py
+    & $Python scripts\export_mcp_tool_schemas.py
     & $Python scripts\smoke_static_mcp.py
+    & $Python scripts\smoke_freecad_runtime.py
     if (Test-Path upstream\FreeCAD\src) {
         & $Python scripts\scan_freecad_tools.py --freecad-root upstream\FreeCAD --out-json docs\freecad_tool_inventory.json --out-md docs\freecad_tool_inventory.md
     }

@@ -2,14 +2,14 @@
 
 ## Now
 
-- Add runtime bridge discovery for `FreeCADCmd.exe` and GUI bridge modes.
+- Implement document tools: new, open, save, recompute, export.
+- Add fake bridge integration tests for document lifecycle.
 
 ## Next
 
-- Implement document tools: new, open, save, recompute, export.
 - Implement object tools: list, get, set properties, delete.
 - Implement typed Part primitive and boolean tools.
-- Add integration tests using a fake bridge before requiring FreeCAD.
+- Add persistent GUI/workbench bridge design.
 
 ## Later
 

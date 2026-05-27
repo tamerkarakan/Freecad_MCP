@@ -60,6 +60,18 @@ def main() -> int:
                 },
             },
         )
+        status = send(
+            process,
+            {
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {
+                    "name": "freecad_session_status",
+                    "arguments": {"probe": False},
+                },
+            },
+        )
     finally:
         if process.stdin:
             process.stdin.close()
@@ -69,7 +81,10 @@ def main() -> int:
     assert initialized["result"]["capabilities"]["tools"]["listChanged"] is False
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
     assert "freecad_command_describe" in tool_names
+    assert "freecad_session_status" in tool_names
+    assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
+    assert "discovery" in status["result"]["structuredContent"]
     if process.returncode != 0:
         raise RuntimeError(f"server exited with {process.returncode}: {stderr}")
     print("static MCP smoke OK")

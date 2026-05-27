@@ -1,4 +1,4 @@
-"""Minimal stdio MCP server for static FreeCAD tools."""
+"""Minimal stdio MCP server for FreeCAD hybrid tools."""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from freecad_mcp import __version__
-from freecad_mcp.static_tools import InventoryStore, StaticToolService, ToolInputError
+from freecad_mcp.runtime_tools import RuntimeToolService
+from freecad_mcp.static_tools import InventoryStore, StaticToolService
+from freecad_mcp.tooling import ToolDefinition, ToolInputError
 
 
 PROTOCOL_VERSION = "2025-06-18"
@@ -24,8 +26,24 @@ class JsonRpcError(Exception):
     data: Any | None = None
 
 
+class CompositeToolService:
+    """Combine multiple services that expose ToolDefinition objects."""
+
+    def __init__(self, *services: object):
+        self.services = services
+
+    def definitions(self) -> list[ToolDefinition]:
+        definitions: list[ToolDefinition] = []
+        for service in self.services:
+            definitions.extend(service.definitions())
+        return definitions
+
+    def definition_map(self) -> dict[str, ToolDefinition]:
+        return {definition.name: definition for definition in self.definitions()}
+
+
 class McpServer:
-    """JSON-RPC request dispatcher for the static Phase 1 tool surface."""
+    """JSON-RPC request dispatcher for the hybrid tool surface."""
 
     def __init__(self, tool_service: StaticToolService):
         self.tool_service = tool_service
@@ -79,8 +97,8 @@ class McpServer:
                 "version": __version__,
             },
             "instructions": (
-                "Phase 1 exposes static FreeCAD source intelligence tools only. "
-                "Runtime document and CAD mutation tools are intentionally unavailable yet."
+                "Exposes static FreeCAD source intelligence plus Phase 2 FreeCADCmd runtime tools. "
+                "Document and CAD mutation typed tools are intentionally unavailable yet."
             ),
         }
 
@@ -149,7 +167,8 @@ def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO |
 def build_server(repo_root: Path | None = None) -> McpServer:
     root = (repo_root or Path.cwd()).resolve()
     store = InventoryStore(root)
-    return McpServer(StaticToolService(store))
+    tools = CompositeToolService(StaticToolService(store), RuntimeToolService())
+    return McpServer(tools)
 
 
 def main() -> int:

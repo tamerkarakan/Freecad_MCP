@@ -4,7 +4,7 @@ import json
 import unittest
 
 from freecad_mcp.mcp_stdio import McpServer
-from freecad_mcp.static_tools import ToolDefinition
+from freecad_mcp.tooling import ToolDefinition
 
 
 class McpStdioTests(unittest.TestCase):

@@ -27,7 +27,7 @@ Generated files:
 - `docs/freecad_tool_inventory.json`
 - `docs/mcp_tool_plan.md`
 
-## Phase 1 Static MCP
+## MCP Server
 
 Run the local stdio MCP server:
 
@@ -55,6 +55,16 @@ Available Phase 1 tools:
 - `freecad_source_symbol_index`
 - `freecad_source_search`
 - `freecad_source_open`
+
+Available Phase 2 runtime tools:
+
+- `freecad_session_status`
+- `freecad_python_exec`
+
+For runtime tools, set one of:
+
+- `FREECAD_MCP_FREECAD_HOME` to a portable FreeCAD directory
+- `FREECAD_MCP_FREECAD_CMD` to a concrete `FreeCADCmd.exe`
 
 Smoke test:
 

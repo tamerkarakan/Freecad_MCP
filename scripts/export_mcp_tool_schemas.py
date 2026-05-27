@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export Phase 1 MCP tool schemas as reviewable docs."""
+"""Export MCP tool schemas as reviewable docs."""
 
 from __future__ import annotations
 
@@ -22,12 +22,12 @@ def main() -> int:
 
     docs = ROOT / "docs"
     docs.mkdir(exist_ok=True)
-    json_path = docs / "phase1_tool_schemas.json"
-    md_path = docs / "phase1_tool_schemas.md"
+    json_path = docs / "mcp_tool_schemas.json"
+    md_path = docs / "mcp_tool_schemas.md"
 
     json_path.write_text(json.dumps({"tools": tools}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
-    lines = ["# Phase 1 Tool Schemas", ""]
+    lines = ["# MCP Tool Schemas", ""]
     for tool in tools:
         lines.extend(
             [

@@ -11,6 +11,8 @@ The server is hybrid in two ways:
 | --- | --- |
 | `freecad_mcp.source_inventory` | Static scanner for FreeCAD workbenches, commands, and source references. |
 | `freecad_mcp.static_tools` | Source-backed Phase 1 tool implementations. |
+| `freecad_mcp.runtime_bridge` | FreeCADCmd discovery and process-per-call execution bridge. |
+| `freecad_mcp.runtime_tools` | Phase 2 runtime MCP tools. |
 | `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
 | `server.py` | MCP stdio entrypoint. |
 | `bridge/` | Future FreeCAD runtime process/session bridge. |
@@ -26,6 +28,15 @@ The server is hybrid in two ways:
 | `freecad_source_symbol_index` | Implemented |
 | `freecad_source_search` | Implemented |
 | `freecad_source_open` | Implemented |
+
+## Phase 2 Runtime Tools
+
+| Tool | Status |
+| --- | --- |
+| `freecad_session_status` | Implemented with FreeCADCmd discovery and optional probe |
+| `freecad_python_exec` | Implemented as low-level FreeCADCmd `-c` execution |
+
+Runtime bridge mode is currently process-per-call. It is deterministic and testable, but not yet a persistent FreeCAD session.
 
 ## Runtime Policy Target
 

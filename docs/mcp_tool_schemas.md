@@ -1,4 +1,4 @@
-# Phase 1 Tool Schemas
+# MCP Tool Schemas
 
 ## `freecad_command_list`
 
@@ -139,6 +139,67 @@ Read a bounded line range from a source file in the local FreeCAD checkout.
   },
   "required": [
     "path"
+  ]
+}
+```
+
+## `freecad_session_status`
+
+Discover FreeCADCmd and optionally probe the runtime version/config.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "probe": {
+      "type": "boolean",
+      "description": "Run a small FreeCAD Python probe when an executable is found."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    }
+  }
+}
+```
+
+## `freecad_python_exec`
+
+Run a low-level Python snippet through FreeCADCmd and return stdout/stderr.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Python code passed to FreeCADCmd -c. Prefer typed tools when available."
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    }
+  },
+  "required": [
+    "code"
   ]
 }
 ```

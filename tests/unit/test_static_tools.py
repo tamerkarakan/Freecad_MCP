@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from freecad_mcp.static_tools import InventoryStore, StaticToolService, ToolInputError
+from freecad_mcp.static_tools import InventoryStore, StaticToolService
+from freecad_mcp.tooling import ToolInputError
 
 
 class StaticToolServiceTests(unittest.TestCase):
