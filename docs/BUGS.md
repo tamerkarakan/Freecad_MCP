@@ -12,6 +12,7 @@
 - Server uses a minimal local JSON-RPC implementation because the Python MCP SDK is not installed in the bundled runtime.
 - `freecad_python_exec` is a low-level escape hatch and requires explicit unsafe opt-in.
 - Even with response truncation, some Windows MCP clients may still report `Transport closed` under extreme runtime output/IO conditions; continue validating in long smoke sessions.
+- `freecad_part_extrude` currently supports wire/face-like profiles; directly extruding an existing solid shape can return the FreeCAD OCC error `Solids are not Processed`.
 
 ## Closed
 

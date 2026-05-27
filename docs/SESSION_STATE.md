@@ -27,6 +27,8 @@
 - `FreeCadCmdBridge.execute_python` now returns structured launch failures (`launch_error`) for process start errors instead of propagating raw OS exceptions.
 - Stdio server response writing now has a serialization fallback so non-JSON-serializable tool payloads return a structured internal error instead of terminating the server loop.
 - MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
+- `scripts/smoke_static_mcp.py` now smoke-checks `resources/templates/list`.
+- `scripts/smoke_cad_tools.py` now covers STEP export/import roundtrip, Part boolean fuse + BOP geometry check, unsupported mesh repair action reporting, open-sketch extrusion, and current solid-shape extrude failure behavior.
 - Current MCP tool count is 40.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.

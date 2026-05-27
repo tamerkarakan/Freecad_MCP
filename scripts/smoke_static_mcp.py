@@ -85,11 +85,12 @@ def main() -> int:
             },
         )
         resources = send(process, {"jsonrpc": "2.0", "id": 6, "method": "resources/list"})
+        resource_templates = send(process, {"jsonrpc": "2.0", "id": 7, "method": "resources/templates/list"})
         prompt = send(
             process,
             {
                 "jsonrpc": "2.0",
-                "id": 7,
+                "id": 8,
                 "method": "prompts/get",
                 "params": {"name": "freecad_phase_gate", "arguments": {"phase": "smoke"}},
             },
@@ -110,6 +111,7 @@ def main() -> int:
     assert unsafe["result"]["isError"] is True
     assert "unsafe" in unsafe["result"]["structuredContent"]["error"]
     assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
+    assert resource_templates["result"]["resourceTemplates"] == []
     assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:
         raise RuntimeError(f"server exited with {process.returncode}: {stderr}")

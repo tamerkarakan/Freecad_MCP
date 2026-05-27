@@ -13,10 +13,11 @@ Current checks:
 - MCP tool schema snapshot export.
 - Static stdio MCP smoke test through `scripts/smoke_static_mcp.py`.
 - Optional real FreeCADCmd runtime smoke test through `scripts/smoke_freecad_runtime.py`.
-- Optional typed CAD smoke test through `scripts/smoke_cad_tools.py`, including primitive/export, mesh import/repair, Assembly creation, and Sketcher rectangle to solid extrusion.
+- Optional typed CAD smoke test through `scripts/smoke_cad_tools.py`, including primitive/export, STEP roundtrip import, Part boolean + geometry check, mesh import/repair, unsupported mesh repair action reporting, Assembly creation, closed Sketcher rectangle to solid extrusion, open Sketcher extrusion, and current solid-shape extrude failure behavior.
 - Inventory regeneration when `upstream/FreeCAD/src` exists.
 - Unit guard for stdio serialization fallback (`test_mcp_stdio.py`).
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
+- Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).
 - Unit guard for structured launch errors and runtime output truncation (`test_runtime_bridge.py`).
 
 Expected future checks:
