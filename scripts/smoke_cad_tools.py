@@ -81,6 +81,52 @@ def main() -> int:
         if mesh["document"]["object_count"] < 1:
             raise RuntimeError(f"mesh import empty: {mesh}")
 
+        sketch_doc = temp / "sketch.FCStd"
+        sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {"document_name": "SketchSmoke", "sketch_name": "ProfileSketch", "output_path": str(sketch_doc), "overwrite": True}
+            ),
+            "sketch_create",
+        )
+        if sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+            raise RuntimeError(f"sketch type mismatch: {sketch}")
+
+        sketch_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(sketch_doc),
+                    "sketch_name": "ProfileSketch",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0, 0], "end": [5, 0, 0]},
+                        {"type": "line", "start": [5, 0, 0], "end": [5, 3, 0]},
+                        {"type": "line", "start": [5, 3, 0], "end": [0, 3, 0]},
+                        {"type": "line", "start": [0, 3, 0], "end": [0, 0, 0]},
+                    ],
+                    "output_path": str(sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "sketch_add_geometry",
+        )
+        if sketch_geometry["sketch"]["shape"]["edges"] != 4:
+            raise RuntimeError(f"unexpected sketch geometry: {sketch_geometry}")
+
+        extrude = assert_ok(
+            service.definition_map()["freecad_part_extrude"].handler(
+                {
+                    "document_path": str(sketch_doc),
+                    "source_object": "ProfileSketch",
+                    "vector": [0, 0, 2],
+                    "result_name": "ProfileExtrude",
+                    "output_path": str(sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "part_extrude sketch",
+        )
+        if extrude["object"]["shape"]["solids"] != 1:
+            raise RuntimeError(f"sketch extrude did not create a solid: {extrude}")
+
         assembly_doc = temp / "assembly.FCStd"
         assembly = assert_ok(
             service.definition_map()["freecad_assembly_create"].handler(

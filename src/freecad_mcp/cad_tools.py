@@ -343,17 +343,37 @@ def action_part_boolean(args):
     return {"saved_path": saved, "object": object_summary(result), "document": document_summary(doc)}
 
 
+def planar_face_from_closed_wires(shape):
+    import Part
+
+    wires = list(getattr(shape, "Wires", []) or [])
+    if not wires or len(getattr(shape, "Faces", []) or []) > 0:
+        return None
+    if any(not wire.isClosed() for wire in wires):
+        return None
+    try:
+        if len(wires) == 1:
+            return Part.Face(wires[0])
+        return Part.Face(wires)
+    except Exception:
+        return None
+
+
 def action_part_extrude(args):
     doc = App.openDocument(args["document_path"])
     source = get_object(doc, args["source_object"])
-    shape = source.Shape.extrude(vector(args.get("vector"), [0, 0, 10]))
+    base_shape = source.Shape
+    face = planar_face_from_closed_wires(base_shape)
+    extrude_source = face if face is not None else base_shape
+    mode = "face_from_closed_wire" if face is not None else "shape"
+    shape = extrude_source.extrude(vector(args.get("vector"), [0, 0, 10]))
     doc.openTransaction("MCP part extrude")
     result = doc.addObject("Part::Feature", args.get("result_name") or "Extrude")
     result.Shape = shape
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)
-    return {"saved_path": saved, "object": object_summary(result), "document": document_summary(doc)}
+    return {"saved_path": saved, "mode": mode, "object": object_summary(result), "document": document_summary(doc)}
 
 
 def action_part_revolve(args):

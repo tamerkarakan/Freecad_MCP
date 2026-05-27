@@ -14,4 +14,4 @@
 
 ## Closed
 
-- None yet.
+- Closed Sketcher/profile extrusion previously produced a shell-only `Part::Feature`; `freecad_part_extrude` now builds a planar face from closed wires before extrusion so rectangle profiles become solids.

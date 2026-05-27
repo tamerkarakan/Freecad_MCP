@@ -21,6 +21,7 @@
 - Phase 2 FreeCADCmd bridge is implemented as process-per-call.
 - Implemented runtime tools: `freecad_session_status`, `freecad_python_exec`.
 - Typed CAD tools are implemented for document, object, Part, Sketcher, import/export, mesh, and Assembly basics.
+- `freecad_part_extrude` now converts closed wire/sketch profiles to a planar `Part.Face` before extrusion, so closed Sketcher rectangles produce solid Part extrusions instead of shell-only results.
 - Current MCP tool count is 40.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.
@@ -30,4 +31,5 @@
 1. Run `git status --short --branch`.
 2. Run `scripts\verify.ps1`.
 3. Read `docs/BACKLOG.md` and `docs/BUGS.md`.
-4. Push only after verification passes.
+4. Re-run a Sketcher profile smoke if extrude behavior changes again.
+5. Push only after verification passes.

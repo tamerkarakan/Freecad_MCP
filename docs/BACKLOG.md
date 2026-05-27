@@ -8,6 +8,7 @@
 ## Next
 
 - Add document/object fixtures for more complex real-world FreeCAD files.
+- Add an explicit typed option for advanced extrude modes such as shell-only, solid, taper, and symmetric extrusion.
 - Add MCP SDK adapter if the Python SDK becomes available in the runtime.
 
 ## Later
