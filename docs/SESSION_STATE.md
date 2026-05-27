@@ -7,6 +7,7 @@
 - Repo discipline and verification commit exists: `7c6ef09 chore: add repo discipline and verification automation`.
 - Phase 1 static MCP commit exists: `57930c3 feat: add static MCP server tools`.
 - Phase 2 runtime bridge commit exists: `558b4b0 feat: add FreeCADCmd runtime bridge`.
+- Typed FreeCAD MCP surface commit exists: `3dcc942 feat: complete typed FreeCAD MCP tool surface`.
 - Remote repository is configured as `origin`: `https://github.com/tamerkarakan/Freecad_MCP.git`.
 - First GitHub push completed to `origin/main`; repository was created private.
 - FreeCAD upstream source is checked out under ignored `upstream/FreeCAD`.
