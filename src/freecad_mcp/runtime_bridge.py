@@ -26,6 +26,7 @@ class FreeCadCandidate:
             "executable": str(self.executable),
             "source": self.source,
             "exists": self.exists,
+            "is_file": self.executable.is_file(),
         }
 
 
@@ -105,17 +106,17 @@ class FreeCadDiscovery:
         raw_candidates: list[tuple[Path, str]] = []
 
         if executable:
-            raw_candidates.append((Path(executable), "argument:executable"))
+            raw_candidates.append((clean_path(executable), "argument:executable"))
         env_executable = self.env.get("FREECAD_MCP_FREECAD_CMD")
         if env_executable:
-            raw_candidates.append((Path(env_executable), "env:FREECAD_MCP_FREECAD_CMD"))
+            raw_candidates.append((clean_path(env_executable), "env:FREECAD_MCP_FREECAD_CMD"))
 
         home_values = []
         if freecad_home:
-            home_values.append((Path(freecad_home), "argument:freecad_home"))
+            home_values.append((clean_path(freecad_home), "argument:freecad_home"))
         env_home = self.env.get("FREECAD_MCP_FREECAD_HOME")
         if env_home:
-            home_values.append((Path(env_home), "env:FREECAD_MCP_FREECAD_HOME"))
+            home_values.append((clean_path(env_home), "env:FREECAD_MCP_FREECAD_HOME"))
 
         for home, source in home_values:
             raw_candidates.extend(
@@ -142,9 +143,10 @@ class FreeCadDiscovery:
         deduped: dict[str, FreeCadCandidate] = {}
         for path, source in raw_candidates:
             resolved = path.expanduser().resolve()
+            exists = resolved.exists() and resolved.is_file()
             deduped.setdefault(
                 str(resolved).casefold(),
-                FreeCadCandidate(executable=resolved, source=source, exists=resolved.exists()),
+                FreeCadCandidate(executable=resolved, source=source, exists=exists),
             )
         return list(deduped.values())
 
@@ -216,8 +218,16 @@ class FreeCadCmdBridge:
         return {"execution": result.to_dict(), "freecad": payload}
 
 
+def clean_path(value: str) -> Path:
+    return Path(value.strip().strip('"').strip("'"))
+
+
 def parse_prefixed_json(text: str) -> dict[str, Any] | None:
     for line in text.splitlines():
         if line.startswith(FREECAD_JSON_PREFIX):
-            return json.loads(line[len(FREECAD_JSON_PREFIX) :])
+            try:
+                parsed = json.loads(line[len(FREECAD_JSON_PREFIX) :])
+            except json.JSONDecodeError:
+                return None
+            return parsed if isinstance(parsed, dict) else None
     return None

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from freecad_mcp import __version__
+from freecad_mcp.cad_tools import CadToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
 from freecad_mcp.tooling import ToolDefinition, ToolInputError
@@ -85,20 +86,32 @@ class McpServer:
             return {"tools": [tool.to_mcp() for tool in self.tools.values()]}
         if method == "tools/call":
             return self._tools_call(params)
+        if method == "resources/list":
+            return self._resources_list()
+        if method == "resources/read":
+            return self._resources_read(params)
+        if method == "prompts/list":
+            return self._prompts_list()
+        if method == "prompts/get":
+            return self._prompts_get(params)
         raise JsonRpcError(-32601, f"Method not found: {method}")
 
     def _initialize(self, params: JsonObject) -> JsonObject:
         return {
             "protocolVersion": PROTOCOL_VERSION,
-            "capabilities": {"tools": {"listChanged": False}},
+            "capabilities": {
+                "tools": {"listChanged": False},
+                "resources": {"subscribe": False, "listChanged": False},
+                "prompts": {"listChanged": False},
+            },
             "serverInfo": {
                 "name": "freecad-hybrid-mcp",
                 "title": "FreeCAD Hybrid MCP",
                 "version": __version__,
             },
             "instructions": (
-                "Exposes static FreeCAD source intelligence plus Phase 2 FreeCADCmd runtime tools. "
-                "Document and CAD mutation typed tools are intentionally unavailable yet."
+                "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
+                "and typed process-per-call CAD operations."
             ),
         }
 
@@ -118,6 +131,124 @@ class McpServer:
         except ToolInputError as exc:
             return tool_result({"error": str(exc)}, is_error=True)
         return tool_result(structured, is_error=False)
+
+    def _resources_list(self) -> JsonObject:
+        return {
+            "resources": [
+                {
+                    "uri": "freecad://docs/architecture",
+                    "name": "architecture",
+                    "title": "Architecture",
+                    "description": "Current architecture and bridge policy.",
+                    "mimeType": "text/markdown",
+                },
+                {
+                    "uri": "freecad://docs/session-state",
+                    "name": "session_state",
+                    "title": "Session State",
+                    "description": "Cross-session handoff state.",
+                    "mimeType": "text/markdown",
+                },
+                {
+                    "uri": "freecad://docs/testing",
+                    "name": "testing",
+                    "title": "Testing",
+                    "description": "Verification gates and smoke tests.",
+                    "mimeType": "text/markdown",
+                },
+                {
+                    "uri": "freecad://schemas/tools",
+                    "name": "tool_schemas",
+                    "title": "MCP Tool Schemas",
+                    "description": "Generated tool schema snapshot.",
+                    "mimeType": "application/json",
+                },
+                {
+                    "uri": "freecad://inventory/summary",
+                    "name": "inventory_summary",
+                    "title": "FreeCAD Inventory Summary",
+                    "description": "Compact generated inventory summary.",
+                    "mimeType": "application/json",
+                },
+            ]
+        }
+
+    def _resources_read(self, params: JsonObject) -> JsonObject:
+        uri = params.get("uri")
+        if not isinstance(uri, str) or not uri:
+            raise JsonRpcError(-32602, "Resource uri is required")
+        contents = read_resource(Path.cwd(), uri)
+        if contents is None:
+            raise JsonRpcError(-32602, f"Unknown resource: {uri}")
+        return {"contents": [contents]}
+
+    def _prompts_list(self) -> JsonObject:
+        return {
+            "prompts": [
+                {
+                    "name": "freecad_design_task",
+                    "title": "FreeCAD Design Task",
+                    "description": "Plan and execute a FreeCAD design task using typed tools first.",
+                    "arguments": [
+                        {"name": "task", "description": "The design or automation task.", "required": True}
+                    ],
+                },
+                {
+                    "name": "freecad_phase_gate",
+                    "title": "FreeCAD Phase Gate",
+                    "description": "Review a phase for tests, docs, risks, and runtime evidence.",
+                    "arguments": [
+                        {"name": "phase", "description": "Phase name or number.", "required": True}
+                    ],
+                },
+            ]
+        }
+
+    def _prompts_get(self, params: JsonObject) -> JsonObject:
+        name = params.get("name")
+        arguments = params.get("arguments") or {}
+        if not isinstance(name, str) or not name:
+            raise JsonRpcError(-32602, "Prompt name is required")
+        if not isinstance(arguments, dict):
+            raise JsonRpcError(-32602, "Prompt arguments must be an object")
+        if name == "freecad_design_task":
+            task = arguments.get("task", "")
+            return {
+                "description": "FreeCAD design task workflow",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": {
+                            "type": "text",
+                            "text": (
+                                "Use FreeCAD typed MCP tools before low-level Python. "
+                                "Inspect available source/tool schemas if needed, create or open the document, "
+                                "apply operations with save/output paths, run geometry checks, and report exact files. "
+                                f"Task: {task}"
+                            ),
+                        },
+                    }
+                ],
+            }
+        if name == "freecad_phase_gate":
+            phase = arguments.get("phase", "")
+            return {
+                "description": "FreeCAD MCP phase gate",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": {
+                            "type": "text",
+                            "text": (
+                                "Review the phase for: tool schema drift, path safety, FreeCAD runtime smoke, "
+                                "unit tests, docs/session handoff, known risks, and git cleanliness. "
+                                f"Phase: {phase}"
+                            ),
+                        },
+                    }
+                ],
+            }
+        raise JsonRpcError(-32602, f"Unknown prompt: {name}")
 
 
 def tool_result(payload: JsonObject, *, is_error: bool) -> JsonObject:
@@ -139,6 +270,39 @@ def error_response(
     if data is not None:
         error["data"] = data
     return {"jsonrpc": "2.0", "id": request_id, "error": error}
+
+
+def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
+    mapping = {
+        "freecad://docs/architecture": repo_root / "docs" / "ARCHITECTURE.md",
+        "freecad://docs/session-state": repo_root / "docs" / "SESSION_STATE.md",
+        "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
+        "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",
+    }
+    if uri in mapping:
+        path = mapping[uri]
+        if not path.exists():
+            return None
+        mime = "application/json" if path.suffix == ".json" else "text/markdown"
+        return {"uri": uri, "mimeType": mime, "text": path.read_text(encoding="utf-8")}
+    if uri == "freecad://inventory/summary":
+        inventory_path = repo_root / "docs" / "freecad_tool_inventory.json"
+        if not inventory_path.exists():
+            return None
+        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        commands = inventory.get("commands", [])
+        modules: dict[str, int] = {}
+        for command in commands:
+            module = str(command.get("module", "unknown"))
+            modules[module] = modules.get(module, 0) + 1
+        summary = {
+            "scan": inventory.get("scan", {}),
+            "command_count": len(commands),
+            "module_counts": dict(sorted(modules.items())),
+            "workbench_count": len(inventory.get("workbenches", [])),
+        }
+        return {"uri": uri, "mimeType": "application/json", "text": json.dumps(summary, indent=2)}
+    return None
 
 
 def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO | None = None) -> int:
@@ -167,7 +331,7 @@ def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO |
 def build_server(repo_root: Path | None = None) -> McpServer:
     root = (repo_root or Path.cwd()).resolve()
     store = InventoryStore(root)
-    tools = CompositeToolService(StaticToolService(store), RuntimeToolService())
+    tools = CompositeToolService(StaticToolService(store), RuntimeToolService(), CadToolService())
     return McpServer(tools)
 
 

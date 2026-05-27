@@ -13,10 +13,11 @@ Current checks:
 - MCP tool schema snapshot export.
 - Static stdio MCP smoke test through `scripts/smoke_static_mcp.py`.
 - Optional real FreeCADCmd runtime smoke test through `scripts/smoke_freecad_runtime.py`.
+- Optional typed CAD smoke test through `scripts/smoke_cad_tools.py`.
 - Inventory regeneration when `upstream/FreeCAD/src` exists.
 
 Expected future checks:
 
 - MCP tool schema tests.
-- Fake bridge integration tests for document and object tools.
+- More fixture coverage for document/object/Part/Sketcher/mesh/assembly tools.
 - Persistent bridge integration tests once GUI/workbench bridge mode exists.

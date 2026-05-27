@@ -19,6 +19,10 @@
 - MCP tool schema snapshots are generated at `docs/mcp_tool_schemas.json` and `docs/mcp_tool_schemas.md`.
 - Phase 2 FreeCADCmd bridge is implemented as process-per-call.
 - Implemented runtime tools: `freecad_session_status`, `freecad_python_exec`.
+- Typed CAD tools are implemented for document, object, Part, Sketcher, import/export, mesh, and Assembly basics.
+- Current MCP tool count is 40.
+- MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
+- Persistent bridge remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`; current tools are file-scoped/process-per-call.
 
 ## Next Session Checklist
 

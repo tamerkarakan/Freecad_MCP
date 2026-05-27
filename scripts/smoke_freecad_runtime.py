@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import os
 from pathlib import Path
 
 
@@ -18,7 +19,10 @@ from freecad_mcp.runtime_bridge import FreeCadCmdBridge, FreeCadDiscovery
 def main() -> int:
     discovery = FreeCadDiscovery().discover()
     if discovery.executable is None:
-        print("real FreeCAD runtime smoke SKIPPED: FreeCADCmd not discovered")
+        message = "real FreeCAD runtime smoke SKIPPED: FreeCADCmd not discovered"
+        if os.environ.get("FREECAD_MCP_REQUIRE_RUNTIME") == "1":
+            raise RuntimeError(message)
+        print(message)
         return 0
 
     bridge = FreeCadCmdBridge(discovery.executable)

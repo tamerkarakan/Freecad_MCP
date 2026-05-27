@@ -61,10 +61,24 @@ Available Phase 2 runtime tools:
 - `freecad_session_status`
 - `freecad_python_exec`
 
+Typed CAD tool groups are also available:
+
+- document: new/open/save/recompute/export
+- object: list/get/set properties/delete
+- Part: primitives, boolean, extrude, revolve, fillet, chamfer, geometry check
+- Sketcher: create/add geometry/add constraints/validate
+- import/export and mesh tools
+- Assembly: create/insert/link placeholder joints/recompute/BOM
+
+The server also exposes MCP resources for architecture, session state, testing, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
+
 For runtime tools, set one of:
 
 - `FREECAD_MCP_FREECAD_HOME` to a portable FreeCAD directory
 - `FREECAD_MCP_FREECAD_CMD` to a concrete `FreeCADCmd.exe`
+- `FREECAD_MCP_WORKSPACE_ROOT` to constrain typed CAD output paths
+
+Typed CAD tools require absolute `output_path` values. Writes outside the workspace root require `allow_external_paths=true`.
 
 Smoke test:
 

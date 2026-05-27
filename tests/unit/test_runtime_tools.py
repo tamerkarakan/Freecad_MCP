@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from freecad_mcp.runtime_tools import RuntimeToolService
+from freecad_mcp.tooling import ToolInputError
 
 
 class RuntimeToolServiceTests(unittest.TestCase):
@@ -15,12 +16,20 @@ class RuntimeToolServiceTests(unittest.TestCase):
             {
                 "executable": sys.executable,
                 "code": "print('spark-tool')",
+                "allow_unsafe": True,
                 "timeout_sec": 10,
             }
         )
 
         self.assertTrue(result["execution"]["ok"])
         self.assertIn("spark-tool", result["execution"]["stdout"])
+        self.assertEqual(result["audit"]["unsafe_opt_in"], True)
+
+    def test_python_exec_requires_unsafe_opt_in(self) -> None:
+        service = RuntimeToolService()
+
+        with self.assertRaises(ToolInputError):
+            service.python_exec({"executable": sys.executable, "code": "print('blocked')"})
 
     def test_status_reports_discovery_without_probe(self) -> None:
         service = RuntimeToolService()

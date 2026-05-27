@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import os
 from pathlib import Path
 
 from freecad_mcp.runtime_bridge import FreeCadCmdBridge, FreeCadDiscovery
@@ -56,6 +58,11 @@ class RuntimeToolService:
                         "code": {
                             "type": "string",
                             "description": "Python code passed to FreeCADCmd -c. Prefer typed tools when available.",
+                            "maxLength": 20000,
+                        },
+                        "allow_unsafe": {
+                            "type": "boolean",
+                            "description": "Must be true unless FREECAD_MCP_ALLOW_UNSAFE_PYTHON=1 is set.",
                         },
                         "executable": {"type": "string", "description": "Optional explicit FreeCADCmd path."},
                         "freecad_home": {"type": "string", "description": "Optional portable FreeCAD directory."},
@@ -88,6 +95,13 @@ class RuntimeToolService:
         code = required_string(args, "code")
         if len(code) > 20_000:
             raise ToolInputError("code exceeds 20000 characters")
+        allow_unsafe = args.get("allow_unsafe", False)
+        env_allowed = os.environ.get("FREECAD_MCP_ALLOW_UNSAFE_PYTHON") == "1"
+        if not env_allowed and allow_unsafe is not True:
+            raise ToolInputError(
+                "freecad_python_exec is unsafe. Pass allow_unsafe=true or set "
+                "FREECAD_MCP_ALLOW_UNSAFE_PYTHON=1. Prefer typed CAD tools."
+            )
         executable_arg = optional_string(args, "executable")
         freecad_home = optional_string(args, "freecad_home")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=120)
@@ -103,4 +117,12 @@ class RuntimeToolService:
             code,
             timeout_sec=timeout_sec,
         )
-        return {"discovery": discovery.to_dict(), "execution": result.to_dict()}
+        return {
+            "discovery": discovery.to_dict(),
+            "execution": result.to_dict(),
+            "audit": {
+                "tool": "freecad_python_exec",
+                "code_sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
+                "unsafe_opt_in": True,
+            },
+        }

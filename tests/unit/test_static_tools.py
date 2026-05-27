@@ -35,6 +35,13 @@ class StaticToolServiceTests(unittest.TestCase):
             with self.assertRaises(ToolInputError):
                 service.source_open({"path": "../secret.txt"})
 
+    def test_source_search_rejects_long_query(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            with self.assertRaises(ToolInputError):
+                service.source_search({"query": "x" * 501})
+
 
 class fake_repo:
     def __enter__(self) -> Path:

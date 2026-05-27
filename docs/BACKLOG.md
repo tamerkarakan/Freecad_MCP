@@ -2,18 +2,15 @@
 
 ## Now
 
-- Implement document tools: new, open, save, recompute, export.
-- Add fake bridge integration tests for document lifecycle.
+- Add richer persistent bridge implementation when interactive GUI workflows become necessary.
+- Replace placeholder assembly joint metadata with real connector-aware joint creation.
 
 ## Next
 
-- Implement object tools: list, get, set properties, delete.
-- Implement typed Part primitive and boolean tools.
-- Add persistent GUI/workbench bridge design.
+- Add document/object fixtures for more complex real-world FreeCAD files.
+- Add MCP SDK adapter if the Python SDK becomes available in the runtime.
 
 ## Later
 
-- Add Sketcher typed tools.
-- Add mesh import/export/evaluate/repair tools.
-- Add Assembly typed tools.
 - Add Workbench-hosted bridge mode.
+- Add TechDraw/CAM/FEM typed wrappers after source-backed design review.

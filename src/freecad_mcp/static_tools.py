@@ -260,6 +260,8 @@ class StaticToolService:
 
     def source_search(self, args: JsonObject) -> JsonObject:
         query = required_string(args, "query")
+        if len(query) > 500:
+            raise ToolInputError("query exceeds 500 characters")
         module = optional_string(args, "module")
         glob_pattern = optional_string(args, "glob") or "*"
         use_regex = bool(args.get("regex", False))
@@ -390,6 +392,11 @@ def safe_source_path(freecad_root: Path, source_path: str) -> Path:
     root = freecad_root.resolve()
     if target != root and root not in target.parents:
         raise ToolInputError("path escapes the FreeCAD root")
+    unresolved = freecad_root.resolve()
+    for part in Path(normalized).parts:
+        unresolved = unresolved / part
+        if unresolved.exists() and unresolved.is_symlink():
+            raise ToolInputError("path contains a symlink segment")
     return target
 
 

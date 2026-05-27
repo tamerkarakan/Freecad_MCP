@@ -72,6 +72,28 @@ def main() -> int:
                 },
             },
         )
+        unsafe = send(
+            process,
+            {
+                "jsonrpc": "2.0",
+                "id": 5,
+                "method": "tools/call",
+                "params": {
+                    "name": "freecad_python_exec",
+                    "arguments": {"code": "print('blocked')"},
+                },
+            },
+        )
+        resources = send(process, {"jsonrpc": "2.0", "id": 6, "method": "resources/list"})
+        prompt = send(
+            process,
+            {
+                "jsonrpc": "2.0",
+                "id": 7,
+                "method": "prompts/get",
+                "params": {"name": "freecad_phase_gate", "arguments": {"phase": "smoke"}},
+            },
+        )
     finally:
         if process.stdin:
             process.stdin.close()
@@ -85,6 +107,10 @@ def main() -> int:
     assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]
+    assert unsafe["result"]["isError"] is True
+    assert "unsafe" in unsafe["result"]["structuredContent"]["error"]
+    assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
+    assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:
         raise RuntimeError(f"server exited with {process.returncode}: {stderr}")
     print("static MCP smoke OK")

@@ -42,6 +42,24 @@ class McpStdioTests(unittest.TestCase):
         self.assertEqual(result["structuredContent"]["echo"], "spark")
         self.assertEqual(json.loads(result["content"][0]["text"])["echo"], "spark")
 
+    def test_resources_and_prompts_are_listed(self) -> None:
+        server = McpServer(FakeToolService())
+
+        resources = server.handle_message({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
+        prompts = server.handle_message({"jsonrpc": "2.0", "id": 5, "method": "prompts/list"})
+        prompt = server.handle_message(
+            {
+                "jsonrpc": "2.0",
+                "id": 6,
+                "method": "prompts/get",
+                "params": {"name": "freecad_design_task", "arguments": {"task": "make a cube"}},
+            }
+        )
+
+        self.assertIn("resources", resources["result"])
+        self.assertIn("prompts", prompts["result"])
+        self.assertIn("make a cube", prompt["result"]["messages"][0]["content"]["text"])
+
 
 class FakeToolService:
     def definitions(self):

@@ -169,7 +169,12 @@
         "properties": {
           "code": {
             "type": "string",
-            "description": "Python code passed to FreeCADCmd -c. Prefer typed tools when available."
+            "description": "Python code passed to FreeCADCmd -c. Prefer typed tools when available.",
+            "maxLength": 20000
+          },
+          "allow_unsafe": {
+            "type": "boolean",
+            "description": "Must be true unless FREECAD_MCP_ALLOW_UNSAFE_PYTHON=1 is set."
           },
           "executable": {
             "type": "string",
@@ -187,6 +192,1540 @@
         },
         "required": [
           "code"
+        ]
+      }
+    },
+    {
+      "name": "freecad_document_new",
+      "title": "Create FreeCAD Document",
+      "description": "Create a new FreeCAD document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_document_open",
+      "title": "Open FreeCAD Document",
+      "description": "Open a FreeCAD document and return a summary.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_document_save",
+      "title": "Save FreeCAD Document",
+      "description": "Open and save a FreeCAD document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_document_recompute",
+      "title": "Recompute FreeCAD Document",
+      "description": "Open/recompute a document and optionally save it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_document_export",
+      "title": "Export FreeCAD Document",
+      "description": "Export selected or all document objects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_object_list",
+      "title": "List FreeCAD Objects",
+      "description": "List document objects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_object_get",
+      "title": "Get FreeCAD Object",
+      "description": "Inspect one document object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "include_properties": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "object_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_object_set_properties",
+      "title": "Set FreeCAD Object Properties",
+      "description": "Set simple object properties and save optionally.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "object_name",
+          "properties"
+        ]
+      }
+    },
+    {
+      "name": "freecad_object_delete",
+      "title": "Delete FreeCAD Objects",
+      "description": "Delete object(s) by name/label.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_create_primitive",
+      "title": "Create Part Primitive",
+      "description": "Create a Part primitive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "primitive": {
+            "type": "string",
+            "enum": [
+              "box",
+              "cylinder",
+              "sphere",
+              "cone",
+              "torus"
+            ]
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "properties": {
+            "type": "object"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_part_boolean",
+      "title": "Part Boolean",
+      "description": "Fuse/cut/common Part shapes.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "fuse",
+              "cut",
+              "common"
+            ]
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "object_names"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_extrude",
+      "title": "Part Extrude",
+      "description": "Extrude a source shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "source_object": {
+            "type": "string"
+          },
+          "vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "source_object"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_revolve",
+      "title": "Part Revolve",
+      "description": "Revolve a source shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "source_object": {
+            "type": "string"
+          },
+          "base": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "axis": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "angle": {
+            "type": "number"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "source_object"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_fillet",
+      "title": "Part Fillet",
+      "description": "Create a filleted copy of a shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "source_object": {
+            "type": "string"
+          },
+          "radius": {
+            "type": "number"
+          },
+          "edge_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "source_object",
+          "radius"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_chamfer",
+      "title": "Part Chamfer",
+      "description": "Create a chamfered copy of a shape.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "source_object": {
+            "type": "string"
+          },
+          "distance": {
+            "type": "number"
+          },
+          "edge_indices": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "source_object",
+          "distance"
+        ]
+      }
+    },
+    {
+      "name": "freecad_part_check_geometry",
+      "title": "Check Part Geometry",
+      "description": "Run shape validity checks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "run_bop_check": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_sketch_create",
+      "title": "Create Sketch",
+      "description": "Create a Sketcher object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_sketch_add_geometry",
+      "title": "Add Sketch Geometry",
+      "description": "Add line/circle/arc geometry to a sketch.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "geometry": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "sketch_name",
+          "geometry"
+        ]
+      }
+    },
+    {
+      "name": "freecad_sketch_add_constraint",
+      "title": "Add Sketch Constraint",
+      "description": "Add Sketcher constraints.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "sketch_name",
+          "constraints"
+        ]
+      }
+    },
+    {
+      "name": "freecad_sketch_validate",
+      "title": "Validate Sketch",
+      "description": "Summarize sketch geometry and constraints.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "sketch_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_import_file",
+      "title": "Import File",
+      "description": "Import a CAD/mesh file into a document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "input_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_export_file",
+      "title": "Export File",
+      "description": "Export selected/all objects from a document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_supported_formats",
+      "title": "Supported Formats",
+      "description": "Return common import/export formats.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_mesh_import",
+      "title": "Import Mesh",
+      "description": "Import a mesh file into a document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "input_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "input_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_mesh_export",
+      "title": "Export Mesh",
+      "description": "Export mesh objects.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_mesh_evaluate",
+      "title": "Evaluate Mesh",
+      "description": "Summarize mesh object health.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_mesh_repair",
+      "title": "Repair Mesh",
+      "description": "Run conservative mesh repair actions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "harmonize_normals",
+                "remove_duplicated_points"
+              ]
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_mesh_boolean",
+      "title": "Mesh Boolean",
+      "description": "Run mesh boolean operation when supported by FreeCAD build.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "union",
+              "difference",
+              "intersection"
+            ]
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "object_names"
+        ]
+      }
+    },
+    {
+      "name": "freecad_assembly_create",
+      "title": "Create Assembly",
+      "description": "Create an Assembly object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        }
+      }
+    },
+    {
+      "name": "freecad_assembly_insert",
+      "title": "Insert Assembly Link",
+      "description": "Insert an existing object into an assembly as an App::Link.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "link_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "assembly_name",
+          "object_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_assembly_create_joint",
+      "title": "Create Assembly Joint",
+      "description": "Create placeholder joint metadata under an assembly joint group.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "joint_type": {
+            "type": "string"
+          },
+          "joint_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path",
+          "assembly_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_assembly_solve",
+      "title": "Solve Assembly",
+      "description": "Recompute an assembly document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_assembly_bom",
+      "title": "Assembly BOM",
+      "description": "Return a simple assembly bill of materials.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
         ]
       }
     }

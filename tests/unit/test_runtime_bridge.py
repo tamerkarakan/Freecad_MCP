@@ -20,6 +20,25 @@ class RuntimeBridgeTests(unittest.TestCase):
             self.assertTrue(result.found)
             self.assertEqual(result.executable, exe.resolve())
 
+    def test_discovers_quoted_executable_from_env(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            exe = Path(temp_dir) / "FreeCADCmd.exe"
+            exe.write_text("", encoding="utf-8")
+
+            result = FreeCadDiscovery(env={"FREECAD_MCP_FREECAD_CMD": f'"{exe}"'}).discover()
+
+            self.assertTrue(result.found)
+            self.assertEqual(result.executable, exe.resolve())
+
+    def test_does_not_select_directory_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            home = Path(temp_dir)
+            (home / "FreeCADCmd.exe").mkdir()
+
+            result = FreeCadDiscovery(env={}).discover(freecad_home=str(home))
+
+            self.assertFalse(result.found)
+
     def test_execute_python_uses_process_envelope(self) -> None:
         result = FreeCadCmdBridge(Path(sys.executable)).execute_python(
             "print('spark-runtime')",
@@ -44,6 +63,11 @@ class RuntimeBridgeTests(unittest.TestCase):
         parsed = parse_prefixed_json('noise\n__FREECAD_MCP_JSON__{"version": ["1"]}\n')
 
         self.assertEqual(parsed, {"version": ["1"]})
+
+    def test_parse_prefixed_json_handles_malformed_payload(self) -> None:
+        parsed = parse_prefixed_json("noise\n__FREECAD_MCP_JSON__{bad json}\n")
+
+        self.assertIsNone(parsed)
 
 
 if __name__ == "__main__":
