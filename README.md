@@ -91,6 +91,8 @@ $env:FREECAD_MCP_GUI_SMOKE = "1"
 scripts\verify.ps1
 ```
 
+The opt-in smoke also validates that GUI selection records can populate native Assembly `Reference1`/`Reference2` connector fields through `freecad_assembly_create_joint`.
+
 Typed CAD tool groups are also available:
 
 - document: new/open/save/recompute/export

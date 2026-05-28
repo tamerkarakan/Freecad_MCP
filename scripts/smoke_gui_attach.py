@@ -23,6 +23,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from freecad_mcp.cad_tools import CadToolService
 from freecad_mcp.gui_tools import GuiToolService
 
 
@@ -87,6 +88,7 @@ def main() -> int:
     ready_path = run_dir / "ready.json"
     stop_path = run_dir / "stop.txt"
     report_path = run_dir / f"gui-smoke-report-{run_id}.json"
+    document_path = run_dir / "gui-assembly-connectors.FCStd"
     macro_path = run_dir / "freecad_gui_smoke_macro.py"
     bridge_path = ROOT / "scripts" / "freecad_gui_bridge_server.py"
 
@@ -101,6 +103,7 @@ import traceback
 
 READY_PATH = pathlib.Path({str(ready_path)!r})
 STOP_PATH = pathlib.Path({str(stop_path)!r})
+DOCUMENT_PATH = pathlib.Path({str(document_path)!r})
 BRIDGE_PATH = pathlib.Path({str(bridge_path)!r})
 
 try:
@@ -110,15 +113,26 @@ try:
     bridge_ns = {{}}
     exec(BRIDGE_PATH.read_text(encoding="utf-8"), bridge_ns)
 
-    doc = App.newDocument("GuiSmoke")
-    box = doc.addObject("Part::Box", "Box")
-    box.Length = 10
-    box.Width = 8
-    box.Height = 6
+    doc = App.newDocument("GuiAssemblySmoke")
+    assembly = doc.addObject("Assembly::AssemblyObject", "Assembly")
+    assembly.Type = "Assembly"
+    assembly.newObject("Assembly::JointGroup", "Joints")
+
+    box_a = doc.addObject("Part::Box", "BoxA")
+    box_a.Length = 10
+    box_a.Width = 8
+    box_a.Height = 6
+    box_b = doc.addObject("Part::Box", "BoxB")
+    box_b.Length = 7
+    box_b.Width = 5
+    box_b.Height = 4
+    box_b.Placement.Base.x = 16
     doc.recompute()
+    doc.saveAs(str(DOCUMENT_PATH))
 
     Gui.Selection.clearSelection()
-    Gui.Selection.addSelection(doc.Name, box.Name, "Face1", 0.0, 0.0, 0.0)
+    Gui.Selection.addSelection(doc.Name, box_a.Name, "Face1", 0.0, 0.0, 0.0, True)
+    Gui.Selection.addSelection(doc.Name, box_b.Name, "Face1", 16.0, 0.0, 0.0, False)
     try:
         Gui.activeDocument().activeView().viewAxonometric()
         Gui.activeDocument().activeView().fitAll()
@@ -131,8 +145,10 @@ try:
             {{
                 "ok": True,
                 "document_name": doc.Name,
-                "object_name": box.Name,
-                "selection": "Face1",
+                "document_path": str(DOCUMENT_PATH),
+                "object_names": [box_a.Name, box_b.Name],
+                "assembly_name": assembly.Name,
+                "selection": ["Face1", "Face1"],
                 "bridge": bridge_status,
             }},
             indent=2,
@@ -181,26 +197,55 @@ except Exception as exc:
             {"session_id": session_id, "document_name": str(ready["document_name"]), "resolve": 0}
         )
         records = selection["gui"]["selection"]
-        if not records:
-            raise RuntimeError("GUI selection was empty")
-        first = records[0]
-        if first.get("object_name") != ready["object_name"] or "Face1" not in first.get("subelement_names", []):
-            raise RuntimeError(f"unexpected GUI selection record: {first}")
-
+        if len(records) != 2:
+            raise RuntimeError(f"expected two GUI selection records, got {records}")
+        object_names = list(ready["object_names"])
+        for index, record in enumerate(records):
+            if record.get("object_name") != object_names[index] or "Face1" not in record.get("subelement_names", []):
+                raise RuntimeError(f"unexpected GUI selection record: {record}")
         fit = tools["freecad_gui_view_fit"].handler({"session_id": session_id, "selection_only": True})
         tools["freecad_gui_detach"].handler({"session_id": session_id})
+
+        stop_path.write_text("stop\n", encoding="utf-8")
+        terminate(process)
+
+        references = [
+            {"object_name": record["object_name"], "sub_element": record["subelement_names"][0]}
+            for record in records
+        ]
+        cad_tools = CadToolService().definition_map()
+        joint = cad_tools["freecad_assembly_create_joint"].handler(
+            {
+                "document_path": str(document_path),
+                "assembly_name": str(ready["assembly_name"]),
+                "joint_name": "GuiSelectionFixedJoint",
+                "joint_type": "Fixed",
+                "references": references,
+                "output_path": str(document_path),
+                "overwrite": True,
+            }
+        )
+        joint_payload = joint.get("freecad")
+        if not isinstance(joint_payload, dict) or joint_payload.get("error"):
+            raise RuntimeError(f"assembly connector joint failed: {joint}")
+        joint_fields = joint_payload["joint_fields"]
+        if not joint_fields["has_reference1"] or not joint_fields["has_reference2"]:
+            raise RuntimeError(f"assembly connector references were not populated: {joint}")
+
         report = {
             "status": "OK",
             "freecad_gui": str(gui_exe),
             "run_dir": str(run_dir),
+            "document_path": str(document_path),
             "ready": ready,
             "attach": attach,
             "status_result": status,
             "selection_result": selection,
             "fit_result": fit,
+            "assembly_joint_result": joint,
         }
         write_report(report_path, report)
-        print(f"GUI attach smoke OK: {report_path}")
+        print(f"GUI attach and assembly connector smoke OK: {report_path}")
         return 0
     finally:
         stop_path.write_text("stop\n", encoding="utf-8")

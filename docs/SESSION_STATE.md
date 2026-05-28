@@ -47,8 +47,7 @@
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - GUI attach design for active document, active view, selection, preselection, and subelement records is documented in `docs/GUI_ATTACH_PLAN.md` and exposed as an MCP resource.
 - GUI attach client/server slice is implemented: `scripts/freecad_gui_bridge_server.py` runs inside FreeCAD GUI, while MCP tools expose attach/list/detach/status, active document/view reads, selection/preselection reads, selection set, and view fit.
-- Opt-in GUI attach smoke exists at `scripts/smoke_gui_attach.py`; it launches FreeCAD GUI, starts the bridge with a token, selects `Box.Face1`, reads it through `freecad_gui_selection_get`, calls view fit, and closes the process. Last local run passed with report under `runs/gui-smoke/`.
-- GUI attach still needs Assembly connector-reference smoke.
+- Opt-in GUI attach smoke exists at `scripts/smoke_gui_attach.py`; it launches FreeCAD GUI, starts the bridge with a token, selects two `Face1` records, reads them through `freecad_gui_selection_get`, calls view fit, closes the GUI process, and creates a Fixed Assembly joint with populated `Reference1`/`Reference2`. Last local run passed with report under `runs/gui-smoke/`.
 - Workbench-hosted bridge mode remains planned in `docs/PERSISTENT_BRIDGE_PLAN.md`.
 
 ## Next Session Checklist
