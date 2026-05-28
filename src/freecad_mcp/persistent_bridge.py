@@ -1700,7 +1700,11 @@ class PersistentBridgeManager:
 
     def status(self, session_id: str, *, timeout_sec: int = 30) -> JsonObject:
         session = self.get(session_id)
-        response = session.request("status", {}, timeout_sec=timeout_sec)
+        try:
+            response = session.request("status", {}, timeout_sec=timeout_sec)
+        except ToolInputError:
+            self._drop_if_stopped(session_id, session)
+            raise
         if not response.ok:
             raise ToolInputError(response.error or "worker status failed")
         return {"session": session.to_dict(), "worker": response.result}
@@ -1726,7 +1730,15 @@ class PersistentBridgeManager:
 
     def request(self, session_id: str, method: str, params: JsonObject, *, timeout_sec: int = 30) -> JsonObject:
         session = self.get(session_id)
-        response = session.request(method, {**params, "workspace_root": str(self.workspace_root)}, timeout_sec=timeout_sec)
+        try:
+            response = session.request(
+                method,
+                {**params, "workspace_root": str(self.workspace_root)},
+                timeout_sec=timeout_sec,
+            )
+        except ToolInputError:
+            self._drop_if_stopped(session_id, session)
+            raise
         if not response.ok:
             return {"session": session.to_dict(), "worker": response.to_dict(), "ok": False}
         return {"session": session.to_dict(), "worker": response.to_dict(), "ok": True}
@@ -1736,6 +1748,7 @@ class PersistentBridgeManager:
         if session is None:
             raise ToolInputError(f"unknown worker session: {session_id}")
         if not session.is_running:
+            session.close(timeout_sec=1)
             self.sessions.pop(session_id, None)
             raise ToolInputError(f"worker session is not running: {session_id}")
         return session
@@ -1752,6 +1765,12 @@ class PersistentBridgeManager:
             if not session.is_running:
                 session.close(timeout_sec=1)
                 self.sessions.pop(session_id, None)
+
+    def _drop_if_stopped(self, session_id: str, session: FreeCadWorkerSession) -> None:
+        if session.is_running:
+            return
+        session.close(timeout_sec=1)
+        self.sessions.pop(session_id, None)
 
 
 def discovery_summary(discovery: FreeCadDiscoveryResult) -> JsonObject:

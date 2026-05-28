@@ -2,7 +2,7 @@
 
 ## Now
 
-- Add crash injection and automatic unhealthy-session cleanup coverage for persistent worker mode.
+- Add Workbench-hosted bridge mode for automatic FreeCAD GUI startup/hosting.
 
 ## Next
 
@@ -11,5 +11,4 @@
 
 ## Later
 
-- Add Workbench-hosted bridge mode.
 - Add TechDraw/CAM/FEM typed wrappers after source-backed design review.

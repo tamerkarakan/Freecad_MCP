@@ -33,6 +33,10 @@ for raw in sys.stdin:
     if method == "fail":
         emit({"id": request.get("id"), "ok": False, "error": "planned failure", "traceback": "trace"})
         continue
+    if method == "crash":
+        sys.stderr.write("planned crash\n")
+        sys.stderr.flush()
+        raise SystemExit(7)
     emit({"id": request.get("id"), "ok": True, "result": {"method": method, "params": request.get("params") or {}}})
 '''
 
@@ -110,6 +114,18 @@ class PersistentBridgeTests(unittest.TestCase):
         self.assertEqual(closed["session"]["session_id"], session_id)
         self.assertTrue(closed_again["already_closed"])
         self.assertEqual(manager.list_sessions()["count"], 0)
+
+    def test_manager_drops_crashed_session_after_request_error(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = PersistentBridgeManager(workspace_root=Path(temp_dir), worker_script=FAKE_WORKER_SCRIPT)
+            started = manager.start_session(executable=sys.executable, timeout_sec=10)
+            session_id = started["session"]["session_id"]
+
+            with self.assertRaisesRegex(ToolInputError, "worker exited"):
+                manager.request(session_id, "crash", {}, timeout_sec=10)
+
+        self.assertEqual(manager.list_sessions()["count"], 0)
+        self.assertTrue(manager.close(session_id)["already_closed"])
 
     def test_unknown_session_raises_tool_error(self) -> None:
         manager = PersistentBridgeManager(worker_script=FAKE_WORKER_SCRIPT)

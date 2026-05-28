@@ -42,6 +42,7 @@
 - Persistent worker coverage now includes document export, object set/delete, Part boolean/extrude/revolve/check-geometry, Sketcher create/add geometry/add constraints/add profiles/edit/transform/auto-constrain/validate, mesh import/export/evaluate/repair/boolean, and Assembly create/insert/native joint proxy/solve/BOM tools.
 - `scripts/smoke_persistent_worker.py` now exercises Part, Sketcher, mesh, and Assembly flows in one long-lived FreeCADCmd worker session.
 - Persistent worker startup also uses a temp `.py` script for long worker payloads and keeps that file until session close to avoid Windows script-load races.
+- Persistent worker manager now drops and cleans up crashed/stopped sessions after request/status errors, with fake-worker crash injection unit coverage.
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
 - Current MCP tool count is 96.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.

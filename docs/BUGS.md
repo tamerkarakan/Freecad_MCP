@@ -20,6 +20,7 @@
 ## Closed
 
 - Persistent worker mode previously covered only session/document/object basics, document export, and several Part operations; it now exposes worker Sketcher, mesh, and Assembly typed operations with real FreeCAD smoke coverage.
+- Persistent worker crashed/stopped sessions could remain in the manager after a request/status failure; manager cleanup now drops them and unit tests inject a fake worker crash.
 - Closed Sketcher/profile extrusion previously produced a shell-only `Part::Feature`; `freecad_part_extrude` now builds a planar face from closed wires before extrusion so rectangle profiles become solids.
 - `freecad_mesh_repair` previously attempted to mutate `Mesh::Feature.Mesh` directly and could hit immutable mesh errors; it now repairs a copy and assigns it back, with replacement-object fallback.
 - Response serialization errors in `serve_stdio` previously could terminate the stdio loop; they now fall back to a structured `-32603` error response.

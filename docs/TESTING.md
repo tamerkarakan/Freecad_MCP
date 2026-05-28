@@ -24,7 +24,7 @@ Current checks:
 - Static MCP smoke guard for GUI attach tool schemas (`freecad_gui_attach`, `freecad_gui_selection_get`).
 - Static MCP resource coverage includes architecture, session state, testing, Sketcher capabilities, GUI attach planning, schemas, and inventory summary.
 - Unit guard for structured launch errors, runtime output truncation, compact execution metadata, and long-code temp-script execution (`test_runtime_bridge.py`).
-- Unit guard for persistent worker request/response framing, structured worker errors, long worker temp-script lifecycle, cross-field input validation, session cleanup, and unknown-session errors (`test_persistent_bridge.py`).
+- Unit guard for persistent worker request/response framing, structured worker errors, fake crash injection cleanup, long worker temp-script lifecycle, cross-field input validation, session cleanup, and unknown-session errors (`test_persistent_bridge.py`).
 - Unit guard for GUI bridge attach/call/detach/error handling against a fake local HTTP bridge (`test_gui_bridge.py`).
 - Opt-in live FreeCAD GUI attach smoke (`FREECAD_MCP_GUI_SMOKE=1 scripts\verify.ps1` or `scripts/smoke_gui_attach.py`) launches FreeCAD GUI, starts the bridge, selects two Part faces, reads them via MCP GUI tools, fits the view, closes the GUI process, and verifies a Fixed Assembly joint populated from those selection records.
 

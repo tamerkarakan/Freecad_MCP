@@ -33,5 +33,4 @@ Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`.
 
 ## Remaining Persistent Work
 
-- Add crash injection and automatic unhealthy-session cleanup coverage.
 - Add Workbench-hosted bridge mode for automatic FreeCAD GUI startup/hosting.
