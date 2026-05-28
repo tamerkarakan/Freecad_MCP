@@ -26,6 +26,12 @@ There are no unblocked roadmap items left in the current scope.
 
 ## Future Deepening
 
+- Add remote MCP transport support for HTTP/SSE and Streamable HTTP while preserving stdio as the local default.
+- Add structured logs for server crashes, FreeCAD subprocess lifecycle, worker lifecycle, request/response size, timing, and tool-level performance.
+- Add FreeCAD console reading across process-per-call, persistent worker, GUI bridge, and Workbench-hosted bridge modes.
+- Expand GUI bridge into full live FreeCAD access for observing live drawing, GUI command boundaries, transaction/dirty state, console forwarding, and safe GUI-side mutations.
+- Add image-to-sketch decision guidance so ambiguous traces ask the user or report uncertainty for B-spline vs arc vs line/polyline instead of silently falling back.
+- Research Sketcher and PartDesign workbenches from FreeCAD docs and the local source checkout, then add safe typed and GUI/workbench-backed MCP wrappers with fixtures and smoke tests.
 - TechDraw SVG/PDF export should go through GUI attach or Workbench validation because those APIs live behind `TechDrawGui`.
 - CAM job/toolbit/postprocessor workflows need machine/post fixture contracts before default typed mutation tools are safe.
 - FEM mesh generation, solver execution, and result import need solver availability and fixture contracts before default typed mutation tools are safe.

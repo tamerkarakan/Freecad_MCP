@@ -60,6 +60,7 @@
 - Workbench-hosted bridge mode exists at `freecad_workbench/FreeCADMCP/InitGui.py`; it registers a **FreeCAD MCP** workbench with start/stop/status commands and optional `FREECAD_MCP_AUTOSTART=1` hosting. Setup notes are in `docs/WORKBENCH_BRIDGE.md`.
 - TechDraw/CAM/FEM design review is captured in `docs/TECHDRAW_CAM_FEM_PLAN.md`; first typed slices are implemented for TechDraw page/template/view/DXF, CAM raw `Path::Feature` command paths + G-code export, and FEM analysis/material/fixed-force constraints without solver execution.
 - Bundled Python runtime does not include the `mcp` package, so the MCP SDK adapter item remains deferred while the minimal local JSON-RPC dispatcher stays active.
+- New expansion TODOs are captured in `docs/BACKLOG.md`: remote HTTP/SSE/Streamable HTTP MCP endpoint, structured crash/performance logging, FreeCAD console reading, fuller live GUI bridge access, image-to-sketch ambiguity guidance, and deeper Sketcher/PartDesign workbench coverage from docs plus source.
 
 ## Next Session Checklist
 
