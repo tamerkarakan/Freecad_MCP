@@ -156,6 +156,17 @@ def main() -> int:
             if not constraint["added_indices"]:
                 raise RuntimeError(f"worker sketch constraint missing: {constraint}")
 
+            blocked_group = service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerSketch",
+                    "constraints": [{"type": "Group", "values": [[0, 1]]}],
+                }
+            )
+            if blocked_group.get("ok") is not False or "Group/Text" not in blocked_group["worker"].get("error", ""):
+                raise RuntimeError(f"worker Sketcher Group constraint did not fail safely: {blocked_group}")
+
             edit_geometry = worker_result(
                 service.definition_map()["freecad_worker_sketch_edit_geometry"].handler(
                     {

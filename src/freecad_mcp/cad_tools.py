@@ -709,6 +709,8 @@ def make_sketch_geometries(item):
 def make_constraint(spec):
     import Sketcher
 
+    if spec.get("type") in {"Group", "Text"}:
+        raise ValueError("Sketcher Group/Text constraints are blocked until stable FreeCAD 1.1.1 fixtures exist")
     values = spec.get("values")
     if values is None:
         values = []

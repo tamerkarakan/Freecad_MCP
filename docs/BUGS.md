@@ -4,7 +4,7 @@
 
 - GUI selection, active view, and selected edge/face state are not exposed yet; `docs/GUI_ATTACH_PLAN.md` defines the planned bridge contract.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
-- Sketcher `Group` and `Text` constraint ergonomics are intentionally not wrapped yet because their FreeCAD 1.1.1 constructor combinations need stable fixtures.
+- Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
 - Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.
 - Mesh boolean support depends on the actual FreeCAD build and may return tool errors on unsupported operations.
 - File reads/imports accept caller-provided paths; write paths are workspace-gated by default.

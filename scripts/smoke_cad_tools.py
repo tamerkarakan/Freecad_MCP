@@ -355,6 +355,21 @@ def main() -> int:
         if taper_extrude["object"]["shape"]["solids"] != 1 or not taper_extrude["object"]["shape"]["valid"]:
             raise RuntimeError(f"feature taper extrude invalid: {taper_extrude}")
 
+        for blocked_type in ("Group", "Text"):
+            blocked = assert_tool_failed(
+                service.definition_map()["freecad_sketch_add_constraint"].handler(
+                    {
+                        "document_path": str(sketch_doc),
+                        "sketch_name": "ProfileSketch",
+                        "constraints": [{"type": blocked_type, "values": [[0, 1]]}],
+                    }
+                ),
+                f"sketch {blocked_type} constraint blocked",
+            )
+            blocked_payload = blocked.get("freecad") or {}
+            if "Group/Text" not in blocked_payload.get("error", ""):
+                raise RuntimeError(f"Sketcher {blocked_type} constraint did not fail safely: {blocked}")
+
         open_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {

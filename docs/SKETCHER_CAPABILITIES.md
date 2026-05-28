@@ -20,7 +20,7 @@ The typed Sketcher MCP surface targets headless `Sketcher::SketchObject` APIs th
 
 `freecad_sketch_add_constraint` keeps the FreeCAD constructor expressive by accepting either `values` or named fields (`first`, `first_pos`, `second`, `second_pos`, `third`, `third_pos`, `value`). Datum/angle values may be passed as numbers, `{"degrees": 90}`, `{"radians": 1.5708}`, or `{"quantity": "90 deg"}`.
 
-`Group` and `Text` constraints are intentionally not given a high-level wrapper yet. FreeCAD's C++ constructor supports them, but runtime stability and argument combinations need focused fixtures before making them ergonomic.
+`Group` and `Text` constraints are intentionally not given a high-level wrapper yet. In the current FreeCAD 1.1.1 runtime, direct constructor attempts can terminate `FreeCADCmd`, so typed tools block those raw constraint types and smoke-test the safe failure path before a future wrapper is considered.
 
 ## GUI-Only Boundary
 
