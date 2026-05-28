@@ -84,6 +84,13 @@ Available GUI attach tools:
 
 GUI attach is opt-in. Start `scripts/freecad_gui_bridge_server.py` inside a running FreeCAD GUI Python console, then call `freecad_gui_attach` with the local bridge URL and optional token. This mode is for live active document/view/selection state; typed CAD tools remain the primary way to mutate geometry.
 
+Opt-in GUI smoke:
+
+```powershell
+$env:FREECAD_MCP_GUI_SMOKE = "1"
+scripts\verify.ps1
+```
+
 Typed CAD tool groups are also available:
 
 - document: new/open/save/recompute/export

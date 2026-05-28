@@ -18,6 +18,9 @@ try {
     & $Python scripts\smoke_cad_tools.py
     & $Python scripts\smoke_fixture_documents.py
     & $Python scripts\smoke_persistent_worker.py
+    if ($env:FREECAD_MCP_GUI_SMOKE -eq "1") {
+        & $Python scripts\smoke_gui_attach.py
+    }
     if (Test-Path upstream\FreeCAD\src) {
         & $Python scripts\scan_freecad_tools.py --freecad-root upstream\FreeCAD --out-json docs\freecad_tool_inventory.json --out-md docs\freecad_tool_inventory.md
     }

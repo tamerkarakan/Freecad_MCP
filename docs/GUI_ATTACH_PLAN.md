@@ -78,7 +78,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
 - Static MCP smoke confirms GUI attach schemas are listed.
-- Manual GUI smoke: open FreeCAD, create/select a box face, call `freecad_gui_selection_get`, and verify `FaceN` and picked point fields.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects a box face, calls `freecad_gui_selection_get`, and verifies `Face1`.
 - Assembly connector smoke: select two connector faces in GUI, create a Fixed joint through typed Assembly tool, and assert `Reference1`/`Reference2` are populated.
 
 ## Non-goals

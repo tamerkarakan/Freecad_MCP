@@ -2,7 +2,7 @@
 
 ## Open
 
-- GUI attach tools now expose active document/view and selection/preselection through a local bridge, but live FreeCAD GUI smoke and Workbench-hosted startup are still pending.
+- GUI attach tools now expose active document/view and selection/preselection through a local bridge, and opt-in live GUI smoke passes; Workbench-hosted startup is still pending.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
 - Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.
