@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from freecad_mcp.persistent_bridge import FreeCadWorkerSession, PersistentBridgeManager
+from freecad_mcp.runtime_bridge import MAX_INLINE_CODE_CHARS
 from freecad_mcp.tooling import ToolInputError
 
 
@@ -53,6 +54,25 @@ class PersistentBridgeTests(unittest.TestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.result["method"], "ping")
         self.assertEqual(response.result["params"]["value"], "ok")
+        self.assertFalse(closed["session"]["running"])
+
+    def test_worker_session_uses_temp_script_for_long_worker_code(self) -> None:
+        long_worker_script = FAKE_WORKER_SCRIPT + ("\n# filler" * (MAX_INLINE_CODE_CHARS // 4))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            session = FreeCadWorkerSession(
+                session_id="test",
+                executable=Path(sys.executable),
+                workspace_root=Path(temp_dir),
+                worker_script=long_worker_script,
+            )
+
+            started = session.start(timeout_sec=10)
+            response = session.request("ping", {"value": "ok"}, timeout_sec=10)
+            closed = session.close(timeout_sec=10)
+
+        self.assertEqual(started["ready"]["type"], "ready")
+        self.assertTrue(response.ok)
+        self.assertEqual(response.result["method"], "ping")
         self.assertFalse(closed["session"]["running"])
 
     def test_worker_failure_is_structured(self) -> None:

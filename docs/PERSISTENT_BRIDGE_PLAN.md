@@ -23,12 +23,13 @@ Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`.
 
 - Session lifecycle: start/list/status/close.
 - Document lifecycle: new/open/save/recompute/close.
-- Object basics: list/get.
-- Part basics: primitive creation.
+- Object basics: list/get/set properties/delete.
+- Part basics: primitive creation, boolean, extrude, revolve, and geometry check.
+- Document export from in-memory worker documents.
 - Tests: unit worker lifecycle/framing tests and real FreeCAD worker smoke.
 
 ## Remaining Persistent Work
 
-- Broaden worker tools to reuse more typed CAD operations.
+- Broaden worker tools to reuse Sketcher, mesh, and assembly typed CAD operations.
 - Add crash injection and automatic unhealthy-session cleanup coverage.
 - Add GUI attach and Workbench-hosted bridge modes for live selection/view workflows.

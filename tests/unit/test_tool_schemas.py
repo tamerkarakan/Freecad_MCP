@@ -47,8 +47,13 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_session_start",
             "freecad_worker_session_status",
             "freecad_worker_document_new",
+            "freecad_worker_document_export",
             "freecad_worker_part_create_primitive",
+            "freecad_worker_part_boolean",
+            "freecad_worker_part_check_geometry",
             "freecad_worker_object_get",
+            "freecad_worker_object_set_properties",
+            "freecad_worker_object_delete",
         ]:
             self.assertIn(name, tools)
 

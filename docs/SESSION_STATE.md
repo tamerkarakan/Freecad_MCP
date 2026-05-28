@@ -35,8 +35,9 @@
 - `scripts/smoke_cad_tools.py` now covers STEP export/import roundtrip, Part boolean fuse + BOP geometry check, unsupported mesh repair action reporting, open-sketch extrusion, current solid-shape extrude failure behavior, and expanded Sketcher advanced geometry/profile/constraint/diagnostic/transform flows.
 - Persistent `freecadcmd-worker` mode is implemented for session lifecycle, in-memory document lifecycle, object list/get, and primitive creation.
 - Persistent worker tools include roadmap aliases `freecad_session_start`, `freecad_session_list`, `freecad_session_close` plus explicit `freecad_worker_*` tools.
+- Persistent worker coverage now includes document export, object set/delete, and Part boolean/extrude/revolve/check-geometry tools.
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
-- Current MCP tool count is 60.
+- Current MCP tool count is 67.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
 - GUI attach and Workbench-hosted bridge modes remain planned in `docs/PERSISTENT_BRIDGE_PLAN.md`.
 

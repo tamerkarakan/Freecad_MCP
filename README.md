@@ -65,9 +65,9 @@ Available persistent worker tools:
 
 - `freecad_session_start`, `freecad_session_list`, `freecad_session_close`
 - `freecad_worker_session_start/list/status/close`
-- `freecad_worker_document_new/open/save/recompute/close`
-- `freecad_worker_part_create_primitive`
-- `freecad_worker_object_list/get`
+- `freecad_worker_document_new/open/save/recompute/close/export`
+- `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry`
+- `freecad_worker_object_list/get/set_properties/delete`
 
 Typed CAD tool groups are also available:
 

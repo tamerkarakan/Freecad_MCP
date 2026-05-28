@@ -2,7 +2,7 @@
 
 ## Now
 
-- Broaden persistent worker coverage beyond document/object/primitive basics.
+- Broaden persistent worker coverage to Sketcher, mesh, and assembly typed operations.
 - Add GUI attach design spike for active document, active view, and selection/subelement reads.
 - Validate Codex-on-Windows behavior under very large runtime outputs and add an opt-in compact execution mode toggle if transport instability still appears.
 

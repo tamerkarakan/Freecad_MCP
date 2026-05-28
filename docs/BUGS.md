@@ -2,7 +2,7 @@
 
 ## Open
 
-- Persistent worker mode currently covers session/document/object basics and primitive creation; most typed CAD operations still use process-per-call tools.
+- Persistent worker mode currently covers session/document/object basics, document export, and several Part operations; Sketcher, mesh, and assembly typed operations still use process-per-call tools.
 - GUI selection, active view, and selected edge/face state are not exposed yet.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint ergonomics are intentionally not wrapped yet because their FreeCAD 1.1.1 constructor combinations need stable fixtures.

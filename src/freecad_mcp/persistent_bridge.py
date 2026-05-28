@@ -6,6 +6,7 @@ import json
 import os
 import queue
 import subprocess
+import tempfile
 import threading
 import time
 import uuid
@@ -14,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from freecad_mcp.runtime_bridge import FreeCadDiscovery, FreeCadDiscoveryResult, truncate_text
+from freecad_mcp.runtime_bridge import FreeCadDiscovery, FreeCadDiscoveryResult, MAX_INLINE_CODE_CHARS, truncate_text
 from freecad_mcp.tooling import JsonObject, ToolInputError
 
 
@@ -162,6 +163,38 @@ def save_doc(doc, params):
     return None
 
 
+def export_objects(objects, output_path, params):
+    output_path = safe_output_path(output_path, params)
+    ext = os.path.splitext(output_path)[1].lower()
+    if os.path.exists(output_path) and not bool(params.get("overwrite", False)):
+        raise ValueError("output exists; pass overwrite=true: " + output_path)
+    if ext in {".stl", ".obj", ".ply", ".off"}:
+        import Mesh
+
+        Mesh.export(objects, output_path)
+    else:
+        import Import
+
+        Import.export(objects, output_path)
+    return output_path
+
+
+def planar_face_from_closed_wires(shape):
+    import Part
+
+    wires = list(getattr(shape, "Wires", []) or [])
+    if not wires or len(getattr(shape, "Faces", []) or []) > 0:
+        return None
+    if any(not wire.isClosed() for wire in wires):
+        return None
+    try:
+        if len(wires) == 1:
+            return Part.Face(wires[0])
+        return Part.Face(wires)
+    except Exception:
+        return None
+
+
 def action_ping(params):
     return {"version": App.Version(), "document_count": len(App.listDocuments())}
 
@@ -214,6 +247,17 @@ def action_document_close(params):
     return {"closed": doc_id, "document_count": len(App.listDocuments())}
 
 
+def action_document_export(params):
+    doc = get_doc(params)
+    output_path = params.get("output_path")
+    if not output_path:
+        raise ValueError("output_path is required")
+    names = params.get("object_names") or [obj.Name for obj in doc.Objects]
+    objects = [get_object(doc, name) for name in names]
+    exported = export_objects(objects, output_path, params)
+    return {"exported_path": exported, "objects": [object_summary(obj) for obj in objects]}
+
+
 def action_part_create_primitive(params):
     doc = get_doc(params)
     primitive = params.get("primitive", "box")
@@ -240,6 +284,132 @@ def action_part_create_primitive(params):
     return {"saved_path": saved, "object": object_summary(obj), "document": document_summary(doc)}
 
 
+def action_object_set_properties(params):
+    doc = get_doc(params)
+    obj = get_object(doc, params.get("object_name") or "")
+    changed = {}
+    doc.openTransaction("MCP worker set object properties")
+    try:
+        for key, value in (params.get("properties") or {}).items():
+            if key not in obj.PropertiesList and not hasattr(obj, key):
+                raise ValueError("unknown property: " + key)
+            setattr(obj, key, value)
+            changed[key] = value
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {"saved_path": saved, "changed": changed, "object": object_summary(obj), "document": document_summary(doc)}
+
+
+def action_object_delete(params):
+    doc = get_doc(params)
+    names = params.get("object_names") or ([params["object_name"]] if params.get("object_name") else [])
+    if not names:
+        raise ValueError("object_name or object_names is required")
+    doc.openTransaction("MCP worker delete objects")
+    try:
+        for name in names:
+            obj = get_object(doc, name)
+            doc.removeObject(obj.Name)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {"saved_path": saved, "deleted": names, "document": document_summary(doc)}
+
+
+def action_part_boolean(params):
+    doc = get_doc(params)
+    objs = [get_object(doc, name) for name in params.get("object_names", [])]
+    if len(objs) < 2:
+        raise ValueError("object_names must contain at least two objects")
+    operation = params.get("operation", "fuse")
+    shape = objs[0].Shape
+    for obj in objs[1:]:
+        if operation == "fuse":
+            shape = shape.fuse(obj.Shape)
+        elif operation == "cut":
+            shape = shape.cut(obj.Shape)
+        elif operation == "common":
+            shape = shape.common(obj.Shape)
+        else:
+            raise ValueError("unsupported boolean operation: " + str(operation))
+    doc.openTransaction("MCP worker part boolean")
+    try:
+        result = doc.addObject("Part::Feature", params.get("result_name") or operation.title())
+        result.Shape = shape
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {"saved_path": saved, "object": object_summary(result), "document": document_summary(doc)}
+
+
+def action_part_extrude(params):
+    doc = get_doc(params)
+    source = get_object(doc, params.get("source_object") or "")
+    base_shape = source.Shape
+    face = planar_face_from_closed_wires(base_shape)
+    extrude_source = face if face is not None else base_shape
+    mode = "face_from_closed_wire" if face is not None else "shape"
+    shape = extrude_source.extrude(vector(params.get("vector"), [0, 0, 10]))
+    doc.openTransaction("MCP worker part extrude")
+    try:
+        result = doc.addObject("Part::Feature", params.get("result_name") or "Extrude")
+        result.Shape = shape
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {"saved_path": saved, "mode": mode, "object": object_summary(result), "document": document_summary(doc)}
+
+
+def action_part_revolve(params):
+    doc = get_doc(params)
+    source = get_object(doc, params.get("source_object") or "")
+    shape = source.Shape.revolve(
+        vector(params.get("base"), [0, 0, 0]),
+        vector(params.get("axis"), [0, 0, 1]),
+        float(params.get("angle", 360)),
+    )
+    doc.openTransaction("MCP worker part revolve")
+    try:
+        result = doc.addObject("Part::Feature", params.get("result_name") or "Revolve")
+        result.Shape = shape
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {"saved_path": saved, "object": object_summary(result), "document": document_summary(doc)}
+
+
+def action_part_check_geometry(params):
+    doc = get_doc(params)
+    names = params.get("object_names") or [obj.Name for obj in doc.Objects if hasattr(obj, "Shape")]
+    checks = []
+    for name in names:
+        obj = get_object(doc, name)
+        shape = obj.Shape
+        check_error = None
+        try:
+            shape.check(bool(params.get("run_bop_check", False)))
+        except Exception as exc:
+            check_error = str(exc)
+        checks.append({"object": object_summary(obj), "is_valid": bool(shape.isValid()), "check_error": check_error})
+    return {"checks": checks}
+
+
 def action_object_list(params):
     doc = get_doc(params)
     return {"document": document_summary(doc)}
@@ -259,9 +429,16 @@ ACTIONS = {
     "document_save": action_document_save,
     "document_recompute": action_document_recompute,
     "document_close": action_document_close,
+    "document_export": action_document_export,
     "part_create_primitive": action_part_create_primitive,
+    "part_boolean": action_part_boolean,
+    "part_extrude": action_part_extrude,
+    "part_revolve": action_part_revolve,
+    "part_check_geometry": action_part_check_geometry,
     "object_list": action_object_list,
     "object_get": action_object_get,
+    "object_set_properties": action_object_set_properties,
+    "object_delete": action_object_delete,
 }
 
 
@@ -332,23 +509,41 @@ class FreeCadWorkerSession:
             return self.to_dict()
         env = os.environ.copy()
         env["FREECAD_MCP_WORKSPACE_ROOT"] = str(self.workspace_root)
-        self.process = subprocess.Popen(
-            [str(self.executable), "-c", self.worker_script],
-            cwd=str(self.executable.parent),
-            env=env,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if self.process.stdout is not None:
-            threading.Thread(target=self._drain_stdout, daemon=True).start()
-        if self.process.stderr is not None:
-            threading.Thread(target=self._drain_stderr, daemon=True).start()
-        ready = self._wait_for_message(timeout_sec=timeout_sec, expected_id=None, expected_type="ready")
-        return {"session": self.to_dict(), "ready": ready}
+        script_path: Path | None = None
+        if len(self.worker_script) > MAX_INLINE_CODE_CHARS:
+            handle = tempfile.NamedTemporaryFile("w", suffix=".py", encoding="utf-8", delete=False)
+            try:
+                handle.write(self.worker_script)
+                script_path = Path(handle.name)
+            finally:
+                handle.close()
+            argv = [str(self.executable), str(script_path)]
+        else:
+            argv = [str(self.executable), "-c", self.worker_script]
+        try:
+            self.process = subprocess.Popen(
+                argv,
+                cwd=str(self.executable.parent),
+                env=env,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            if self.process.stdout is not None:
+                threading.Thread(target=self._drain_stdout, daemon=True).start()
+            if self.process.stderr is not None:
+                threading.Thread(target=self._drain_stderr, daemon=True).start()
+            ready = self._wait_for_message(timeout_sec=timeout_sec, expected_id=None, expected_type="ready")
+            return {"session": self.to_dict(), "ready": ready}
+        finally:
+            if script_path is not None:
+                try:
+                    script_path.unlink()
+                except OSError:
+                    pass
 
     @property
     def is_running(self) -> bool:

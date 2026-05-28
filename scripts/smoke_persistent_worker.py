@@ -80,13 +80,96 @@ def main() -> int:
             if created["object"]["shape"]["solids"] != 1:
                 raise RuntimeError(f"worker primitive is not a solid: {created}")
 
+            updated = worker_result(
+                service.definition_map()["freecad_worker_object_set_properties"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_name": "WorkerBox",
+                        "properties": {"Length": 8.0},
+                    }
+                ),
+                "worker_object_set_properties",
+            )
+            updated_bbox = updated["object"]["shape"]["bound_box"]
+            if updated_bbox["xmax"] != 8.0:
+                raise RuntimeError(f"worker object property update failed: {updated}")
+
+            second = worker_result(
+                service.definition_map()["freecad_worker_part_create_primitive"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "primitive": "box",
+                        "object_name": "WorkerBox2",
+                        "properties": {"Length": 2.0, "Width": 2.0, "Height": 2.0},
+                    }
+                ),
+                "worker_part_create_second_primitive",
+            )
+            if second["object"]["shape"]["solids"] != 1:
+                raise RuntimeError(f"worker second primitive is not a solid: {second}")
+
+            boolean = worker_result(
+                service.definition_map()["freecad_worker_part_boolean"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_names": ["WorkerBox", "WorkerBox2"],
+                        "operation": "fuse",
+                        "result_name": "WorkerFuse",
+                    }
+                ),
+                "worker_part_boolean",
+            )
+            if boolean["object"]["shape"]["solids"] != 1:
+                raise RuntimeError(f"worker boolean fuse is not a solid: {boolean}")
+
+            checks = worker_result(
+                service.definition_map()["freecad_worker_part_check_geometry"].handler(
+                    {"session_id": session_id, "document_id": document_id, "object_names": ["WorkerFuse"]}
+                ),
+                "worker_part_check_geometry",
+            )
+            if not checks["checks"] or not checks["checks"][0]["is_valid"]:
+                raise RuntimeError(f"worker geometry check failed: {checks}")
+
+            exported = temp / "worker-fuse.step"
+            export = worker_result(
+                service.definition_map()["freecad_worker_document_export"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_names": ["WorkerFuse"],
+                        "output_path": str(exported),
+                        "overwrite": True,
+                    }
+                ),
+                "worker_document_export",
+            )
+            if not Path(export["exported_path"]).exists():
+                raise RuntimeError(f"worker exported path missing: {export}")
+
+            deleted = worker_result(
+                service.definition_map()["freecad_worker_object_delete"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_name": "WorkerBox2",
+                    }
+                ),
+                "worker_object_delete",
+            )
+            if any(obj["name"] == "WorkerBox2" for obj in deleted["document"]["objects"]):
+                raise RuntimeError(f"worker object delete failed: {deleted}")
+
             objects = worker_result(
                 service.definition_map()["freecad_worker_object_list"].handler(
                     {"session_id": session_id, "document_id": document_id}
                 ),
                 "worker_object_list",
             )
-            if objects["document"]["object_count"] != 1:
+            if objects["document"]["object_count"] < 2:
                 raise RuntimeError(f"worker object count mismatch: {objects}")
 
             obj = worker_result(
@@ -96,7 +179,7 @@ def main() -> int:
                 "worker_object_get",
             )
             bbox = obj["object"]["shape"]["bound_box"]
-            if [bbox["xmax"], bbox["ymax"], bbox["zmax"]] != [7.0, 5.0, 3.0]:
+            if [bbox["xmax"], bbox["ymax"], bbox["zmax"]] != [8.0, 5.0, 3.0]:
                 raise RuntimeError(f"worker bbox mismatch: {obj}")
 
             saved = worker_result(

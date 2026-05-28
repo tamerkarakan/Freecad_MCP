@@ -14,7 +14,7 @@ The server is hybrid in two ways:
 | `freecad_mcp.runtime_bridge` | FreeCADCmd discovery and process-per-call execution bridge, with temp-script fallback for long Python payloads on Windows. |
 | `freecad_mcp.runtime_tools` | Phase 2 runtime MCP tools. |
 | `freecad_mcp.persistent_bridge` | Long-lived FreeCADCmd worker process lifecycle and JSON request bridge. |
-| `freecad_mcp.persistent_tools` | Persistent worker MCP session/document/object tools. |
+| `freecad_mcp.persistent_tools` | Persistent worker MCP session/document/object/Part tools. |
 | `freecad_mcp.cad_tools` | Typed document/object/Part/Sketcher/import-export/mesh/assembly tools. |
 | `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
 | `server.py` | MCP stdio entrypoint. |
@@ -48,9 +48,9 @@ The server also exposes a long-lived `freecadcmd-worker` mode. It starts a `Free
 | Tool group | Status |
 | --- | --- |
 | Session lifecycle | `freecad_session_start`, `freecad_session_list`, `freecad_session_close`, plus `freecad_worker_session_*` explicit forms |
-| Document lifecycle | Worker new/open/save/recompute/close by `document_id` |
-| Object basics | Worker object list/get |
-| Part basics | Worker primitive creation in an in-memory document |
+| Document lifecycle | Worker new/open/save/recompute/close/export by `document_id` |
+| Object basics | Worker object list/get/set properties/delete |
+| Part basics | Worker primitive creation, boolean, extrude, revolve, and geometry check in an in-memory document |
 
 ## Typed CAD Tools
 
