@@ -10,7 +10,7 @@ Push-Location $Root
 try {
     $env:PYTHONPATH = Join-Path $Root "src"
     $env:FREECAD_MCP_WORKSPACE_ROOT = $Root
-    & $Python -m compileall -q server.py scripts src tests
+    & $Python -m compileall -q server.py scripts src tests freecad_workbench
     & $Python -m unittest discover -s tests\unit -p "test_*.py"
     & $Python scripts\export_mcp_tool_schemas.py
     & $Python scripts\smoke_static_mcp.py

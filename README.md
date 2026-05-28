@@ -93,6 +93,12 @@ scripts\verify.ps1
 
 The opt-in smoke also validates that GUI selection records can populate native Assembly `Reference1`/`Reference2` connector fields through `freecad_assembly_create_joint`.
 
+Workbench-hosted bridge:
+
+- Add `freecad_workbench` as a FreeCAD module path (`-M`).
+- Load the **FreeCAD MCP** workbench to start/stop/status the bridge from FreeCAD.
+- Set `FREECAD_MCP_AUTOSTART=1` and `FREECAD_MCP_GUI_TOKEN` to host automatically when the module is loaded.
+
 Typed CAD tool groups are also available:
 
 - document: new/open/save/recompute/export
@@ -102,7 +108,7 @@ Typed CAD tool groups are also available:
 - import/export and mesh tools
 - Assembly: create/insert/link native JointObject proxies/recompute/BOM
 
-The server also exposes MCP resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
+The server also exposes MCP resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
 
 Sketcher details are tracked in `docs/SKETCHER_CAPABILITIES.md`.
 

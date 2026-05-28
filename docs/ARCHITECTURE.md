@@ -21,6 +21,7 @@ The server is hybrid in two ways:
 | `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
 | `server.py` | MCP stdio entrypoint. |
 | `scripts/freecad_gui_bridge_server.py` | Local JSON bridge script to execute inside FreeCAD GUI. It marshals RPC handlers onto the Qt GUI thread when PySide is available. |
+| `freecad_workbench/FreeCADMCP/InitGui.py` | FreeCAD Workbench/module entrypoint that can host the GUI bridge manually or via `FREECAD_MCP_AUTOSTART=1`. |
 | `bridge/` | Future FreeCAD runtime process/session bridge. |
 | `policy/` | Future transaction, recompute, geometry-check, and result-shaping rules. |
 | `docs/` | Architecture, backlog, bugs, testing, and session continuity. |
@@ -69,6 +70,8 @@ The server exposes `freecad-gui-attach` mode for live GUI state. The MCP client 
 | Selection state | `freecad_gui_selection_get`, `freecad_gui_preselection_get`, `freecad_gui_selection_set` |
 | View action | `freecad_gui_view_fit` |
 
+`freecad_workbench/FreeCADMCP/InitGui.py` also registers a **FreeCAD MCP** workbench with start/stop/status commands and optional autostart via environment variables.
+
 ## Typed CAD Tools
 
 Implemented groups:
@@ -86,7 +89,7 @@ Write paths are guarded by default: `output_path` must be absolute and remain un
 
 ## MCP Resources And Prompts
 
-The server exposes read-only resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
+The server exposes read-only resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
 
 ## Runtime Policy Target
 

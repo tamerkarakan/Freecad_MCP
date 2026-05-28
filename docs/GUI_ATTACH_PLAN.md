@@ -83,6 +83,6 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 
 ## Non-goals
 
-- The first GUI attach slice will not host a full Workbench UI.
+- The current Workbench slice is a small bridge host, not a full AI workbench UI.
 - It will not make headless `FreeCADCmd` depend on Qt.
 - It will not expose arbitrary GUI command execution as the preferred path; typed tools remain primary.

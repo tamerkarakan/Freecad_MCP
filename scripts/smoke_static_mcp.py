@@ -115,6 +115,7 @@ def main() -> int:
     assert unsafe["result"]["isError"] is True
     assert "unsafe" in unsafe["result"]["structuredContent"]["error"]
     assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/workbench-bridge" for resource in resources["result"]["resources"])
     assert resource_templates["result"]["resourceTemplates"] == []
     assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:
