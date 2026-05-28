@@ -433,6 +433,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_sketch_add_profile",
                 "freecad_sketch_profile_create",
                 "freecad_sketch_profile_validate",
+                "freecad_curve_fit_analyze",
                 "freecad_sketch_edit_geometry",
                 "freecad_sketch_edit_constraints",
                 "freecad_sketch_transform",

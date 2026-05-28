@@ -115,6 +115,7 @@ def main() -> int:
     assert "freecad_fem_analysis_create" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names
+    assert "freecad_curve_fit_analyze" in tool_names
     assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]

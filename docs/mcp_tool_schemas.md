@@ -1230,7 +1230,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_worker_sketch_profile_validate`
 
-Validate whether a worker Sketcher object is pad-ready: closed wires, face creation, open vertices, isolated points, branch points, and micro-offset checks.
+Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent.
 
 ```json
 {
@@ -1271,6 +1271,39 @@ Validate whether a worker Sketcher object is pad-ready: closed wires, face creat
     },
     "endpoint_key_precision": {
       "type": "integer"
+    },
+    "include_construction": {
+      "type": "boolean"
+    },
+    "required_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_curve_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "minimum_curve_segments": {
+      "type": "integer"
+    },
+    "forbid_all_line_loops": {
+      "type": "boolean"
+    },
+    "forbid_polyline_fallback": {
+      "type": "boolean"
+    },
+    "forbid_intent_mismatch": {
+      "type": "boolean"
+    },
+    "expected_geometry": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
     }
   },
   "required": [
@@ -3432,7 +3465,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_sketch_profile_validate`
 
-Validate whether a Sketcher object is pad-ready: closed wires, face creation, open vertices, isolated points, branch points, and micro-offset checks.
+Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent.
 
 ```json
 {
@@ -3465,6 +3498,39 @@ Validate whether a Sketcher object is pad-ready: closed wires, face creation, op
     "endpoint_key_precision": {
       "type": "integer"
     },
+    "include_construction": {
+      "type": "boolean"
+    },
+    "required_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_curve_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "minimum_curve_segments": {
+      "type": "integer"
+    },
+    "forbid_all_line_loops": {
+      "type": "boolean"
+    },
+    "forbid_polyline_fallback": {
+      "type": "boolean"
+    },
+    "forbid_intent_mismatch": {
+      "type": "boolean"
+    },
+    "expected_geometry": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "executable": {
       "type": "string",
       "description": "Optional explicit FreeCADCmd path."
@@ -3490,6 +3556,57 @@ Validate whether a Sketcher object is pad-ready: closed wires, face creation, op
   "required": [
     "document_path",
     "sketch_name"
+  ]
+}
+```
+
+## `freecad_curve_fit_analyze`
+
+Compare line and circular-arc fit errors for traced sketch points and recommend line, arc, or B-spline without mutating a document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "points": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "tolerance": {
+      "type": "number"
+    },
+    "fit_tolerance": {
+      "type": "number"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "points"
   ]
 }
 ```

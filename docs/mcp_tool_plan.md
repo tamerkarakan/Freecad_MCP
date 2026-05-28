@@ -54,7 +54,8 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
 | `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
 | `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, and optional Block constraints. | Sketcher App API |
-| `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, and micro-offset checks. | Sketcher + Part App API |
+| `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, and intent-mismatch checks. | Sketcher + Part App API |
+| `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend line, arc, or B-spline before sketch creation. | Geometry analysis |
 | `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |
 | `freecad_sketch_edit_constraints` | Delete/rename/update constraints, set datum/driving/active/virtual/visibility state, and clean redundant/invalid constraints. | Sketcher App API |
 | `freecad_sketch_transform` | Apply fillet/trim/extend/split/join/copy/move/symmetry/array and B-spline transform operations. | Sketcher App API |

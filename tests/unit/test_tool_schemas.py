@@ -72,6 +72,10 @@ class ToolSchemaTests(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
 
+        validate_props = tools["freecad_worker_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("expected_geometry", validate_props)
+        self.assertIn("required_segment_types", validate_props)
+
     def test_gui_attach_tools_are_exposed(self) -> None:
         tools = GuiToolService().definition_map()
 
@@ -120,6 +124,7 @@ class ToolSchemaTests(unittest.TestCase):
         for name in [
             "freecad_sketch_profile_create",
             "freecad_sketch_profile_validate",
+            "freecad_curve_fit_analyze",
         ]:
             self.assertIn(name, tools)
 
@@ -131,6 +136,15 @@ class ToolSchemaTests(unittest.TestCase):
             "forbid_all_line_loops",
         ]:
             self.assertIn(name, props)
+        validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
+        for name in [
+            "expected_geometry",
+            "required_segment_types",
+            "minimum_curve_segments",
+            "forbid_intent_mismatch",
+        ]:
+            self.assertIn(name, validate_props)
+        self.assertIn("points", tools["freecad_curve_fit_analyze"].to_mcp()["inputSchema"]["properties"])
 
 
 if __name__ == "__main__":

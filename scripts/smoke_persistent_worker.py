@@ -126,8 +126,23 @@ def main() -> int:
                                 "name": "spline_arc_loop",
                                 "segments": [
                                     {"type": "line", "start": [0, 20, 0], "end": [10, 20, 0]},
-                                    {"type": "bspline", "poles": [[10, 20, 0], [12, 25, 0], [10, 30, 0]]},
-                                    {"type": "arc", "center": [5, 30, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                                    {
+                                        "type": "bspline",
+                                        "expected_type": "bspline",
+                                        "fallback_policy": "fail",
+                                        "reason": "variable curvature trace",
+                                        "poles": [[10, 20, 0], [12, 25, 0], [10, 30, 0]],
+                                    },
+                                    {
+                                        "type": "arc",
+                                        "expected_type": "arc",
+                                        "fallback_policy": "fail",
+                                        "reason": "constant-radius round end",
+                                        "center": [5, 30, 0],
+                                        "radius": 5,
+                                        "start_angle": 0,
+                                        "end_angle": 3.141592653589793,
+                                    },
                                     {"type": "line", "start": [0, 30, 0], "end": [0, 20, 0]},
                                 ],
                             }
@@ -147,6 +162,9 @@ def main() -> int:
                 raise RuntimeError(f"worker profile builder did not fully constrain profile: {worker_profile}")
             if worker_profile["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
                 raise RuntimeError(f"worker profile builder did not preserve curve segment count: {worker_profile}")
+            if worker_profile["loops"][0]["segment_intent_mismatches"]:
+                raise RuntimeError(f"worker profile builder reported unexpected intent mismatch: {worker_profile}")
+            worker_profile_indices = worker_profile["loops"][0]["added_indices"]
             worker_profile_validation = worker_result(
                 service.definition_map()["freecad_worker_sketch_profile_validate"].handler(
                     {
@@ -154,12 +172,21 @@ def main() -> int:
                         "document_id": document_id,
                         "sketch_name": "WorkerProfileBuilder",
                         "require_fully_constrained": True,
+                        "required_segment_types": ["bspline", "arc"],
+                        "minimum_curve_segments": 2,
+                        "forbid_all_line_loops": True,
+                        "expected_geometry": [
+                            {"geometry_index": worker_profile_indices[1], "expected_type": "bspline", "fallback_policy": "fail"},
+                            {"geometry_index": worker_profile_indices[2], "expected_type": "arc", "fallback_policy": "fail"},
+                        ],
                     }
                 ),
                 "worker_sketch_profile_validate",
             )
             if not worker_profile_validation["validation"]["ok"]:
                 raise RuntimeError(f"worker profile validation mismatch: {worker_profile_validation}")
+            if worker_profile_validation["validation"]["geometry_type_counts"].get("bspline") != 1 or worker_profile_validation["validation"]["geometry_type_counts"].get("arc") != 1:
+                raise RuntimeError(f"worker profile validation did not report native curve types: {worker_profile_validation}")
 
             worker_line_fallback = service.definition_map()["freecad_worker_sketch_profile_create"].handler(
                 {
@@ -185,6 +212,32 @@ def main() -> int:
             worker_line_error = str(worker_line_fallback.get("worker", {}).get("error") or worker_line_fallback.get("error") or worker_line_fallback)
             if "all-line fallback" not in worker_line_error:
                 raise RuntimeError(f"worker profile builder did not reject line fallback: {worker_line_fallback}")
+            worker_intent_mismatch = service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerIntentFallback",
+                    "loops": [
+                        {
+                            "segments": [
+                                {
+                                    "type": "line",
+                                    "expected_type": "bspline",
+                                    "fallback_policy": "fail",
+                                    "start": [0, 60, 0],
+                                    "end": [10, 60, 0],
+                                },
+                                {"type": "line", "start": [10, 60, 0], "end": [0, 60, 0]},
+                            ],
+                        }
+                    ],
+                }
+            )
+            if worker_intent_mismatch.get("ok") and worker_intent_mismatch.get("worker", {}).get("ok"):
+                raise RuntimeError(f"worker profile builder allowed intent mismatch: {worker_intent_mismatch}")
+            worker_intent_error = str(worker_intent_mismatch.get("worker", {}).get("error") or worker_intent_mismatch.get("error") or worker_intent_mismatch)
+            if "intent mismatch" not in worker_intent_error:
+                raise RuntimeError(f"worker profile builder did not reject intent mismatch: {worker_intent_mismatch}")
 
             profile = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_profile"].handler(

@@ -327,7 +327,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_validate",
                 "Worker Validate Sketch Profile",
-                "Validate whether a worker Sketcher object is pad-ready: closed wires, face creation, open vertices, isolated points, branch points, and micro-offset checks.",
+                "Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -338,6 +338,14 @@ class PersistentToolService:
                     "forbid_micro_offsets": {"type": "boolean"},
                     "micro_offset_tolerance": {"type": "number"},
                     "endpoint_key_precision": {"type": "integer"},
+                    "include_construction": {"type": "boolean"},
+                    "required_segment_types": {"type": "array", "items": {"type": "string"}},
+                    "required_curve_types": {"type": "array", "items": {"type": "string"}},
+                    "minimum_curve_segments": {"type": "integer"},
+                    "forbid_all_line_loops": {"type": "boolean"},
+                    "forbid_polyline_fallback": {"type": "boolean"},
+                    "forbid_intent_mismatch": {"type": "boolean"},
+                    "expected_geometry": {"type": "array", "items": {"type": "object"}},
                 },
                 ["document_id", "sketch_name"],
                 "sketch_profile_validate",

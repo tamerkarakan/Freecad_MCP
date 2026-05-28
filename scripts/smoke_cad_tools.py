@@ -640,8 +640,23 @@ def main() -> int:
                             "name": "spline_arc_loop",
                             "segments": [
                                 {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
-                                {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
-                                {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                                {
+                                    "type": "bspline",
+                                    "expected_type": "bspline",
+                                    "fallback_policy": "fail",
+                                    "reason": "variable curvature trace",
+                                    "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]],
+                                },
+                                {
+                                    "type": "arc",
+                                    "expected_type": "arc",
+                                    "fallback_policy": "fail",
+                                    "reason": "constant-radius round end",
+                                    "center": [5, 10, 0],
+                                    "radius": 5,
+                                    "start_angle": 0,
+                                    "end_angle": 3.141592653589793,
+                                },
                                 {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
                             ],
                         }
@@ -663,18 +678,32 @@ def main() -> int:
             raise RuntimeError(f"profile builder did not fully constrain profile: {profile_builder}")
         if profile_builder["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
             raise RuntimeError(f"profile builder did not preserve curve segment count: {profile_builder}")
+        if profile_builder["loops"][0]["segment_intent_mismatches"]:
+            raise RuntimeError(f"profile builder reported unexpected segment intent mismatch: {profile_builder}")
+        profile_indices = profile_builder["loops"][0]["added_indices"]
         profile_validation = assert_ok(
             service.definition_map()["freecad_sketch_profile_validate"].handler(
                 {
                     "document_path": str(profile_builder_doc),
                     "sketch_name": "ProfileBuilderSketch",
                     "require_fully_constrained": True,
+                    "required_segment_types": ["bspline", "arc"],
+                    "minimum_curve_segments": 2,
+                    "forbid_all_line_loops": True,
+                    "expected_geometry": [
+                        {"geometry_index": profile_indices[1], "expected_type": "bspline", "fallback_policy": "fail", "reason": "variable curvature trace"},
+                        {"geometry_index": profile_indices[2], "expected_type": "arc", "fallback_policy": "fail", "reason": "constant-radius round end"},
+                    ],
                 }
             ),
             "sketch profile validate",
         )
         if not profile_validation["validation"]["ok"] or profile_validation["validation"]["face_validation"]["face_count"] != 1:
             raise RuntimeError(f"profile validation mismatch: {profile_validation}")
+        if profile_validation["validation"]["geometry_type_counts"].get("bspline") != 1 or profile_validation["validation"]["geometry_type_counts"].get("arc") != 1:
+            raise RuntimeError(f"profile validation did not report native curve types: {profile_validation}")
+        if profile_validation["validation"]["intent_mismatches"]:
+            raise RuntimeError(f"profile validation reported unexpected intent mismatch: {profile_validation}")
         drift_rejected = assert_tool_failed(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {
@@ -722,6 +751,56 @@ def main() -> int:
         )
         if "all-line fallback" not in line_fallback_rejected["freecad"].get("error", ""):
             raise RuntimeError(f"profile builder did not reject line fallback: {line_fallback_rejected}")
+        intent_mismatch_rejected = assert_tool_failed(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "ProfileBuilderIntentRejectSmoke",
+                    "sketch_name": "IntentRejectSketch",
+                    "loops": [
+                        {
+                            "segments": [
+                                {
+                                    "type": "line",
+                                    "expected_type": "bspline",
+                                    "fallback_policy": "fail",
+                                    "start": [0, 0, 0],
+                                    "end": [10, 0, 0],
+                                },
+                                {"type": "line", "start": [10, 0, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "output_path": str(temp / "profile_builder_intent_reject.FCStd"),
+                    "overwrite": True,
+                }
+            ),
+            "sketch profile segment intent mismatch rejection",
+        )
+        if "intent mismatch" not in intent_mismatch_rejected["freecad"].get("error", ""):
+            raise RuntimeError(f"profile builder did not reject segment intent mismatch: {intent_mismatch_rejected}")
+
+        arc_fit = assert_ok(
+            service.definition_map()["freecad_curve_fit_analyze"].handler(
+                {
+                    "points": [[10, 0, 0], [7.0710678119, 7.0710678119, 0], [0, 10, 0]],
+                    "tolerance": 0.01,
+                }
+            ),
+            "curve fit arc analyze",
+        )
+        if arc_fit["analysis"]["recommendation"] != "arc":
+            raise RuntimeError(f"curve fit did not recommend arc for circular trace: {arc_fit}")
+        spline_fit = assert_ok(
+            service.definition_map()["freecad_curve_fit_analyze"].handler(
+                {
+                    "points": [[0, 0, 0], [2, 1, 0], [4, 0, 0], [6, -1, 0], [8, 0, 0]],
+                    "tolerance": 0.1,
+                }
+            ),
+            "curve fit freeform analyze",
+        )
+        if spline_fit["analysis"]["recommendation"] != "bspline":
+            raise RuntimeError(f"curve fit did not recommend bspline for freeform trace: {spline_fit}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

@@ -875,6 +875,122 @@ def sketch_endpoint_records(sketch, precision=6, include_construction=False):
     return records
 
 
+def sketch_geometry_profile_type(geom):
+    name = type(geom).__name__.lower()
+    if "linesegment" in name:
+        return "line"
+    if "bspline" in name:
+        return "bspline"
+    if "arcofcircle" in name:
+        return "arc"
+    if "circle" == name:
+        return "circle"
+    if "arcofellipse" in name:
+        return "ellipse_arc"
+    if "ellipse" == name:
+        return "ellipse"
+    if "arcofhyperbola" in name or "arcofparabola" in name:
+        return "conic_arc"
+    if "point" == name:
+        return "point"
+    return name
+
+
+def sketch_geometry_type_summary(sketch, include_construction=False):
+    records = []
+    counts = {}
+    curve_count = 0
+    for index, geom in enumerate(sketch.Geometry):
+        try:
+            construction = bool(sketch.getConstruction(index))
+        except Exception:
+            construction = False
+        if construction and not include_construction:
+            continue
+        geometry_type = sketch_geometry_profile_type(geom)
+        counts[geometry_type] = counts.get(geometry_type, 0) + 1
+        if geometry_type in CURVED_PROFILE_SEGMENT_TYPES:
+            curve_count += 1
+        records.append(
+            {
+                "geometry_index": index,
+                "type": geometry_type,
+                "native_type": type(geom).__name__,
+                "construction": construction,
+            }
+        )
+    return {
+        "counts": counts,
+        "records": records,
+        "curve_segment_count": curve_count,
+        "total": len(records),
+    }
+
+
+def profile_segment_intent_report(segments):
+    reports = []
+    mismatches = []
+    for index, segment in enumerate(segments):
+        expected = segment.get("expected_type") or segment.get("intent_type")
+        reason = segment.get("reason") or segment.get("intent_reason")
+        policy = str(segment.get("fallback_policy", "report"))
+        if expected is None and reason is None and "fallback_policy" not in segment:
+            continue
+        expected_type = normalized_profile_segment_type(expected)
+        actual_type = normalized_profile_segment_type(segment.get("type"))
+        matches = expected is None or expected_type == actual_type
+        report = {
+            "segment_index": index,
+            "actual_type": actual_type,
+            "expected_type": expected_type if expected is not None else None,
+            "fallback_policy": policy,
+            "reason": reason,
+            "matches": matches,
+        }
+        reports.append(report)
+        if not matches:
+            mismatches.append(report)
+            if policy == "fail":
+                raise ValueError("profile segment intent mismatch: segment " + str(index) + " expected " + expected_type + " got " + actual_type)
+    return reports, mismatches
+
+
+def validate_expected_geometry_intents(sketch, params):
+    specs = params.get("expected_geometry") or params.get("geometry_intents") or []
+    reports = []
+    mismatches = []
+    for spec in specs:
+        index = int(spec["geometry_index"])
+        if index < 0 or index >= len(sketch.Geometry):
+            report = {
+                "geometry_index": index,
+                "expected_type": normalized_profile_segment_type(spec.get("expected_type")),
+                "actual_type": None,
+                "fallback_policy": str(spec.get("fallback_policy", "report")),
+                "reason": spec.get("reason"),
+                "matches": False,
+                "error": "geometry_index out of range",
+            }
+            reports.append(report)
+            mismatches.append(report)
+            continue
+        expected_type = normalized_profile_segment_type(spec.get("expected_type"))
+        actual_type = sketch_geometry_profile_type(sketch.Geometry[index])
+        matches = expected_type == actual_type
+        report = {
+            "geometry_index": index,
+            "expected_type": expected_type,
+            "actual_type": actual_type,
+            "fallback_policy": str(spec.get("fallback_policy", "report")),
+            "reason": spec.get("reason"),
+            "matches": matches,
+        }
+        reports.append(report)
+        if not matches:
+            mismatches.append(report)
+    return reports, mismatches
+
+
 def validate_sketch_profile(sketch, params):
     precision = int(params.get("endpoint_key_precision", 6))
     micro_offset_tolerance = float(params.get("micro_offset_tolerance", 0.05))
@@ -883,6 +999,7 @@ def validate_sketch_profile(sketch, params):
     forbid_micro_offsets = bool(params.get("forbid_micro_offsets", True))
     require_pad_ready = bool(params.get("require_pad_ready", True))
     require_fully_constrained = bool(params.get("require_fully_constrained", False))
+    include_construction = bool(params.get("include_construction", False))
 
     solve_code = sketch.solve()
     try:
@@ -890,6 +1007,13 @@ def validate_sketch_profile(sketch, params):
     except Exception:
         pass
     face_validation = wire_face_validation(sketch.Shape)
+    geometry_summary = sketch_geometry_type_summary(sketch, include_construction=include_construction)
+    geometry_counts = geometry_summary["counts"]
+    required_types = normalized_profile_segment_set(params.get("required_segment_types")) | normalized_profile_segment_set(params.get("required_curve_types"))
+    minimum_curve_segments = int(params.get("minimum_curve_segments", 0) or 0)
+    forbid_all_line_loops = bool(params.get("forbid_all_line_loops", False))
+    forbid_polyline_fallback = bool(params.get("forbid_polyline_fallback", False))
+    expected_geometry_reports, intent_mismatches = validate_expected_geometry_intents(sketch, params)
     open_vertices = [point_list(vertex) for vertex in getattr(sketch, "OpenVertices", [])]
     isolated_points = []
     for index, geom in enumerate(sketch.Geometry):
@@ -950,12 +1074,35 @@ def validate_sketch_profile(sketch, params):
         issues.append({"code": "not_pad_ready", "face_validation": face_validation})
     if require_fully_constrained and dof != 0:
         issues.append({"code": "not_fully_constrained", "degrees_of_freedom": dof})
+    missing_geometry_types = sorted(required_types - set(geometry_counts.keys()))
+    if missing_geometry_types:
+        issues.append({"code": "missing_required_geometry_types", "types": missing_geometry_types})
+    if geometry_summary["curve_segment_count"] < minimum_curve_segments:
+        issues.append(
+            {
+                "code": "curve_segment_count_below_minimum",
+                "minimum": minimum_curve_segments,
+                "actual": geometry_summary["curve_segment_count"],
+            }
+        )
+    if forbid_all_line_loops and geometry_summary["total"] > 0 and geometry_summary["curve_segment_count"] == 0:
+        issues.append({"code": "all_line_fallback_detected"})
+    if forbid_polyline_fallback and geometry_counts.get("polyline", 0):
+        issues.append({"code": "polyline_fallback_detected", "count": geometry_counts.get("polyline", 0)})
+    failing_intent_mismatches = [item for item in intent_mismatches if item.get("fallback_policy") == "fail" or bool(params.get("forbid_intent_mismatch", False))]
+    if failing_intent_mismatches:
+        issues.append({"code": "geometry_intent_mismatch", "mismatches": failing_intent_mismatches})
     return {
         "ok": not issues,
         "issues": issues,
         "pad_ready": pad_ready,
         "solve_code": solve_code,
         "degrees_of_freedom": dof,
+        "geometry_type_counts": geometry_counts,
+        "geometry_type_records": geometry_summary["records"],
+        "curve_segment_count": geometry_summary["curve_segment_count"],
+        "expected_geometry": expected_geometry_reports,
+        "intent_mismatches": intent_mismatches,
         "open_vertices": open_vertices,
         "isolated_points": isolated_points,
         "branch_points": branch_points,
@@ -975,6 +1122,7 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
     segments = loop.get("segments") or loop.get("geometry") or []
     if not segments:
         raise ValueError("profile loop has no segments: " + name)
+    segment_intents, segment_intent_mismatches = profile_segment_intent_report(segments)
     curve_contract = enforce_profile_loop_curve_contract(loop, params, segments, name)
     flat = []
     for segment in segments:
@@ -1012,6 +1160,8 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
         "constraint_indices": constraint_indices,
         "segment_count": len(flat),
         "curve_contract": curve_contract,
+        "segment_intents": segment_intents,
+        "segment_intent_mismatches": segment_intent_mismatches,
     }
 
 
