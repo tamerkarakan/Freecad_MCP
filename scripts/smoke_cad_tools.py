@@ -70,6 +70,7 @@ def main() -> int:
         boolean_doc = temp / "boolean.FCStd"
         open_sketch_doc = temp / "open_sketch.FCStd"
         advanced_sketch_doc = temp / "advanced_sketch.FCStd"
+        auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
 
         create = assert_ok(
@@ -515,6 +516,66 @@ def main() -> int:
         expected_min_constraints = expected_profile_constraints + len(radius_constraint_indices)
         if validation["geometry_count"] < expected_profile_geometry or validation["constraint_count"] < expected_min_constraints:
             raise RuntimeError(f"advanced sketch validation mismatch: {validation}")
+
+        assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "AutoSketchSmoke",
+                    "sketch_name": "AutoSketch",
+                    "output_path": str(auto_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "auto sketch create",
+        )
+        assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(auto_sketch_doc),
+                    "sketch_name": "AutoSketch",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0, 0], "end": [5, 0, 0]},
+                        {"type": "line", "start": [0, 2, 0], "end": [5, 2, 0]},
+                    ],
+                    "output_path": str(auto_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "auto sketch add geometry",
+        )
+        auto_applied = assert_ok(
+            service.definition_map()["freecad_sketch_auto_constrain"].handler(
+                {
+                    "document_path": str(auto_sketch_doc),
+                    "sketch_name": "AutoSketch",
+                    "operations": [
+                        {"operation": "detect_vertical_horizontal"},
+                        {"operation": "make_vertical_horizontal"},
+                        {"operation": "detect_equality"},
+                        {"operation": "make_equality"},
+                    ],
+                    "output_path": str(auto_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "auto sketch detect/apply constraints",
+        )
+        if require_report(auto_applied, 0, "auto sketch detect vertical/horizontal").get("count", 0) < 2:
+            raise RuntimeError(f"vertical/horizontal detection missed candidates: {auto_applied}")
+        if require_report(auto_applied, 2, "auto sketch detect equality").get("count", 0) < 1:
+            raise RuntimeError(f"equality detection missed candidates: {auto_applied}")
+        auto_validation = assert_ok(
+            service.definition_map()["freecad_sketch_validate"].handler(
+                {"document_path": str(auto_sketch_doc), "sketch_name": "AutoSketch"}
+            ),
+            "auto sketch validate",
+        )
+        auto_constraint_types = [
+            constraint["type"]
+            for constraint in auto_validation["sketch"]["sketch"].get("constraints", [])
+        ]
+        if auto_constraint_types.count("Horizontal") < 2 or "Equal" not in auto_constraint_types:
+            raise RuntimeError(f"auto constraints were not applied: {auto_validation}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
