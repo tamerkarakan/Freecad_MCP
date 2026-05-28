@@ -355,6 +355,26 @@ def main() -> int:
             if profile["sketch"]["sketch"]["geometry_count"] != 4:
                 raise RuntimeError(f"worker sketch profile mismatch: {profile}")
 
+            profile_alias = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "profile": {
+                            "type": "slot_start_end_radius",
+                            "start": [8, 0, 0],
+                            "end": [14, 2, 0],
+                            "radius": 1,
+                            "constrain": True,
+                        },
+                    }
+                ),
+                "worker_sketch_add_profile_alias",
+            )
+            if profile_alias["profile_type"] != "slot_start_end_radius" or len(profile_alias["added_indices"]) != 4:
+                raise RuntimeError(f"worker sketch profile alias mismatch: {profile_alias}")
+
             sketch_extrude = worker_result(
                 service.definition_map()["freecad_worker_part_extrude"].handler(
                     {

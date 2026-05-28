@@ -1151,7 +1151,7 @@
     {
       "name": "freecad_worker_sketch_add_profile",
       "title": "Worker Add Sketch Profile",
-      "description": "Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.",
+      "description": "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3453,7 +3453,7 @@
     {
       "name": "freecad_sketch_add_profile",
       "title": "Add Sketch Profile",
-      "description": "Add common closed/open Sketcher profiles such as rectangle, polyline, regular polygon, circle, and slot.",
+      "description": "Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
       "inputSchema": {
         "type": "object",
         "properties": {

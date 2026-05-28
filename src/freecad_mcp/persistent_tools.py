@@ -323,7 +323,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_profile",
                 "Worker Add Sketch Profile",
-                "Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.",
+                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},

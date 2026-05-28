@@ -9,7 +9,7 @@ The typed Sketcher MCP surface targets headless `Sketcher::SketchObject` APIs th
 | `freecad_sketch_create` | Create a Sketcher object in a new or existing document, optionally inside a PartDesign Body attached to `XY`, `XZ`, or `YZ` origin plane. |
 | `freecad_sketch_add_geometry` | Add point, line/line segment, circle/3-point circle, circle arc, ellipse, ellipse arc, hyperbola arc, parabola arc, B-spline, and polyline geometry. It can optionally connect the submitted endpoint-capable geometry sequence with `Coincident` constraints, close the sequence, and fail before saving when open vertices remain. |
 | `freecad_sketch_add_constraint` | Add raw `Sketcher.Constraint` entries with optional name, datum, driving, active, virtual-space, visibility, and label metadata. |
-| `freecad_sketch_add_profile` | Add rectangle, polyline, regular polygon, circle, and slot helper profiles with optional constraints/construction mode. |
+| `freecad_sketch_add_profile` | Add rectangle, rectangle-center, rectangle-3-point, named regular polygons (`triangle` through `octagon`), arbitrary regular polygon, circle, straight slot, oriented slot, arc slot, and polyline helper profiles with optional constraints/construction mode. |
 | `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments; it rejects endpoint drift before adding constraints, can `Block` geometry, validates face creation, can attach to a PartDesign Body origin plane, and can enforce curve-preservation contracts such as required segment types, minimum curve count, and no line/polyline fallback. |
 | `freecad_sketch_profile_validate` | Validate existing sketches for pad readiness, isolated points, branch vertices, near-duplicate micro-offset vertices, closed wires, face creation, native geometry type counts, curve intent mismatches, and optional full constraint. |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend `line`, `arc`, or `bspline` before creating sketch geometry. |
@@ -42,6 +42,10 @@ Circular arcs are exposed through several explicit intent forms: `arc_3_point` /
 
 `freecad_sketch_add_geometry` and `freecad_sketch_profile_create` now return `geometry_reports` for circular arcs. Each report includes `actual_start`, `actual_end`, `center`, `radius`, `sweep_deg`, and `normal`, so callers can reject a visually plausible but wrong long-arc result immediately.
 
+## Profile Method Notes
+
+FreeCAD GUI exposes rectangle, center rectangle, 3-point rectangle, regular polygon presets, slot, and arc slot as Sketcher create commands. The typed MCP equivalent is `freecad_sketch_add_profile`: `rectangle`, `rectangle_center`, `rectangle_3_point`, `triangle`, `square`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `regular_polygon`, `slot`, `slot_start_end_radius`, `arc_slot`, `circle`, and `polyline`. Named polygons are aliases for `regular_polygon` with fixed side counts.
+
 ## PartDesign Body Attachment
 
 FreeCAD GUI asks whether to create a Body and which plane to use before a Sketcher profile can drive PartDesign features. The MCP equivalent is to pass `body_name` and `attachment_plane` (`XY`, `XZ`, or `YZ`) to `freecad_sketch_create` or `freecad_sketch_profile_create`. The tool creates or reuses the Body, adds the sketch to it, sets `AttachmentSupport` to the Body origin plane, and sets `MapMode="FlatFace"`. Use `freecad_partdesign_pad` afterward when the intended result is a PartDesign solid feature rather than a standalone Part extrusion.
@@ -52,4 +56,4 @@ Commands such as Sketcher edit mode, view alignment, overlays, mouse-driven crea
 
 ## Verification
 
-`scripts/smoke_cad_tools.py` exercises the expanded Sketcher flow with real FreeCAD 1.1.1: advanced geometry, arc creation method catalog/reporting, connected closed line/B-spline/arc chains, loop-based profile creation/validation, native geometry type reporting, segment intent mismatch rejection, endpoint drift rejection, curve-preservation and line-fallback rejection, curve fit recommendation, rectangle profile, constraint datum/driving/active update, construction toggling, missing-constraint detection, validation diagnostics, B-spline edits, copy, and move transforms.
+`scripts/smoke_cad_tools.py` exercises the expanded Sketcher flow with real FreeCAD 1.1.1: advanced geometry, arc creation method catalog/reporting, profile method catalog coverage, rectangle/center rectangle/3-point rectangle/named polygon/slot/arc-slot profiles, connected closed line/B-spline/arc chains, loop-based profile creation/validation, native geometry type reporting, segment intent mismatch rejection, endpoint drift rejection, curve-preservation and line-fallback rejection, curve fit recommendation, constraint datum/driving/active update, construction toggling, missing-constraint detection, validation diagnostics, B-spline edits, copy, and move transforms.

@@ -1506,11 +1506,24 @@ def add_profile_geometry(sketch, profile):
     import Part
     import Sketcher
 
-    kind = profile.get("type")
+    kind = str(profile.get("type") or "").lower()
     construction = bool(profile.get("construction", False))
     constrain = bool(profile.get("constrain", True))
     added = []
     constraints = []
+    named_polygon_sides = {
+        "triangle": 3,
+        "equilateral_triangle": 3,
+        "square": 4,
+        "pentagon": 5,
+        "hexagon": 6,
+        "heptagon": 7,
+        "octagon": 8,
+    }
+    if kind in named_polygon_sides:
+        profile = dict(profile)
+        profile["sides"] = named_polygon_sides[kind]
+        kind = "regular_polygon"
 
     def add_lines(points, closed=True):
         local = []
@@ -1526,16 +1539,10 @@ def add_profile_geometry(sketch, profile):
         added.extend(local)
         return local
 
-    if kind == "rectangle":
-        if profile.get("corner1") and profile.get("corner2"):
-            c1 = vector(profile["corner1"])
-            c2 = vector(profile["corner2"])
-        else:
-            c1 = vector(profile.get("origin"), [0, 0, 0])
-            c2 = App.Vector(c1.x + float(profile["width"]), c1.y + float(profile["height"]), c1.z)
-        points = [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
-        local = add_lines(points, True)
-        if constrain:
+    def add_rectangle_constraints(local, axis_aligned):
+        if not constrain:
+            return
+        if axis_aligned:
             constraints.extend(
                 [
                     sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])),
@@ -1544,9 +1551,52 @@ def add_profile_geometry(sketch, profile):
                     sketch.addConstraint(Sketcher.Constraint("Vertical", local[3])),
                 ]
             )
+        else:
+            constraints.extend(
+                [
+                    sketch.addConstraint(Sketcher.Constraint("Parallel", local[0], local[2])),
+                    sketch.addConstraint(Sketcher.Constraint("Parallel", local[1], local[3])),
+                    sketch.addConstraint(Sketcher.Constraint("Perpendicular", local[0], local[1])),
+                ]
+            )
+
+    if kind in {"rectangle", "rectangle_corner", "rectangle_corners", "rectangle_2_point", "rectangle_two_points", "rectangle_center", "center_rectangle"}:
+        axis_aligned = True
+        if kind in {"rectangle_center", "center_rectangle"} or profile.get("center"):
+            center = vector(profile.get("center"), [0, 0, 0])
+            width = float(profile["width"])
+            height = float(profile["height"])
+            c1 = App.Vector(center.x - width / 2.0, center.y - height / 2.0, center.z)
+            c2 = App.Vector(center.x + width / 2.0, center.y + height / 2.0, center.z)
+        elif profile.get("corner1") and profile.get("corner2"):
+            c1 = vector(profile["corner1"])
+            c2 = vector(profile["corner2"])
+        else:
+            c1 = vector(profile.get("origin"), [0, 0, 0])
+            c2 = App.Vector(c1.x + float(profile["width"]), c1.y + float(profile["height"]), c1.z)
+        points = [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
+        local = add_lines(points, True)
+        add_rectangle_constraints(local, axis_aligned)
         if bool(profile.get("dimension_constraints", False)):
             constraints.append(sketch.addConstraint(Sketcher.Constraint("DistanceX", local[0], 1, local[0], 2, abs(c2.x - c1.x))))
             constraints.append(sketch.addConstraint(Sketcher.Constraint("DistanceY", local[1], 1, local[1], 2, abs(c2.y - c1.y))))
+    elif kind in {"rectangle_3_point", "rectangle_three_points"}:
+        points_input = profile.get("points") or [profile["point1"], profile["point2"], profile["point3"]]
+        p1 = vector(points_input[0])
+        p2 = vector(points_input[1])
+        p3 = vector(points_input[2])
+        edge = p2 - p1
+        length = float(edge.Length)
+        if length <= 1e-12:
+            raise ValueError("rectangle_3_point requires distinct point1 and point2")
+        normal = App.Vector(-edge.y / length, edge.x / length, 0)
+        height = (p3 - p2).dot(normal)
+        if abs(height) <= 1e-12:
+            raise ValueError("rectangle_3_point requires point3 away from the first edge")
+        p3_projected = p2 + normal * height
+        p4 = p1 + normal * height
+        local = add_lines([p1, p2, p3_projected, p4], True)
+        add_rectangle_constraints(local, False)
     elif kind == "polyline":
         added.extend(add_lines([vector(point) for point in profile["points"]], bool(profile.get("closed", True))))
     elif kind == "regular_polygon":
@@ -1571,30 +1621,72 @@ def add_profile_geometry(sketch, profile):
         added.append(idx)
         if bool(profile.get("radius_constraint", constrain)):
             constraints.append(sketch.addConstraint(Sketcher.Constraint("Radius", idx, float(profile["radius"]))))
-    elif kind == "slot":
-        center = vector(profile.get("center"), [0, 0, 0])
+    elif kind in {"slot", "slot_center_length_radius", "slot_start_end_radius", "slot_2_point", "slot_two_points"}:
         radius = float(profile["radius"])
-        length = float(profile["length"])
-        left = App.Vector(center.x - length / 2, center.y, center.z)
-        right = App.Vector(center.x + length / 2, center.y, center.z)
-        top_left = App.Vector(left.x, left.y + radius, left.z)
-        top_right = App.Vector(right.x, right.y + radius, right.z)
-        bottom_right = App.Vector(right.x, right.y - radius, right.z)
-        bottom_left = App.Vector(left.x, left.y - radius, left.z)
+        if kind in {"slot_start_end_radius", "slot_2_point", "slot_two_points"} or profile.get("start"):
+            left = vector(profile.get("start") or profile.get("point1"))
+            right = vector(profile.get("end") or profile.get("point2"))
+        else:
+            center = vector(profile.get("center"), [0, 0, 0])
+            length = float(profile["length"])
+            left = App.Vector(center.x - length / 2, center.y, center.z)
+            right = App.Vector(center.x + length / 2, center.y, center.z)
+        axis = right - left
+        axis_length = float(axis.Length)
+        if axis_length <= 1e-12:
+            raise ValueError("slot requires distinct start and end centers")
+        unit = App.Vector(axis.x / axis_length, axis.y / axis_length, axis.z / axis_length)
+        normal = App.Vector(-unit.y, unit.x, 0)
+        top_left = left + normal * radius
+        top_right = right + normal * radius
+        bottom_right = right - normal * radius
+        bottom_left = left - normal * radius
         local = [
             sketch.addGeometry(Part.LineSegment(top_left, top_right), construction),
-            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(right, App.Vector(0, 0, 1), radius), math.pi / 2, -math.pi / 2), construction),
+            sketch.addGeometry(Part.ArcOfCircle(top_right, right + unit * radius, bottom_right), construction),
             sketch.addGeometry(Part.LineSegment(bottom_right, bottom_left), construction),
-            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(left, App.Vector(0, 0, 1), radius), -math.pi / 2, math.pi / 2), construction),
+            sketch.addGeometry(Part.ArcOfCircle(bottom_left, left - unit * radius, top_left), construction),
         ]
         added.extend(local)
         if constrain:
             for idx in range(len(local) - 1):
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
             constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
-            constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])))
-            constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[2])))
+            if abs(unit.y) <= 1e-12:
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[2])))
+            else:
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Parallel", local[0], local[2])))
             constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[1], local[3])))
+    elif kind in {"arc_slot", "slot_arc"}:
+        center = vector(profile.get("center"), [0, 0, 0])
+        radius = float(profile["radius"])
+        width = float(profile.get("width", profile.get("slot_width")))
+        inner_radius = radius - width / 2.0
+        outer_radius = radius + width / 2.0
+        if inner_radius <= 0:
+            raise ValueError("arc_slot width must be smaller than twice the radius")
+        start = angle_radians(profile["start_angle"])
+        end = angle_radians(profile["end_angle"])
+        sweep = requested_arc_sweep(start, end, direction=profile.get("direction"), sweep=profile.get("sweep"))
+        mid = start + sweep / 2.0
+        outer_start = arc_point(center, outer_radius, start)
+        outer_mid = arc_point(center, outer_radius, mid)
+        outer_end = arc_point(center, outer_radius, start + sweep)
+        inner_start = arc_point(center, inner_radius, start)
+        inner_mid = arc_point(center, inner_radius, mid)
+        inner_end = arc_point(center, inner_radius, start + sweep)
+        local = [
+            sketch.addGeometry(Part.ArcOfCircle(outer_start, outer_mid, outer_end), construction),
+            sketch.addGeometry(Part.LineSegment(outer_end, inner_end), construction),
+            sketch.addGeometry(Part.ArcOfCircle(inner_end, inner_mid, inner_start), construction),
+            sketch.addGeometry(Part.LineSegment(inner_start, outer_start), construction),
+        ]
+        added.extend(local)
+        if constrain:
+            for idx in range(len(local) - 1):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
     else:
         raise ValueError("unsupported sketch profile: " + str(kind))
 

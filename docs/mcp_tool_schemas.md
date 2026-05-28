@@ -1210,7 +1210,7 @@ Add typed constraints to a worker Sketcher object.
 
 ## `freecad_worker_sketch_add_profile`
 
-Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.
+Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.
 
 ```json
 {
@@ -3598,7 +3598,7 @@ Add raw or named Sketcher constraints with optional metadata such as datum, driv
 
 ## `freecad_sketch_add_profile`
 
-Add common closed/open Sketcher profiles such as rectangle, polyline, regular polygon, circle, and slot.
+Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.
 
 ```json
 {

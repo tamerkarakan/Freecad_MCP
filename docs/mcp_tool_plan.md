@@ -54,7 +54,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane. | Sketcher + PartDesign App API |
 | `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, and circular-arc actual geometry reports. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
-| `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
+| `freecad_sketch_add_profile` | Add helper profiles such as rectangle variants, named/arbitrary regular polygons, circle, straight/oriented/arc slots, and polyline. | Sketcher App API |
 | `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, optional Block constraints, and optional PartDesign Body/plane attachment. | Sketcher + PartDesign App API |
 | `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, and intent-mismatch checks. | Sketcher + Part App API |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend line, arc, or B-spline before sketch creation. | Geometry analysis |

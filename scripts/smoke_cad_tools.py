@@ -493,9 +493,18 @@ def main() -> int:
             for item in method_catalog["geometry_methods"]
             for method in item["methods"]
         }
+        catalog_types.update(
+            method["type"]
+            for item in method_catalog["profile_methods"]
+            for method in item["methods"]
+            if method.get("type")
+        )
         for expected_type in ["line_angle_length", "arc_3_point", "arc_start_end_radius", "arc_center_angles", "circle_3_point", "bspline"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch geometry method catalog missing {expected_type}: {method_catalog}")
+        for expected_type in ["rectangle_center", "rectangle_3_point", "triangle", "square", "hexagon", "slot_start_end_radius", "arc_slot"]:
+            if expected_type not in catalog_types:
+                raise RuntimeError(f"sketch profile method catalog missing {expected_type}: {method_catalog}")
 
         profile = assert_ok(
             service.definition_map()["freecad_sketch_add_profile"].handler(
@@ -516,8 +525,15 @@ def main() -> int:
             raise RuntimeError(f"unexpected profile result: {profile}")
 
         for profile_spec, expected_added in [
+            ({"type": "rectangle_center", "center": [26, -8, 0], "width": 5, "height": 3}, 4),
+            ({"type": "rectangle_3_point", "point1": [20, -16, 0], "point2": [25, -15, 0], "point3": [24, -10, 0]}, 4),
+            ({"type": "triangle", "center": [30, -10, 0], "radius": 3}, 3),
+            ({"type": "square", "center": [38, -10, 0], "radius": 3}, 4),
             ({"type": "regular_polygon", "center": [32, 0, 0], "radius": 3, "sides": 6}, 6),
+            ({"type": "hexagon", "center": [40, 0, 0], "radius": 3}, 6),
             ({"type": "slot", "center": [45, 0, 0], "length": 8, "radius": 1.5}, 4),
+            ({"type": "slot_start_end_radius", "start": [50, -10, 0], "end": [58, -8, 0], "radius": 1.5}, 4),
+            ({"type": "arc_slot", "center": [66, -8, 0], "radius": 5, "width": 2, "start_angle": 0, "end_angle": {"degrees": 90}, "direction": "ccw"}, 4),
             ({"type": "circle", "center": [58, 0, 0], "radius": 2}, 1),
         ]:
             helper_profile = assert_ok(
