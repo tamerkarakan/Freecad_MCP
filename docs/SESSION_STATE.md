@@ -35,6 +35,7 @@
 - MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
 - `scripts/smoke_static_mcp.py` now smoke-checks `resources/templates/list`.
 - `scripts/smoke_cad_tools.py` now covers STEP export/import roundtrip, Part boolean fuse + BOP geometry check, unsupported mesh repair action reporting, open-sketch extrusion, advanced parametric extrusion, current solid-shape extrude failure behavior, and expanded Sketcher advanced geometry/profile/constraint/diagnostic/transform flows.
+- `scripts/smoke_fixture_documents.py` generates a multi-object fixture document at verification time and checks object metadata, boolean geometry, Sketcher profile extrusion, Assembly links, reopen/list/get, geometry check, STEP export, and STL export without committing binary CAD fixtures.
 - Persistent `freecadcmd-worker` mode is implemented for session lifecycle, in-memory document lifecycle, object list/get, and primitive creation.
 - Persistent worker tools include roadmap aliases `freecad_session_start`, `freecad_session_list`, `freecad_session_close` plus explicit `freecad_worker_*` tools.
 - Persistent worker coverage now includes document export, object set/delete, Part boolean/extrude/revolve/check-geometry, Sketcher create/add geometry/add constraints/add profiles/edit/transform/auto-constrain/validate, mesh import/export/evaluate/repair/boolean, and Assembly create/insert/native joint proxy/solve/BOM tools.

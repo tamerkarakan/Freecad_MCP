@@ -2,11 +2,10 @@
 
 ## Now
 
-- Add document/object fixtures for more complex real-world FreeCAD files.
+- Add focused Sketcher fixtures for `Group` and `Text` constraints before exposing high-level wrappers.
 
 ## Next
 
-- Add focused Sketcher fixtures for `Group` and `Text` constraints before exposing high-level wrappers.
 - Implement GUI attach bridge tools from `docs/GUI_ATTACH_PLAN.md`.
 - Add connector-reference smoke coverage for Assembly joints once stable example documents exist.
 - Add MCP SDK adapter if the Python SDK becomes available in the runtime.
