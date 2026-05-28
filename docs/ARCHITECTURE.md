@@ -82,6 +82,7 @@ Implemented groups:
 - Sketcher typed coverage: create sketches; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; create/update constraints; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.
+- TechDraw first slice: create page/template, create part view, inspect page/view graph, and export headless DXF.
 
 Process-per-call typed tools use explicit file paths and output paths. Persistent worker tools use `session_id` plus bridge-local `document_id` for in-memory workflows.
 
@@ -89,7 +90,7 @@ Write paths are guarded by default: `output_path` must be absolute and remain un
 
 ## MCP Resources And Prompts
 
-The server exposes read-only resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
+The server exposes read-only resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, TechDraw/CAM/FEM typed-wrapper planning, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
 
 ## Runtime Policy Target
 

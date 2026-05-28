@@ -109,6 +109,8 @@ def main() -> int:
     assert "freecad_worker_document_new" in tool_names
     assert "freecad_gui_attach" in tool_names
     assert "freecad_gui_selection_get" in tool_names
+    assert "freecad_techdraw_page_create" in tool_names
+    assert "freecad_techdraw_page_export" in tool_names
     assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]
@@ -116,6 +118,7 @@ def main() -> int:
     assert "unsafe" in unsafe["result"]["structuredContent"]["error"]
     assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/workbench-bridge" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/techdraw-cam-fem-plan" for resource in resources["result"]["resources"])
     assert resource_templates["result"]["resourceTemplates"] == []
     assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:

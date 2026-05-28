@@ -727,6 +727,78 @@ def main() -> int:
         if not joint["joint_fields"]["has_proxy"] or joint["joint_fields"]["joint_type"] != "Fixed":
             raise RuntimeError(f"assembly joint proxy mismatch: {joint}")
 
+        techdraw_doc = temp / "techdraw.FCStd"
+        techdraw_dxf = temp / "techdraw-page.dxf"
+        techdraw_base = assert_ok(
+            service.definition_map()["freecad_part_create_primitive"].handler(
+                {
+                    "document_name": "TechDrawSmoke",
+                    "primitive": "box",
+                    "object_name": "TDBox",
+                    "properties": {"Length": 10.0, "Width": 6.0, "Height": 4.0},
+                    "output_path": str(techdraw_doc),
+                    "overwrite": True,
+                }
+            ),
+            "techdraw base box",
+        )
+        if techdraw_base["object"]["shape"]["solids"] != 1:
+            raise RuntimeError(f"TechDraw base box mismatch: {techdraw_base}")
+        techdraw_page = assert_ok(
+            service.definition_map()["freecad_techdraw_page_create"].handler(
+                {
+                    "document_path": str(techdraw_doc),
+                    "page_name": "TDPage",
+                    "template_name": "TDTemplate",
+                    "scale": 2.0,
+                    "output_path": str(techdraw_doc),
+                    "overwrite": True,
+                }
+            ),
+            "techdraw page create",
+        )
+        if techdraw_page["page"]["type_id"] != "TechDraw::DrawPage":
+            raise RuntimeError(f"TechDraw page mismatch: {techdraw_page}")
+        techdraw_view = assert_ok(
+            service.definition_map()["freecad_techdraw_view_create"].handler(
+                {
+                    "document_path": str(techdraw_doc),
+                    "page_name": "TDPage",
+                    "source_objects": ["TDBox"],
+                    "view_name": "TDView",
+                    "direction": [0, 0, 1],
+                    "scale": 1.0,
+                    "output_path": str(techdraw_doc),
+                    "overwrite": True,
+                }
+            ),
+            "techdraw view create",
+        )
+        if techdraw_view["view"]["techdraw"]["source_names"] != ["TDBox"]:
+            raise RuntimeError(f"TechDraw view source mismatch: {techdraw_view}")
+        techdraw_inspect = assert_ok(
+            service.definition_map()["freecad_techdraw_inspect"].handler(
+                {"document_path": str(techdraw_doc), "page_name": "TDPage"}
+            ),
+            "techdraw inspect",
+        )
+        if techdraw_inspect["page_count"] != 1 or techdraw_inspect["view_count"] != 1:
+            raise RuntimeError(f"TechDraw inspect mismatch: {techdraw_inspect}")
+        techdraw_export = assert_ok(
+            service.definition_map()["freecad_techdraw_page_export"].handler(
+                {
+                    "document_path": str(techdraw_doc),
+                    "page_name": "TDPage",
+                    "output_path": str(techdraw_dxf),
+                    "format": "dxf",
+                    "overwrite": True,
+                }
+            ),
+            "techdraw page export",
+        )
+        if not Path(techdraw_export["exported_path"]).exists() or techdraw_export["bytes"] <= 0:
+            raise RuntimeError(f"TechDraw export missing: {techdraw_export}")
+
     print("typed CAD smoke OK")
     return 0
 

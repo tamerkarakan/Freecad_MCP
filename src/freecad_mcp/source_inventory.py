@@ -462,6 +462,17 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
             "evidence": f"Assembly module exposes {counts.get('Assembly', 0)} scanned commands.",
         },
         {
+            "family": "freecad.techdraw",
+            "priority": "P2",
+            "tools": [
+                "freecad_techdraw_page_create",
+                "freecad_techdraw_view_create",
+                "freecad_techdraw_inspect",
+                "freecad_techdraw_page_export",
+            ],
+            "evidence": f"TechDraw module exposes {counts.get('TechDraw', 0)} scanned commands and headless App APIs for DrawPage/DrawViewPart/DXF export.",
+        },
+        {
             "family": "freecad.import_export",
             "priority": "P2",
             "tools": [

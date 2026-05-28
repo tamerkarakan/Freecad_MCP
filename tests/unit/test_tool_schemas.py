@@ -87,6 +87,17 @@ class ToolSchemaTests(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
 
+    def test_techdraw_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_techdraw_page_create",
+            "freecad_techdraw_view_create",
+            "freecad_techdraw_inspect",
+            "freecad_techdraw_page_export",
+        ]:
+            self.assertIn(name, tools)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -216,6 +216,43 @@ def sketch_summary(obj):
     }
 
 
+def techdraw_summary(obj):
+    type_id = getattr(obj, "TypeId", "")
+    if not str(type_id).startswith("TechDraw::"):
+        return None
+    summary = {"type": type_id}
+    if type_id == "TechDraw::DrawPage":
+        try:
+            views = obj.getViews()
+        except Exception:
+            views = []
+        summary["views"] = [getattr(view, "Name", str(view)) for view in views]
+        summary["view_count"] = len(views)
+        for method, key in [
+            ("getPageWidth", "page_width"),
+            ("getPageHeight", "page_height"),
+            ("getPageOrientation", "page_orientation"),
+        ]:
+            try:
+                summary[key] = getattr(obj, method)()
+            except Exception:
+                summary[key] = None
+        template = getattr(obj, "Template", None)
+        summary["template"] = getattr(template, "Name", None) if template is not None else None
+    elif type_id == "TechDraw::DrawViewPart":
+        sources = getattr(obj, "Source", []) or []
+        summary["source_names"] = [getattr(source, "Name", str(source)) for source in sources]
+        summary["state"] = list(getattr(obj, "State", []) or [])
+        summary["direction"] = point_list(getattr(obj, "Direction", [0, 0, 1]))
+        summary["x_direction"] = point_list(getattr(obj, "XDirection", [1, 0, 0]))
+        summary["scale"] = float(getattr(obj, "Scale", 1.0))
+        summary["x"] = float(getattr(obj, "X", 0.0))
+        summary["y"] = float(getattr(obj, "Y", 0.0))
+    elif type_id == "TechDraw::DrawSVGTemplate":
+        summary["template_path"] = str(getattr(obj, "Template", ""))
+    return summary
+
+
 def object_summary(obj):
     return {
         "name": obj.Name,
@@ -226,6 +263,7 @@ def object_summary(obj):
         "shape": shape_summary(obj),
         "mesh": mesh_summary(obj),
         "sketch": sketch_summary(obj),
+        "techdraw": techdraw_summary(obj),
     }
 
 
@@ -1179,6 +1217,7 @@ def action_supported_formats(args):
     return {
         "import": [".FCStd", ".step", ".stp", ".iges", ".igs", ".brep", ".brp", ".stl", ".obj", ".ply", ".off"],
         "export": [".FCStd", ".step", ".stp", ".iges", ".igs", ".brep", ".brp", ".stl", ".obj", ".ply", ".off"],
+        "techdraw_page_export": [".dxf"],
         "notes": "Formats depend on the actual FreeCAD build and installed modules.",
     }
 
@@ -1371,6 +1410,108 @@ def action_assembly_bom(args):
     return {"rows": rows, "count": len(rows)}
 
 
+def action_techdraw_page_create(args):
+    doc = open_or_new(args)
+    page_name = args.get("page_name") or "Page"
+    template_name = args.get("template_name") or (page_name + "Template")
+    doc.openTransaction("MCP create TechDraw page")
+    try:
+        page = doc.addObject("TechDraw::DrawPage", page_name)
+        template = doc.addObject("TechDraw::DrawSVGTemplate", template_name)
+        if args.get("template_path"):
+            template.Template = args["template_path"]
+        page.Template = template
+        if args.get("scale") is not None:
+            page.Scale = float(args["scale"])
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "page": object_summary(page),
+        "template": object_summary(template),
+        "document": document_summary(doc),
+    }
+
+
+def action_techdraw_view_create(args):
+    doc = App.openDocument(args["document_path"])
+    page = get_object(doc, args["page_name"])
+    source_names = args.get("source_objects") or args.get("object_names") or []
+    if not source_names:
+        raise ValueError("source_objects must contain at least one object")
+    sources = [get_object(doc, name) for name in source_names]
+    view_name = args.get("view_name") or "View"
+    doc.openTransaction("MCP create TechDraw view")
+    try:
+        view = doc.addObject("TechDraw::DrawViewPart", view_name)
+        view.Source = sources
+        if args.get("direction") is not None:
+            view.Direction = vector(args["direction"])
+        if args.get("x_direction") is not None:
+            view.XDirection = vector(args["x_direction"])
+        if args.get("scale") is not None:
+            view.Scale = float(args["scale"])
+        if args.get("x") is not None:
+            view.X = float(args["x"])
+        if args.get("y") is not None:
+            view.Y = float(args["y"])
+        page.addView(view)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "page": object_summary(page),
+        "view": object_summary(view),
+        "document": document_summary(doc),
+    }
+
+
+def action_techdraw_inspect(args):
+    doc = App.openDocument(args["document_path"])
+    pages = [
+        obj
+        for obj in doc.Objects
+        if getattr(obj, "TypeId", "") == "TechDraw::DrawPage"
+        and (not args.get("page_name") or obj.Name == args.get("page_name") or obj.Label == args.get("page_name"))
+    ]
+    views = [obj for obj in doc.Objects if str(getattr(obj, "TypeId", "")).startswith("TechDraw::DrawView")]
+    return {
+        "pages": [object_summary(page) for page in pages],
+        "views": [object_summary(view) for view in views],
+        "page_count": len(pages),
+        "view_count": len(views),
+        "document": document_summary(doc),
+    }
+
+
+def action_techdraw_page_export(args):
+    import TechDraw
+
+    doc = App.openDocument(args["document_path"])
+    page = get_object(doc, args["page_name"])
+    output = safe_output_path(args["output_path"], args)
+    if os.path.exists(output) and not bool(args.get("overwrite", False)):
+        raise ValueError("output exists; pass overwrite=true: " + output)
+    export_format = (args.get("format") or os.path.splitext(output)[1].lstrip(".") or "dxf").lower()
+    if export_format != "dxf" or os.path.splitext(output)[1].lower() != ".dxf":
+        raise ValueError("headless TechDraw page export currently supports DXF output only")
+    TechDraw.writeDXFPage(page, output)
+    return {
+        "exported_path": output,
+        "format": "dxf",
+        "page": object_summary(page),
+        "bytes": os.path.getsize(output) if os.path.exists(output) else 0,
+    }
+
+
 DISPATCH = {
     "document_new": action_document_new,
     "document_open": action_document_open,
@@ -1410,6 +1551,10 @@ DISPATCH = {
     "assembly_create_joint": action_assembly_create_joint,
     "assembly_solve": action_assembly_solve,
     "assembly_bom": action_assembly_bom,
+    "techdraw_page_create": action_techdraw_page_create,
+    "techdraw_view_create": action_techdraw_view_create,
+    "techdraw_inspect": action_techdraw_inspect,
+    "techdraw_page_export": action_techdraw_page_export,
 }
 
 
@@ -1526,6 +1671,10 @@ class CadToolService:
             self._tool("freecad_assembly_create_joint", "Create Assembly Joint", "Create a native Assembly JointObject proxy under an assembly joint group.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}, "joint_type": {"type": "string", "enum": ["Fixed", "Revolute", "Cylindrical", "Slider", "Ball", "Distance", "Parallel", "Perpendicular", "Angle", "RackPinion", "Screw", "Gears", "Belt"]}, "joint_name": {"type": "string"}, "references": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "assembly_name"], "assembly_create_joint"),
             self._tool("freecad_assembly_solve", "Solve Assembly", "Recompute an assembly document.", {"document_path": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "assembly_solve"),
             self._tool("freecad_assembly_bom", "Assembly BOM", "Return a simple assembly bill of materials.", {"document_path": {"type": "string"}, "assembly_name": {"type": "string"}}, ["document_path"], "assembly_bom"),
+            self._tool("freecad_techdraw_page_create", "Create TechDraw Page", "Create a headless TechDraw page with an optional SVG template.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "page_name": {"type": "string"}, "template_name": {"type": "string"}, "template_path": {"type": "string"}, "scale": {"type": "number"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, [], "techdraw_page_create"),
+            self._tool("freecad_techdraw_view_create", "Create TechDraw Part View", "Create a TechDraw DrawViewPart on a page from source document objects.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}, "source_objects": {"type": "array", "items": {"type": "string"}}, "view_name": {"type": "string"}, "direction": {"type": "array", "items": {"type": "number"}}, "x_direction": {"type": "array", "items": {"type": "number"}}, "scale": {"type": "number"}, "x": {"type": "number"}, "y": {"type": "number"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "page_name", "source_objects"], "techdraw_view_create"),
+            self._tool("freecad_techdraw_inspect", "Inspect TechDraw", "Inspect TechDraw pages and views in a document.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}}, ["document_path"], "techdraw_inspect"),
+            self._tool("freecad_techdraw_page_export", "Export TechDraw Page", "Export a TechDraw page through headless TechDraw APIs. DXF is currently supported.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}, "output_path": {"type": "string"}, "format": {"type": "string", "enum": ["dxf"]}, "overwrite": {"type": "boolean"}}, ["document_path", "page_name", "output_path"], "techdraw_page_export"),
         ]
 
     def definition_map(self) -> dict[str, ToolDefinition]:

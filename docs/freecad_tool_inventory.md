@@ -20,6 +20,7 @@
 | P1 | `freecad.sketcher` | `freecad_sketch_create`, `freecad_sketch_add_geometry`, `freecad_sketch_add_constraint`, `freecad_sketch_add_profile`, `freecad_sketch_edit_geometry`, `freecad_sketch_edit_constraints`, `freecad_sketch_transform`, `freecad_sketch_auto_constrain`, `freecad_sketch_validate` | Sketcher module exposes 101 scanned commands. |
 | P2 | `freecad.mesh` | `freecad_mesh_import`, `freecad_mesh_export`, `freecad_mesh_evaluate`, `freecad_mesh_repair`, `freecad_mesh_boolean` | Mesh and MeshPart modules expose 43 scanned commands. |
 | P2 | `freecad.assembly` | `freecad_assembly_create`, `freecad_assembly_insert`, `freecad_assembly_create_joint`, `freecad_assembly_solve`, `freecad_assembly_bom` | Assembly module exposes 31 scanned commands. |
+| P2 | `freecad.techdraw` | `freecad_techdraw_page_create`, `freecad_techdraw_view_create`, `freecad_techdraw_inspect`, `freecad_techdraw_page_export` | TechDraw module exposes 127 scanned commands and headless App APIs for DrawPage/DrawViewPart/DXF export. |
 | P2 | `freecad.import_export` | `freecad_import_file`, `freecad_export_file`, `freecad_supported_formats` | Import/export commands are distributed across Part, Mesh, TechDraw, Spreadsheet, and Import modules. |
 
 ## Workbench Command Counts

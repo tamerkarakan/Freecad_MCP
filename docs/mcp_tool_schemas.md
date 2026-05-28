@@ -4100,6 +4100,244 @@ Return a simple assembly bill of materials.
 }
 ```
 
+## `freecad_techdraw_page_create`
+
+Create a headless TechDraw page with an optional SVG template.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "page_name": {
+      "type": "string"
+    },
+    "template_name": {
+      "type": "string"
+    },
+    "template_path": {
+      "type": "string"
+    },
+    "scale": {
+      "type": "number"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  }
+}
+```
+
+## `freecad_techdraw_view_create`
+
+Create a TechDraw DrawViewPart on a page from source document objects.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "page_name": {
+      "type": "string"
+    },
+    "source_objects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "view_name": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "x_direction": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "scale": {
+      "type": "number"
+    },
+    "x": {
+      "type": "number"
+    },
+    "y": {
+      "type": "number"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "page_name",
+    "source_objects"
+  ]
+}
+```
+
+## `freecad_techdraw_inspect`
+
+Inspect TechDraw pages and views in a document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "page_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_techdraw_page_export`
+
+Export a TechDraw page through headless TechDraw APIs. DXF is currently supported.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "page_name": {
+      "type": "string"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "dxf"
+      ]
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "page_name",
+    "output_path"
+  ]
+}
+```
+
 ## `freecad_gui_attach`
 
 Attach to an already-running FreeCAD GUI loopback bridge.

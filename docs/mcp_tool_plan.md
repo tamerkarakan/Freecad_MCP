@@ -73,6 +73,10 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_assembly_create_joint` | Create fixed/revolute/slider/etc. joints. | Assembly joint commands |
 | `freecad_assembly_solve` | Solve active assembly. | `Assembly_SolveAssembly` |
 | `freecad_assembly_bom` | Generate bill of materials. | `Assembly_CreateBom` |
+| `freecad_techdraw_page_create` | Create a TechDraw page and optional SVG template. | `TechDraw::DrawPage`, `TechDraw::DrawSVGTemplate` |
+| `freecad_techdraw_view_create` | Create a TechDraw part view from document source objects. | `TechDraw::DrawViewPart`, `DrawPage.addView` |
+| `freecad_techdraw_inspect` | Inspect TechDraw pages, views, and source object links. | TechDraw App object graph |
+| `freecad_techdraw_page_export` | Export a TechDraw page as DXF in headless mode. | `TechDraw.writeDXFPage` |
 | `freecad_import_file` | Import CAD file into active document. | Import/Part/Mesh commands |
 | `freecad_export_file` | Export selected/all objects. | Import/Part/Mesh commands |
 | `freecad_supported_formats` | Report detected import/export formats. | Source/runtime registry |

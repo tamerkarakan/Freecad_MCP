@@ -50,6 +50,8 @@
 - GUI attach client/server slice is implemented: `scripts/freecad_gui_bridge_server.py` runs inside FreeCAD GUI, while MCP tools expose attach/list/detach/status, active document/view reads, selection/preselection reads, selection set, and view fit.
 - Opt-in GUI attach smoke exists at `scripts/smoke_gui_attach.py`; it launches FreeCAD GUI, starts the bridge with a token, selects two `Face1` records, reads them through `freecad_gui_selection_get`, calls view fit, closes the GUI process, and creates a Fixed Assembly joint with populated `Reference1`/`Reference2`. Last local run passed with report under `runs/gui-smoke/`.
 - Workbench-hosted bridge mode exists at `freecad_workbench/FreeCADMCP/InitGui.py`; it registers a **FreeCAD MCP** workbench with start/stop/status commands and optional `FREECAD_MCP_AUTOSTART=1` hosting. Setup notes are in `docs/WORKBENCH_BRIDGE.md`.
+- TechDraw/CAM/FEM design review is captured in `docs/TECHDRAW_CAM_FEM_PLAN.md`; TechDraw first typed slice is implemented for page/template creation, part views, inspection, and headless DXF export.
+- Bundled Python runtime does not include the `mcp` package, so the MCP SDK adapter item remains deferred while the minimal local JSON-RPC dispatcher stays active.
 
 ## Next Session Checklist
 
@@ -59,5 +61,5 @@
 4. Re-run a Sketcher profile smoke if extrude behavior changes again.
 5. Run unit tests for `runtime_bridge` and `mcp_stdio` when touching transport/serialization code.
 6. Run persistent worker smoke when touching session lifecycle or worker tools.
-7. Use `docs/GUI_ATTACH_PLAN.md` and `docs/WORKBENCH_BRIDGE.md` before extending GUI selection/view or Workbench-hosted bridge tools.
+7. Use `docs/GUI_ATTACH_PLAN.md`, `docs/WORKBENCH_BRIDGE.md`, and `docs/TECHDRAW_CAM_FEM_PLAN.md` before extending GUI/Workbench/TechDraw/CAM/FEM tools.
 8. Push only after verification passes.

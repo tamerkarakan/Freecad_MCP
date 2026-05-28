@@ -189,6 +189,13 @@ class McpServer:
                     "mimeType": "text/markdown",
                 },
                 {
+                    "uri": "freecad://docs/techdraw-cam-fem-plan",
+                    "name": "techdraw_cam_fem_plan",
+                    "title": "TechDraw CAM FEM Plan",
+                    "description": "Source-backed typed-wrapper plan for TechDraw, CAM, and FEM.",
+                    "mimeType": "text/markdown",
+                },
+                {
                     "uri": "freecad://schemas/tools",
                     "name": "tool_schemas",
                     "title": "MCP Tool Schemas",
@@ -315,6 +322,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
         "freecad://docs/workbench-bridge": repo_root / "docs" / "WORKBENCH_BRIDGE.md",
+        "freecad://docs/techdraw-cam-fem-plan": repo_root / "docs" / "TECHDRAW_CAM_FEM_PLAN.md",
         "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",
     }
     if uri in mapping:

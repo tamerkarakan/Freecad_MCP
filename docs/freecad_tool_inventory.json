@@ -398,6 +398,17 @@
       "evidence": "Assembly module exposes 31 scanned commands."
     },
     {
+      "family": "freecad.techdraw",
+      "priority": "P2",
+      "tools": [
+        "freecad_techdraw_page_create",
+        "freecad_techdraw_view_create",
+        "freecad_techdraw_inspect",
+        "freecad_techdraw_page_export"
+      ],
+      "evidence": "TechDraw module exposes 127 scanned commands and headless App APIs for DrawPage/DrawViewPart/DXF export."
+    },
+    {
       "family": "freecad.import_export",
       "priority": "P2",
       "tools": [
