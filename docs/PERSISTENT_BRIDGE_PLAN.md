@@ -24,7 +24,7 @@ Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`.
 - Session lifecycle: start/list/status/close.
 - Document lifecycle: new/open/save/recompute/close.
 - Object basics: list/get/set properties/delete.
-- Part basics: primitive creation, boolean, extrude, revolve, and geometry check.
+- Part basics: primitive creation, boolean, direct/parametric extrude, revolve, and geometry check.
 - Sketcher coverage: create, add geometry/constraints/profiles, edit geometry/constraints, transform, auto-constrain, and validate.
 - Mesh coverage: import, export, evaluate, repair, and boolean operations where supported by the FreeCAD build.
 - Assembly coverage: create assembly containers, insert links, create native JointObject proxies, recompute, and BOM rows.

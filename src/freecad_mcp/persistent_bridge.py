@@ -60,6 +60,19 @@ def angle_radians(value, default=0.0):
     return float(value)
 
 
+def angle_degrees(value, default=0.0):
+    if value is None:
+        return float(default)
+    if isinstance(value, dict):
+        if "degrees" in value:
+            return float(value["degrees"])
+        if "radians" in value:
+            return math.degrees(float(value["radians"]))
+        if "value" in value:
+            return angle_degrees(value["value"], default)
+    return float(value)
+
+
 def sketch_arg(value):
     if isinstance(value, dict):
         if "quantity" in value:
@@ -303,6 +316,64 @@ def planar_face_from_closed_wires(shape):
         return None
 
 
+FEATURE_EXTRUDE_KEYS = {
+    "solid",
+    "symmetric",
+    "length_fwd",
+    "length_rev",
+    "taper_angle",
+    "taper_angle_rev",
+    "reversed",
+    "dir_mode",
+    "face_maker_mode",
+    "inner_wire_taper",
+}
+
+
+def uses_feature_extrude(params):
+    mode = params.get("extrude_mode", "auto")
+    if mode not in {"auto", "shape", "feature"}:
+        raise ValueError("unsupported extrude_mode: " + str(mode))
+    return mode == "feature" or any(key in params for key in FEATURE_EXTRUDE_KEYS)
+
+
+def action_part_extrude_feature(doc, source, params):
+    base_shape = source.Shape
+    auto_solid = planar_face_from_closed_wires(base_shape) is not None
+    result = doc.addObject("Part::Extrusion", params.get("result_name") or "Extrude")
+    result.Base = source
+    result.Dir = vector(params.get("vector"), [0, 0, 10])
+    if params.get("dir_mode") is not None:
+        result.DirMode = str(params["dir_mode"])
+    if params.get("length_fwd") is not None:
+        result.LengthFwd = float(params["length_fwd"])
+    if params.get("length_rev") is not None:
+        result.LengthRev = float(params["length_rev"])
+    result.Solid = bool(params["solid"]) if "solid" in params else auto_solid
+    if params.get("reversed") is not None:
+        result.Reversed = bool(params["reversed"])
+    if params.get("symmetric") is not None:
+        result.Symmetric = bool(params["symmetric"])
+    if params.get("taper_angle") is not None:
+        result.TaperAngle = angle_degrees(params["taper_angle"])
+    if params.get("taper_angle_rev") is not None:
+        result.TaperAngleRev = angle_degrees(params["taper_angle_rev"])
+    if params.get("face_maker_mode") is not None:
+        result.FaceMakerMode = str(params["face_maker_mode"])
+    if params.get("inner_wire_taper") is not None:
+        result.InnerWireTaper = str(params["inner_wire_taper"])
+    return result, {
+        "extrude_mode": "feature",
+        "solid": bool(result.Solid),
+        "symmetric": bool(result.Symmetric),
+        "dir_mode": str(result.DirMode),
+        "length_fwd": quantity_summary(result.LengthFwd),
+        "length_rev": quantity_summary(result.LengthRev),
+        "taper_angle": quantity_summary(result.TaperAngle),
+        "taper_angle_rev": quantity_summary(result.TaperAngleRev),
+    }
+
+
 def action_ping(params):
     return {"version": App.Version(), "document_count": len(App.listDocuments())}
 
@@ -463,22 +534,33 @@ def action_part_boolean(params):
 def action_part_extrude(params):
     doc = get_doc(params)
     source = get_object(doc, params.get("source_object") or "")
-    base_shape = source.Shape
-    face = planar_face_from_closed_wires(base_shape)
-    extrude_source = face if face is not None else base_shape
-    mode = "face_from_closed_wire" if face is not None else "shape"
-    shape = extrude_source.extrude(vector(params.get("vector"), [0, 0, 10]))
     doc.openTransaction("MCP worker part extrude")
     try:
-        result = doc.addObject("Part::Feature", params.get("result_name") or "Extrude")
-        result.Shape = shape
+        if uses_feature_extrude(params):
+            result, feature_parameters = action_part_extrude_feature(doc, source, params)
+            mode = "feature"
+        else:
+            base_shape = source.Shape
+            face = planar_face_from_closed_wires(base_shape)
+            extrude_source = face if face is not None else base_shape
+            mode = "face_from_closed_wire" if face is not None else "shape"
+            shape = extrude_source.extrude(vector(params.get("vector"), [0, 0, 10]))
+            result = doc.addObject("Part::Feature", params.get("result_name") or "Extrude")
+            result.Shape = shape
+            feature_parameters = None
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
         raise
     doc.recompute()
     saved = save_doc(doc, params)
-    return {"saved_path": saved, "mode": mode, "object": object_summary(result), "document": document_summary(doc)}
+    return {
+        "saved_path": saved,
+        "mode": mode,
+        "feature_parameters": feature_parameters,
+        "object": object_summary(result),
+        "document": document_summary(doc),
+    }
 
 
 def action_part_revolve(params):

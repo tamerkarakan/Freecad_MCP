@@ -61,7 +61,7 @@ Implemented groups:
 
 - Document lifecycle: new, open, save, recompute, export.
 - Object inspection and mutation: list, get, set simple properties, delete.
-- Part operations: create primitives, boolean, extrude, revolve, fillet, chamfer, check geometry.
+- Part operations: create primitives, boolean, direct or parametric extrude, revolve, fillet, chamfer, check geometry.
 - Sketcher typed coverage: create sketches; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; create/update constraints; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.

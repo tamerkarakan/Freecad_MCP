@@ -296,6 +296,65 @@ def main() -> int:
         if extrude["object"]["shape"]["solids"] != 1:
             raise RuntimeError(f"sketch extrude did not create a solid: {extrude}")
 
+        shell_extrude = assert_ok(
+            service.definition_map()["freecad_part_extrude"].handler(
+                {
+                    "document_path": str(sketch_doc),
+                    "source_object": "ProfileSketch",
+                    "vector": [0, 0, 2],
+                    "extrude_mode": "feature",
+                    "solid": False,
+                    "result_name": "ProfileShellExtrude",
+                    "output_path": str(sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "part_extrude feature shell",
+        )
+        if shell_extrude["mode"] != "feature" or shell_extrude["object"]["shape"]["solids"] != 0:
+            raise RuntimeError(f"feature shell extrude did not stay shell-only: {shell_extrude}")
+
+        symmetric_extrude = assert_ok(
+            service.definition_map()["freecad_part_extrude"].handler(
+                {
+                    "document_path": str(sketch_doc),
+                    "source_object": "ProfileSketch",
+                    "vector": [0, 0, 1],
+                    "extrude_mode": "feature",
+                    "solid": True,
+                    "symmetric": True,
+                    "length_fwd": 6,
+                    "result_name": "ProfileSymmetricExtrude",
+                    "output_path": str(sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "part_extrude feature symmetric",
+        )
+        sym_box = symmetric_extrude["object"]["shape"]["bound_box"]
+        if symmetric_extrude["object"]["shape"]["solids"] != 1 or [sym_box["zmin"], sym_box["zmax"]] != [-3.0, 3.0]:
+            raise RuntimeError(f"feature symmetric extrude mismatch: {symmetric_extrude}")
+
+        taper_extrude = assert_ok(
+            service.definition_map()["freecad_part_extrude"].handler(
+                {
+                    "document_path": str(sketch_doc),
+                    "source_object": "ProfileSketch",
+                    "vector": [0, 0, 1],
+                    "extrude_mode": "feature",
+                    "solid": True,
+                    "length_fwd": 5,
+                    "taper_angle": 5,
+                    "result_name": "ProfileTaperExtrude",
+                    "output_path": str(sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "part_extrude feature taper",
+        )
+        if taper_extrude["object"]["shape"]["solids"] != 1 or not taper_extrude["object"]["shape"]["valid"]:
+            raise RuntimeError(f"feature taper extrude invalid: {taper_extrude}")
+
         open_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {

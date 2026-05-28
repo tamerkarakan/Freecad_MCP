@@ -41,7 +41,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_command_run` | Run a named FreeCAD GUI command when a typed wrapper is missing. | Command registry |
 | `freecad_part_create_primitive` | Create box, cylinder, sphere, cone, torus. | `Part_*` command/API surface |
 | `freecad_part_boolean` | Fuse/cut/common selected Part shapes. | Part workbench commands |
-| `freecad_part_extrude` | Extrude selected profile/face. | Part workbench commands |
+| `freecad_part_extrude` | Extrude selected profile/face with direct shape mode or opt-in parametric `Part::Extrusion` options. | Part workbench commands |
 | `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |

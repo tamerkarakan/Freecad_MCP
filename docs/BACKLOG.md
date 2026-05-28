@@ -2,11 +2,10 @@
 
 ## Now
 
-- Add an explicit typed option for advanced extrude modes such as shell-only, solid, taper, and symmetric extrusion.
+- Add document/object fixtures for more complex real-world FreeCAD files.
 
 ## Next
 
-- Add document/object fixtures for more complex real-world FreeCAD files.
 - Add focused Sketcher fixtures for `Group` and `Text` constraints before exposing high-level wrappers.
 - Implement GUI attach bridge tools from `docs/GUI_ATTACH_PLAN.md`.
 - Add connector-reference smoke coverage for Assembly joints once stable example documents exist.

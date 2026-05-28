@@ -683,6 +683,60 @@
               "type": "number"
             }
           },
+          "extrude_mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "shape",
+              "feature"
+            ]
+          },
+          "solid": {
+            "type": "boolean"
+          },
+          "symmetric": {
+            "type": "boolean"
+          },
+          "length_fwd": {
+            "type": "number"
+          },
+          "length_rev": {
+            "type": "number"
+          },
+          "taper_angle": {
+            "type": "number",
+            "description": "Forward taper angle in degrees."
+          },
+          "taper_angle_rev": {
+            "type": "number",
+            "description": "Reverse taper angle in degrees."
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "dir_mode": {
+            "type": "string",
+            "enum": [
+              "Custom",
+              "Normal"
+            ]
+          },
+          "face_maker_mode": {
+            "type": "string",
+            "enum": [
+              "Simple",
+              "Cheese",
+              "Extrusion",
+              "Bullseye"
+            ]
+          },
+          "inner_wire_taper": {
+            "type": "string",
+            "enum": [
+              "Inverted",
+              "SameAsOuter"
+            ]
+          },
           "result_name": {
             "type": "string"
           },
@@ -2381,6 +2435,60 @@
             "items": {
               "type": "number"
             }
+          },
+          "extrude_mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "shape",
+              "feature"
+            ]
+          },
+          "solid": {
+            "type": "boolean"
+          },
+          "symmetric": {
+            "type": "boolean"
+          },
+          "length_fwd": {
+            "type": "number"
+          },
+          "length_rev": {
+            "type": "number"
+          },
+          "taper_angle": {
+            "type": "number",
+            "description": "Forward taper angle in degrees."
+          },
+          "taper_angle_rev": {
+            "type": "number",
+            "description": "Reverse taper angle in degrees."
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "dir_mode": {
+            "type": "string",
+            "enum": [
+              "Custom",
+              "Normal"
+            ]
+          },
+          "face_maker_mode": {
+            "type": "string",
+            "enum": [
+              "Simple",
+              "Cheese",
+              "Extrusion",
+              "Bullseye"
+            ]
+          },
+          "inner_wire_taper": {
+            "type": "string",
+            "enum": [
+              "Inverted",
+              "SameAsOuter"
+            ]
           },
           "result_name": {
             "type": "string"

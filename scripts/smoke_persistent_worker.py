@@ -113,6 +113,23 @@ def main() -> int:
             if sketch_extrude["mode"] != "face_from_closed_wire" or sketch_extrude["object"]["shape"]["solids"] != 1:
                 raise RuntimeError(f"worker sketch extrude is not a solid: {sketch_extrude}")
 
+            sketch_shell = worker_result(
+                service.definition_map()["freecad_worker_part_extrude"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "source_object": "WorkerSketch",
+                        "vector": [0, 0, 2],
+                        "extrude_mode": "feature",
+                        "solid": False,
+                        "result_name": "WorkerSketchShell",
+                    }
+                ),
+                "worker_sketch_part_shell_extrude",
+            )
+            if sketch_shell["mode"] != "feature" or sketch_shell["object"]["shape"]["solids"] != 0:
+                raise RuntimeError(f"worker feature shell extrude did not stay shell-only: {sketch_shell}")
+
             line = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
                     {

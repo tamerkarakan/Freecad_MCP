@@ -74,6 +74,19 @@ def angle_radians(value, default=0.0):
     return float(value)
 
 
+def angle_degrees(value, default=0.0):
+    if value is None:
+        return float(default)
+    if isinstance(value, dict):
+        if "degrees" in value:
+            return float(value["degrees"])
+        if "radians" in value:
+            return math.degrees(float(value["radians"]))
+        if "value" in value:
+            return angle_degrees(value["value"], default)
+    return float(value)
+
+
 def sketch_arg(value):
     if isinstance(value, dict):
         if "quantity" in value:
@@ -460,21 +473,94 @@ def planar_face_from_closed_wires(shape):
         return None
 
 
+FEATURE_EXTRUDE_KEYS = {
+    "solid",
+    "symmetric",
+    "length_fwd",
+    "length_rev",
+    "taper_angle",
+    "taper_angle_rev",
+    "reversed",
+    "dir_mode",
+    "face_maker_mode",
+    "inner_wire_taper",
+}
+
+
+def uses_feature_extrude(args):
+    mode = args.get("extrude_mode", "auto")
+    if mode not in {"auto", "shape", "feature"}:
+        raise ValueError("unsupported extrude_mode: " + str(mode))
+    return mode == "feature" or any(key in args for key in FEATURE_EXTRUDE_KEYS)
+
+
+def action_part_extrude_feature(doc, source, args):
+    base_shape = source.Shape
+    auto_solid = planar_face_from_closed_wires(base_shape) is not None
+    result = doc.addObject("Part::Extrusion", args.get("result_name") or "Extrude")
+    result.Base = source
+    result.Dir = vector(args.get("vector"), [0, 0, 10])
+    if args.get("dir_mode") is not None:
+        result.DirMode = str(args["dir_mode"])
+    if args.get("length_fwd") is not None:
+        result.LengthFwd = float(args["length_fwd"])
+    if args.get("length_rev") is not None:
+        result.LengthRev = float(args["length_rev"])
+    result.Solid = bool(args["solid"]) if "solid" in args else auto_solid
+    if args.get("reversed") is not None:
+        result.Reversed = bool(args["reversed"])
+    if args.get("symmetric") is not None:
+        result.Symmetric = bool(args["symmetric"])
+    if args.get("taper_angle") is not None:
+        result.TaperAngle = angle_degrees(args["taper_angle"])
+    if args.get("taper_angle_rev") is not None:
+        result.TaperAngleRev = angle_degrees(args["taper_angle_rev"])
+    if args.get("face_maker_mode") is not None:
+        result.FaceMakerMode = str(args["face_maker_mode"])
+    if args.get("inner_wire_taper") is not None:
+        result.InnerWireTaper = str(args["inner_wire_taper"])
+    return result, {
+        "extrude_mode": "feature",
+        "solid": bool(result.Solid),
+        "symmetric": bool(result.Symmetric),
+        "dir_mode": str(result.DirMode),
+        "length_fwd": quantity_summary(result.LengthFwd),
+        "length_rev": quantity_summary(result.LengthRev),
+        "taper_angle": quantity_summary(result.TaperAngle),
+        "taper_angle_rev": quantity_summary(result.TaperAngleRev),
+    }
+
+
 def action_part_extrude(args):
     doc = App.openDocument(args["document_path"])
     source = get_object(doc, args["source_object"])
-    base_shape = source.Shape
-    face = planar_face_from_closed_wires(base_shape)
-    extrude_source = face if face is not None else base_shape
-    mode = "face_from_closed_wire" if face is not None else "shape"
-    shape = extrude_source.extrude(vector(args.get("vector"), [0, 0, 10]))
     doc.openTransaction("MCP part extrude")
-    result = doc.addObject("Part::Feature", args.get("result_name") or "Extrude")
-    result.Shape = shape
-    doc.commitTransaction()
+    try:
+        if uses_feature_extrude(args):
+            result, feature_parameters = action_part_extrude_feature(doc, source, args)
+            mode = "feature"
+        else:
+            base_shape = source.Shape
+            face = planar_face_from_closed_wires(base_shape)
+            extrude_source = face if face is not None else base_shape
+            mode = "face_from_closed_wire" if face is not None else "shape"
+            shape = extrude_source.extrude(vector(args.get("vector"), [0, 0, 10]))
+            result = doc.addObject("Part::Feature", args.get("result_name") or "Extrude")
+            result.Shape = shape
+            feature_parameters = None
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
     doc.recompute()
     saved = save_if_requested(doc, args)
-    return {"saved_path": saved, "mode": mode, "object": object_summary(result), "document": document_summary(doc)}
+    return {
+        "saved_path": saved,
+        "mode": mode,
+        "feature_parameters": feature_parameters,
+        "object": object_summary(result),
+        "document": document_summary(doc),
+    }
 
 
 def action_part_revolve(args):
@@ -1355,7 +1441,7 @@ class CadToolService:
             self._tool("freecad_object_delete", "Delete FreeCAD Objects", "Delete object(s) by name/label.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "object_delete"),
             self._tool("freecad_part_create_primitive", "Create Part Primitive", "Create a Part primitive.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "primitive": {"type": "string", "enum": ["box", "cylinder", "sphere", "cone", "torus"]}, "object_name": {"type": "string"}, "properties": {"type": "object"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, [], "part_create_primitive"),
             self._tool("freecad_part_boolean", "Part Boolean", "Fuse/cut/common Part shapes.", {"document_path": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "operation": {"type": "string", "enum": ["fuse", "cut", "common"]}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "object_names"], "part_boolean"),
-            self._tool("freecad_part_extrude", "Part Extrude", "Extrude a source shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "vector": {"type": "array", "items": {"type": "number"}}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object"], "part_extrude"),
+            self._tool("freecad_part_extrude", "Part Extrude", "Extrude a source shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "vector": {"type": "array", "items": {"type": "number"}}, "extrude_mode": {"type": "string", "enum": ["auto", "shape", "feature"]}, "solid": {"type": "boolean"}, "symmetric": {"type": "boolean"}, "length_fwd": {"type": "number"}, "length_rev": {"type": "number"}, "taper_angle": {"type": "number", "description": "Forward taper angle in degrees."}, "taper_angle_rev": {"type": "number", "description": "Reverse taper angle in degrees."}, "reversed": {"type": "boolean"}, "dir_mode": {"type": "string", "enum": ["Custom", "Normal"]}, "face_maker_mode": {"type": "string", "enum": ["Simple", "Cheese", "Extrusion", "Bullseye"]}, "inner_wire_taper": {"type": "string", "enum": ["Inverted", "SameAsOuter"]}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object"], "part_extrude"),
             self._tool("freecad_part_revolve", "Part Revolve", "Revolve a source shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "base": {"type": "array", "items": {"type": "number"}}, "axis": {"type": "array", "items": {"type": "number"}}, "angle": {"type": "number"}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object"], "part_revolve"),
             self._tool("freecad_part_fillet", "Part Fillet", "Create a filleted copy of a shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "radius": {"type": "number"}, "edge_indices": {"type": "array", "items": {"type": "integer"}}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object", "radius"], "part_fillet"),
             self._tool("freecad_part_chamfer", "Part Chamfer", "Create a chamfered copy of a shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "distance": {"type": "number"}, "edge_indices": {"type": "array", "items": {"type": "integer"}}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object", "distance"], "part_chamfer"),
