@@ -10,6 +10,7 @@ from typing import Any, TextIO
 
 from freecad_mcp import __version__
 from freecad_mcp.cad_tools import CadToolService
+from freecad_mcp.gui_tools import GuiToolService
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
@@ -120,7 +121,8 @@ class McpServer:
             },
             "instructions": (
                 "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
-                "typed process-per-call CAD operations, and persistent FreeCADCmd worker sessions."
+                "typed process-per-call CAD operations, persistent FreeCADCmd worker sessions, "
+                "and opt-in FreeCAD GUI attach tools."
             ),
         }
 
@@ -385,6 +387,7 @@ def build_server(repo_root: Path | None = None) -> McpServer:
         RuntimeToolService(),
         PersistentToolService(workspace_root=root),
         CadToolService(),
+        GuiToolService(),
     )
     return McpServer(tools)
 

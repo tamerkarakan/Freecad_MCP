@@ -4099,3 +4099,256 @@ Return a simple assembly bill of materials.
   ]
 }
 ```
+
+## `freecad_gui_attach`
+
+Attach to an already-running FreeCAD GUI loopback bridge.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "url": {
+      "type": "string",
+      "default": "http://127.0.0.1:48777"
+    },
+    "token": {
+      "type": "string"
+    },
+    "probe": {
+      "type": "boolean",
+      "description": "Probe bridge status before storing the session."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  }
+}
+```
+
+## `freecad_gui_list`
+
+List GUI bridge sessions held by this MCP server process.
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+## `freecad_gui_detach`
+
+Forget a GUI bridge session without closing FreeCAD GUI.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_status`
+
+Report GUI bridge health, active document, and active view.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_active_document_get`
+
+Return the active GUI document summary.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_active_view_get`
+
+Return active view metadata and camera text when available.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_selection_get`
+
+Return normalized GUI selection records with object and subelement references.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string",
+      "description": "Document name, omitted for active document or '*' for all documents."
+    },
+    "resolve": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_preselection_get`
+
+Return current hover/preselection record when available.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_selection_set`
+
+Set GUI selection from normalized document/object/subelement references.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "clear": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id",
+    "records"
+  ]
+}
+```
+
+## `freecad_gui_view_fit`
+
+Fit all or selected objects in the active GUI view.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "selection_only": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```

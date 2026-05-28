@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from freecad_mcp.cad_tools import CadToolService
+from freecad_mcp.gui_tools import GuiToolService
 from freecad_mcp.mcp_stdio import CompositeToolService
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
@@ -18,6 +19,7 @@ class ToolSchemaTests(unittest.TestCase):
             RuntimeToolService(),
             PersistentToolService(workspace_root=root),
             CadToolService(),
+            GuiToolService(),
         )
 
         tools = [definition.to_mcp() for definition in service.definitions()]
@@ -65,6 +67,23 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_object_get",
             "freecad_worker_object_set_properties",
             "freecad_worker_object_delete",
+        ]:
+            self.assertIn(name, tools)
+
+    def test_gui_attach_tools_are_exposed(self) -> None:
+        tools = GuiToolService().definition_map()
+
+        for name in [
+            "freecad_gui_attach",
+            "freecad_gui_list",
+            "freecad_gui_detach",
+            "freecad_gui_status",
+            "freecad_gui_active_document_get",
+            "freecad_gui_active_view_get",
+            "freecad_gui_selection_get",
+            "freecad_gui_preselection_get",
+            "freecad_gui_selection_set",
+            "freecad_gui_view_fit",
         ]:
             self.assertIn(name, tools)
 

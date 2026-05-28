@@ -293,6 +293,23 @@
       "evidence": "Hybrid server needs a live FreeCAD Python bridge for stateful operations."
     },
     {
+      "family": "freecad.gui",
+      "priority": "P0",
+      "tools": [
+        "freecad_gui_attach",
+        "freecad_gui_list",
+        "freecad_gui_detach",
+        "freecad_gui_status",
+        "freecad_gui_active_document_get",
+        "freecad_gui_active_view_get",
+        "freecad_gui_selection_get",
+        "freecad_gui_preselection_get",
+        "freecad_gui_selection_set",
+        "freecad_gui_view_fit"
+      ],
+      "evidence": "GUI attach mode is required for active view, preselection, picked points, and selected edge/face state."
+    },
+    {
       "family": "freecad.document",
       "priority": "P0",
       "tools": [

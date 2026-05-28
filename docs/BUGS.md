@@ -2,7 +2,7 @@
 
 ## Open
 
-- GUI selection, active view, and selected edge/face state are not exposed yet; `docs/GUI_ATTACH_PLAN.md` defines the planned bridge contract.
+- GUI attach tools now expose active document/view and selection/preselection through a local bridge, but live FreeCAD GUI smoke and Workbench-hosted startup are still pending.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
 - Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.
@@ -13,6 +13,7 @@
 - C++ parsing is regex-based and should be replaced or reinforced if source patterns become more complex.
 - Server uses a minimal local JSON-RPC implementation because the Python MCP SDK is not installed in the bundled runtime.
 - `freecad_python_exec` is a low-level escape hatch and requires explicit unsafe opt-in.
+- `scripts/freecad_gui_bridge_server.py` is an opt-in local script, not a signed FreeCAD Workbench yet; run it only from the local repo path and prefer a bearer token for attached GUI sessions.
 - Even with response truncation, some Windows MCP clients may still report `Transport closed` under extreme runtime output/IO conditions; continue validating in long smoke sessions.
 - `freecad_part_extrude` currently supports wire/face-like profiles; directly extruding an existing solid shape can return the FreeCAD OCC error `Solids are not Processed`.
 

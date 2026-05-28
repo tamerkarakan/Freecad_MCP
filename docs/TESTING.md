@@ -21,12 +21,16 @@ Current checks:
 - Unit guard for stdio EOF shutdown cleanup (`test_mcp_stdio.py`).
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
 - Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).
+- Static MCP smoke guard for GUI attach tool schemas (`freecad_gui_attach`, `freecad_gui_selection_get`).
 - Static MCP resource coverage includes architecture, session state, testing, Sketcher capabilities, GUI attach planning, schemas, and inventory summary.
 - Unit guard for structured launch errors, runtime output truncation, compact execution metadata, and long-code temp-script execution (`test_runtime_bridge.py`).
 - Unit guard for persistent worker request/response framing, structured worker errors, long worker temp-script lifecycle, cross-field input validation, session cleanup, and unknown-session errors (`test_persistent_bridge.py`).
+- Unit guard for GUI bridge attach/call/detach/error handling against a fake local HTTP bridge (`test_gui_bridge.py`).
 
 Expected future checks:
 
 - MCP tool schema tests.
 - Real imported third-party fixture files once small license-clean samples are chosen.
-- Persistent bridge integration tests once GUI/workbench bridge mode exists.
+- Live FreeCAD GUI attach smoke for selected face/edge records and picked points.
+- Assembly connector-reference smoke using GUI selection records.
+- Workbench bridge integration tests once Workbench-hosted mode exists.

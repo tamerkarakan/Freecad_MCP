@@ -72,6 +72,18 @@ Available persistent worker tools:
 - `freecad_worker_assembly_create/insert/create_joint/solve/bom`
 - `freecad_worker_object_list/get/set_properties/delete`
 
+Available GUI attach tools:
+
+- `freecad_gui_attach/list/detach/status`
+- `freecad_gui_active_document_get`
+- `freecad_gui_active_view_get`
+- `freecad_gui_selection_get`
+- `freecad_gui_preselection_get`
+- `freecad_gui_selection_set`
+- `freecad_gui_view_fit`
+
+GUI attach is opt-in. Start `scripts/freecad_gui_bridge_server.py` inside a running FreeCAD GUI Python console, then call `freecad_gui_attach` with the local bridge URL and optional token. This mode is for live active document/view/selection state; typed CAD tools remain the primary way to mutate geometry.
+
 Typed CAD tool groups are also available:
 
 - document: new/open/save/recompute/export

@@ -107,6 +107,8 @@ def main() -> int:
     assert "freecad_session_status" in tool_names
     assert "freecad_session_start" in tool_names
     assert "freecad_worker_document_new" in tool_names
+    assert "freecad_gui_attach" in tool_names
+    assert "freecad_gui_selection_get" in tool_names
     assert "freecad_python_exec" in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]

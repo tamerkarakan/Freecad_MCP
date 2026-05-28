@@ -15,9 +15,12 @@ The server is hybrid in two ways:
 | `freecad_mcp.runtime_tools` | Phase 2 runtime MCP tools. |
 | `freecad_mcp.persistent_bridge` | Long-lived FreeCADCmd worker process lifecycle and JSON request bridge. |
 | `freecad_mcp.persistent_tools` | Persistent worker MCP session/document/object/Part/Sketcher/mesh/assembly tools. |
+| `freecad_mcp.gui_bridge` | Client-side session manager for an opt-in FreeCAD GUI loopback bridge. |
+| `freecad_mcp.gui_tools` | MCP tools for attaching to FreeCAD GUI and reading active document, active view, selection, and preselection state. |
 | `freecad_mcp.cad_tools` | Typed document/object/Part/Sketcher/import-export/mesh/assembly tools. |
 | `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
 | `server.py` | MCP stdio entrypoint. |
+| `scripts/freecad_gui_bridge_server.py` | Local JSON bridge script to execute inside FreeCAD GUI. It marshals RPC handlers onto the Qt GUI thread when PySide is available. |
 | `bridge/` | Future FreeCAD runtime process/session bridge. |
 | `policy/` | Future transaction, recompute, geometry-check, and result-shaping rules. |
 | `docs/` | Architecture, backlog, bugs, testing, and session continuity. |
@@ -54,6 +57,17 @@ The server also exposes a long-lived `freecadcmd-worker` mode. It starts a `Free
 | Sketcher basics and advanced operations | Worker create/add geometry/add constraints/add profiles/edit geometry/edit constraints/transform/auto-constrain/validate |
 | Mesh basics | Worker import/export/evaluate/repair/boolean |
 | Assembly basics | Worker create/insert/native joint proxy/recompute/BOM |
+
+## GUI Attach Tools
+
+The server exposes `freecad-gui-attach` mode for live GUI state. The MCP client does not start FreeCAD GUI; a user or future Workbench starts `scripts/freecad_gui_bridge_server.py` inside FreeCAD GUI, then MCP tools connect to the local loopback bridge.
+
+| Tool group | Status |
+| --- | --- |
+| Bridge lifecycle | `freecad_gui_attach`, `freecad_gui_list`, `freecad_gui_detach`, `freecad_gui_status` |
+| Active GUI state | `freecad_gui_active_document_get`, `freecad_gui_active_view_get` |
+| Selection state | `freecad_gui_selection_get`, `freecad_gui_preselection_get`, `freecad_gui_selection_set` |
+| View action | `freecad_gui_view_fit` |
 
 ## Typed CAD Tools
 

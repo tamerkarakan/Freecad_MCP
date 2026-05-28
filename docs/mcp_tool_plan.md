@@ -21,6 +21,9 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
 | `freecad_worker_object_list/get/set_properties/delete` | Inspect and mutate in-memory worker document objects. | FreeCAD process |
+| `freecad_gui_attach/list/detach/status` | Attach to a running FreeCAD GUI loopback bridge and manage GUI bridge sessions. | FreeCAD GUI bridge |
+| `freecad_gui_active_document_get/active_view_get` | Read the active GUI document and active view/camera snapshot. | FreeCADGui API |
+| `freecad_gui_selection_get/preselection_get/selection_set/view_fit` | Read or set GUI selection/preselection records and fit the active view. | FreeCADGui Selection/View API |
 | `freecad_python_exec` | Execute controlled Python snippets for diagnostics, with optional compact execution metadata. | FreeCAD process |
 | `freecad_document_new` | Create a new FreeCAD document. | FreeCAD API |
 | `freecad_document_open` | Open `.FCStd` or importable CAD file. | FreeCAD API |
@@ -80,4 +83,4 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 - `freecad_command_run` is an escape hatch, not the primary interface.
 - Every mutating runtime tool should return a structured document/object diff.
 - Source tools can work without FreeCAD installed; runtime tools require a configured FreeCAD executable.
-- The next implementation step is the MCP scaffold plus a local FreeCAD bridge process.
+- GUI attach is opt-in and requires `scripts/freecad_gui_bridge_server.py` or a future Workbench-hosted bridge inside FreeCAD GUI.

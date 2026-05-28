@@ -11,23 +11,28 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 | Active GUI document | `src/Gui/ApplicationPy.cpp:344`, `src/Gui/ApplicationPy.cpp:592` expose `FreeCADGui.activeDocument()` and require the Python main thread. |
 | Active GUI view | `src/Gui/ApplicationPy.cpp:358`, `src/Gui/ApplicationPy.cpp:609` expose `FreeCADGui.activeView(typeName)` and require the Python main thread. |
 | Selection list with subelements | `src/Gui/Selection/Selection.cpp:2588` exposes `Gui.Selection.getSelectionEx(...)` returning `SelectionObject` records with subelement names. |
+| Preselection record | `src/Gui/Selection/Selection.cpp:2527` and `src/Gui/Selection/Selection.cpp:3048` expose `Gui.Selection.getPreselection()` as a `SelectionObject`. |
 | Selection object fields | `src/Gui/Selection/SelectionObjectPyImp.cpp:75` through `:165` expose object name, document name, subelement names, resolved subobjects, and picked points. |
 | Assembly connector selection shape | `src/Mod/Assembly/CommandCreateJoint.py:454` and `src/Mod/Assembly/JointObject.py:1751` use `Gui.Selection.getSelectionEx("*", 0)` and iterate `SubElementNames`. |
 
-## Proposed Lifecycle
+## Implemented Lifecycle
 
 1. User starts FreeCAD GUI normally or through a future Workbench.
-2. A small bridge script/workbench opens a localhost loopback transport with a per-session token.
+2. `scripts/freecad_gui_bridge_server.py` opens a localhost JSON bridge with an optional bearer token.
 3. MCP `freecad_gui_attach` connects to that bridge and returns a `session_id`.
 4. Read-only GUI tools can query active document/view/selection without mutating model state.
-5. Mutating GUI tools must still use typed backend operations and transactions where possible.
+5. GUI selection and view-fit tools can change GUI selection/view state, but model geometry still belongs in typed CAD tools.
 6. Closing the MCP session detaches from the bridge but does not close FreeCAD GUI.
 
-## Planned Tools
+The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thread when called from the HTTP server thread.
+
+## Implemented Tools
 
 | Tool | Purpose | Mutates |
 | --- | --- | --- |
 | `freecad_gui_attach` | Connect to an already-running GUI bridge and return GUI session metadata. | No |
+| `freecad_gui_list` | List attached GUI bridge sessions held by this MCP server process. | No |
+| `freecad_gui_detach` | Forget a GUI bridge session without closing FreeCAD GUI. | No |
 | `freecad_gui_status` | Report GUI process, active document, active view type, workbench, and bridge health. | No |
 | `freecad_gui_active_document_get` | Return active GUI document summary plus matching App document id/name. | No |
 | `freecad_gui_active_view_get` | Return active view type/name/camera snapshot when available. | No |
@@ -71,8 +76,8 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 
 ## Test Plan
 
-- Unit tests for selection record normalization from fake `SelectionObject`-like objects.
-- Static MCP smoke that confirms GUI attach schemas are listed once implemented.
+- Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
+- Static MCP smoke confirms GUI attach schemas are listed.
 - Manual GUI smoke: open FreeCAD, create/select a box face, call `freecad_gui_selection_get`, and verify `FaceN` and picked point fields.
 - Assembly connector smoke: select two connector faces in GUI, create a Fixed joint through typed Assembly tool, and assert `Reference1`/`Reference2` are populated.
 
