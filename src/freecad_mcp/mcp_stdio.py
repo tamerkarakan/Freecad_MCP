@@ -189,6 +189,13 @@ class McpServer:
                     "mimeType": "text/markdown",
                 },
                 {
+                    "uri": "freecad://docs/vision-debug-pipeline",
+                    "name": "vision_debug_pipeline",
+                    "title": "Vision Debug Pipeline",
+                    "description": "Screenshot and vision-model policy for FreeCAD GUI debugging and image-to-sketch ambiguity.",
+                    "mimeType": "text/markdown",
+                },
+                {
                     "uri": "freecad://docs/workbench-bridge",
                     "name": "workbench_bridge",
                     "title": "Workbench Bridge",
@@ -329,6 +336,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
+        "freecad://docs/vision-debug-pipeline": repo_root / "docs" / "VISION_DEBUG_PIPELINE.md",
         "freecad://docs/workbench-bridge": repo_root / "docs" / "WORKBENCH_BRIDGE.md",
         "freecad://docs/techdraw-cam-fem-plan": repo_root / "docs" / "TECHDRAW_CAM_FEM_PLAN.md",
         "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",

@@ -73,6 +73,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
 - Connector-aware Assembly flows should consume `freecad_gui_selection_get` records before writing native `JointObject` references.
+- Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, local screenshot evidence second, smallest useful crop/detail sent to vision models, and user confirmation for ambiguous B-spline/arc/polyline decisions.
 
 ## Test Plan
 
