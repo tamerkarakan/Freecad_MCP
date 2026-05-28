@@ -27,6 +27,10 @@ COMMON_RUNTIME_PROPS: JsonObject = {
     "executable": {"type": "string", "description": "Optional explicit FreeCADCmd path."},
     "freecad_home": {"type": "string", "description": "Optional portable FreeCAD directory."},
     "timeout_sec": {"type": "integer", "minimum": 1, "maximum": 180},
+    "compact_execution": {
+        "type": "boolean",
+        "description": "Return compact execution metadata without stdout/stderr/argv text.",
+    },
     "allow_external_paths": {
         "type": "boolean",
         "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace.",
@@ -1466,6 +1470,9 @@ class CadToolService:
         executable_arg = optional_string(args, "executable")
         freecad_home = optional_string(args, "freecad_home")
         timeout_sec = bounded_int(args, "timeout_sec", default=60, minimum=1, maximum=180)
+        compact_execution = args.get("compact_execution", False)
+        if not isinstance(compact_execution, bool):
+            raise ToolInputError("compact_execution must be a boolean")
         discovery = self.discovery.discover(executable=executable_arg, freecad_home=freecad_home)
         if discovery.executable is None:
             raise ToolInputError(
@@ -1473,7 +1480,11 @@ class CadToolService:
                 "or pass freecad_home/executable."
             )
 
-        action_args = {key: value for key, value in args.items() if key not in {"executable", "freecad_home", "timeout_sec"}}
+        action_args = {
+            key: value
+            for key, value in args.items()
+            if key not in {"executable", "freecad_home", "timeout_sec", "compact_execution"}
+        }
         action_args["_workspace_root"] = os.environ.get("FREECAD_MCP_WORKSPACE_ROOT") or str(Path.cwd())
         action_args["action"] = action
         if action == "object_delete" and not action_args.get("object_name") and not action_args.get("object_names"):
@@ -1486,6 +1497,6 @@ class CadToolService:
             raise ToolInputError("FreeCAD response did not include a valid MCP JSON payload")
         return {
             "discovery": discovery.to_dict(),
-            "execution": result.to_dict(),
+            "execution": result.to_compact_dict() if compact_execution else result.to_dict(),
             "freecad": payload,
         }

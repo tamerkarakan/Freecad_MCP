@@ -67,6 +67,10 @@ class RuntimeToolService:
                         "executable": {"type": "string", "description": "Optional explicit FreeCADCmd path."},
                         "freecad_home": {"type": "string", "description": "Optional portable FreeCAD directory."},
                         "timeout_sec": {"type": "integer", "minimum": 1, "maximum": 120},
+                        "compact_output": {
+                            "type": "boolean",
+                            "description": "Return compact execution metadata without stdout/stderr/argv text.",
+                        },
                     },
                     "required": ["code"],
                 },
@@ -105,6 +109,9 @@ class RuntimeToolService:
         executable_arg = optional_string(args, "executable")
         freecad_home = optional_string(args, "freecad_home")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=120)
+        compact_output = args.get("compact_output", False)
+        if not isinstance(compact_output, bool):
+            raise ToolInputError("compact_output must be a boolean")
 
         discovery = self.discovery.discover(executable=executable_arg, freecad_home=freecad_home)
         if discovery.executable is None:
@@ -119,10 +126,11 @@ class RuntimeToolService:
         )
         return {
             "discovery": discovery.to_dict(),
-            "execution": result.to_dict(),
+            "execution": result.to_compact_dict() if compact_output else result.to_dict(),
             "audit": {
                 "tool": "freecad_python_exec",
                 "code_sha256": hashlib.sha256(code.encode("utf-8")).hexdigest(),
                 "unsafe_opt_in": True,
+                "compact_output": compact_output,
             },
         }

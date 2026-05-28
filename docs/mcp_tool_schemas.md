@@ -201,6 +201,10 @@ Run a low-level Python snippet through FreeCADCmd and return stdout/stderr.
       "type": "integer",
       "minimum": 1,
       "maximum": 120
+    },
+    "compact_output": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     }
   },
   "required": [
@@ -1041,6 +1045,10 @@ Create a new FreeCAD document.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1072,6 +1080,10 @@ Open a FreeCAD document and return a summary.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1113,6 +1125,10 @@ Open and save a FreeCAD document.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1158,6 +1174,10 @@ Open/recompute a document and optionally save it.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1202,6 +1222,10 @@ Export selected or all document objects.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1237,6 +1261,10 @@ List document objects.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1278,6 +1306,10 @@ Inspect one document object.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1329,6 +1361,10 @@ Set simple object properties and save optionally.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1384,6 +1420,10 @@ Delete object(s) by name/label.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1445,6 +1485,10 @@ Create a Part primitive.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1503,6 +1547,10 @@ Fuse/cut/common Part shapes.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1559,6 +1607,10 @@ Extrude a source shape.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1626,6 +1678,10 @@ Revolve a source shape.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1685,6 +1741,10 @@ Create a filleted copy of a shape.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1747,6 +1807,10 @@ Create a chamfered copy of a shape.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1792,6 +1856,10 @@ Run shape validity checks.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1839,6 +1907,10 @@ Create a Sketcher object.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1889,6 +1961,10 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -1945,6 +2021,10 @@ Add raw or named Sketcher constraints with optional metadata such as datum, driv
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -1996,6 +2076,10 @@ Add common closed/open Sketcher profiles such as rectangle, polyline, regular po
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2052,6 +2136,10 @@ Delete, move, toggle construction state, add external geometry, carbon-copy, and
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2106,6 +2194,10 @@ Delete, rename, set datum/driving/active/visibility/virtual-space state, validat
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2162,6 +2254,10 @@ Run headless Sketcher transform operations such as fillet, trim, extend, split, 
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2216,6 +2312,10 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality constrai
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2274,6 +2374,10 @@ Solve and summarize sketch geometry, constraints, solver diagnostics, missing co
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2318,6 +2422,10 @@ Import a CAD/mesh file into a document.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2366,6 +2474,10 @@ Export selected/all objects from a document.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2398,6 +2510,10 @@ Return common import/export formats.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2439,6 +2555,10 @@ Import a mesh file into a document.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2487,6 +2607,10 @@ Export mesh objects.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2528,6 +2652,10 @@ Summarize mesh object health.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2588,6 +2716,10 @@ Run conservative mesh repair actions.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2650,6 +2782,10 @@ Run mesh boolean operation when supported by FreeCAD build.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2697,6 +2833,10 @@ Create an Assembly object.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2747,6 +2887,10 @@ Insert an existing object into an assembly as an App::Link.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",
@@ -2824,6 +2968,10 @@ Create a native Assembly JointObject proxy under an assembly joint group.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2869,6 +3017,10 @@ Recompute an assembly document.
       "minimum": 1,
       "maximum": 180
     },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
@@ -2906,6 +3058,10 @@ Return a simple assembly bill of materials.
       "type": "integer",
       "minimum": 1,
       "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
     },
     "allow_external_paths": {
       "type": "boolean",

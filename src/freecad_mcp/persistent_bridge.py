@@ -503,10 +503,12 @@ class FreeCadWorkerSession:
     _stderr_lines: deque[str] = field(default_factory=lambda: deque(maxlen=200), init=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
     _next_request_id: int = 0
+    _script_path: Path | None = field(default=None, init=False)
 
     def start(self, *, timeout_sec: int = 30) -> JsonObject:
         if self.process is not None and self.is_running:
             return self.to_dict()
+        self._cleanup_script_file()
         env = os.environ.copy()
         env["FREECAD_MCP_WORKSPACE_ROOT"] = str(self.workspace_root)
         script_path: Path | None = None
@@ -521,6 +523,7 @@ class FreeCadWorkerSession:
         else:
             argv = [str(self.executable), "-c", self.worker_script]
         try:
+            self._script_path = script_path
             self.process = subprocess.Popen(
                 argv,
                 cwd=str(self.executable.parent),
@@ -538,12 +541,20 @@ class FreeCadWorkerSession:
                 threading.Thread(target=self._drain_stderr, daemon=True).start()
             ready = self._wait_for_message(timeout_sec=timeout_sec, expected_id=None, expected_type="ready")
             return {"session": self.to_dict(), "ready": ready}
-        finally:
-            if script_path is not None:
+        except Exception:
+            if self.process is not None and self.process.poll() is None:
                 try:
-                    script_path.unlink()
-                except OSError:
-                    pass
+                    self.process.terminate()
+                    self.process.wait(timeout=timeout_sec)
+                except Exception:
+                    try:
+                        self.process.kill()
+                        self.process.wait(timeout=timeout_sec)
+                    except Exception:
+                        pass
+            self._close_pipes()
+            self._cleanup_script_file()
+            raise
 
     @property
     def is_running(self) -> bool:
@@ -584,6 +595,7 @@ class FreeCadWorkerSession:
                     self.process.kill()
                     self.process.wait(timeout=timeout_sec)
         self._close_pipes()
+        self._cleanup_script_file()
         return {"session": self.to_dict(), "shutdown": response}
 
     def to_dict(self) -> JsonObject:
@@ -620,6 +632,15 @@ class FreeCadWorkerSession:
                     stream.close()
             except Exception:
                 pass
+
+    def _cleanup_script_file(self) -> None:
+        if self._script_path is None:
+            return
+        try:
+            self._script_path.unlink()
+        except OSError:
+            return
+        self._script_path = None
 
     def _wait_for_message(
         self,

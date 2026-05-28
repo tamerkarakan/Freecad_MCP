@@ -23,6 +23,7 @@
 - `freecad_mesh_repair` previously attempted to mutate `Mesh::Feature.Mesh` directly and could hit immutable mesh errors; it now repairs a copy and assigns it back, with replacement-object fallback.
 - Response serialization errors in `serve_stdio` previously could terminate the stdio loop; they now fall back to a structured `-32603` error response.
 - Large runtime envelopes could grow excessively because raw `argv`/`stdout`/`stderr` were returned verbatim; execution payloads now return truncated previews plus total-length metadata.
+- Extremely large runtime outputs can opt into compact execution metadata to omit stdout/stderr/argv text entirely while keeping totals and hashes.
 - Some MCP clients call `resources/templates/list` even when no resource templates are exposed; the server now returns an empty `resourceTemplates` list instead of `-32601`.
 - Persistent worker processes could survive MCP server EOF if sessions were not explicitly closed; stdio shutdown now calls service cleanup.
 - Large process-per-call CAD scripts could exceed the Windows command-line length limit when passed through `FreeCADCmd -c`; long scripts now run from a temporary `.py` file and are cleaned up after execution.

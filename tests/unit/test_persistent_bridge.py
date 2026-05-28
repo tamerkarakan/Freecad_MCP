@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from freecad_mcp.persistent_bridge import FreeCadWorkerSession, PersistentBridgeManager
+from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_bridge import MAX_INLINE_CODE_CHARS
 from freecad_mcp.tooling import ToolInputError
 
@@ -67,10 +68,14 @@ class PersistentBridgeTests(unittest.TestCase):
             )
 
             started = session.start(timeout_sec=10)
+            script_path = session._script_path
             response = session.request("ping", {"value": "ok"}, timeout_sec=10)
             closed = session.close(timeout_sec=10)
 
         self.assertEqual(started["ready"]["type"], "ready")
+        self.assertIsNotNone(script_path)
+        self.assertFalse(script_path.exists())
+        self.assertIsNone(session._script_path)
         self.assertTrue(response.ok)
         self.assertEqual(response.result["method"], "ping")
         self.assertFalse(closed["session"]["running"])
@@ -111,6 +116,14 @@ class PersistentBridgeTests(unittest.TestCase):
 
         with self.assertRaises(ToolInputError):
             manager.status("missing", timeout_sec=1)
+
+    def test_object_delete_requires_object_selector_before_worker_request(self) -> None:
+        service = PersistentToolService(manager=PersistentBridgeManager(worker_script=FAKE_WORKER_SCRIPT))
+
+        with self.assertRaises(ToolInputError):
+            service.definition_map()["freecad_worker_object_delete"].handler(
+                {"session_id": "missing", "document_id": "Doc"}
+            )
 
 
 if __name__ == "__main__":

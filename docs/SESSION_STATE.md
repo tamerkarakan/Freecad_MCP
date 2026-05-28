@@ -28,6 +28,7 @@
 - `freecad_mesh_repair` repairs a mesh copy and assigns it back to avoid immutable mesh errors on imported `Mesh::Feature` objects.
 - Long process-per-call runtime scripts now run through a temporary `.py` file when the inline `FreeCADCmd -c` command would exceed the Windows command-line limit.
 - Runtime execution payloads now truncate oversized `argv`/`stdout`/`stderr` previews with total-length metadata to reduce oversized MCP responses.
+- Runtime execution payloads also support opt-in compact metadata: `freecad_python_exec` uses `compact_output=true`, and typed CAD process-per-call tools use `compact_execution=true`.
 - `FreeCadCmdBridge.execute_python` now returns structured launch failures (`launch_error`) for process start errors instead of propagating raw OS exceptions.
 - Stdio server response writing now has a serialization fallback so non-JSON-serializable tool payloads return a structured internal error instead of terminating the server loop.
 - MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
@@ -36,6 +37,7 @@
 - Persistent `freecadcmd-worker` mode is implemented for session lifecycle, in-memory document lifecycle, object list/get, and primitive creation.
 - Persistent worker tools include roadmap aliases `freecad_session_start`, `freecad_session_list`, `freecad_session_close` plus explicit `freecad_worker_*` tools.
 - Persistent worker coverage now includes document export, object set/delete, and Part boolean/extrude/revolve/check-geometry tools.
+- Persistent worker startup also uses a temp `.py` script for long worker payloads and keeps that file until session close to avoid Windows script-load races.
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
 - Current MCP tool count is 67.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.

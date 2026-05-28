@@ -312,6 +312,8 @@ class PersistentToolService:
         for key in required:
             if key not in args or args[key] in (None, ""):
                 raise ToolInputError(f"{key} is required")
+        if method == "object_delete" and not args.get("object_name") and not args.get("object_names"):
+            raise ToolInputError("object_name or object_names is required")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=180)
         params = {key: value for key, value in args.items() if key not in {"session_id", "timeout_sec"}}
         return self.manager.request(session_id, method, params, timeout_sec=timeout_sec)

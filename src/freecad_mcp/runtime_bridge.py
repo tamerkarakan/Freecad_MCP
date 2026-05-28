@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -87,6 +88,23 @@ class FreeCadExecutionResult:
             "stderr_total_chars": len(self.stderr),
             "timed_out": self.timed_out,
             "launch_error": self.launch_error,
+        }
+
+    def to_compact_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "executable": str(self.executable),
+            "argv_count": len(self.argv),
+            "timeout_sec": self.timeout_sec,
+            "duration_ms": self.duration_ms,
+            "returncode": self.returncode,
+            "stdout_total_chars": len(self.stdout),
+            "stdout_sha256": hashlib.sha256(self.stdout.encode("utf-8")).hexdigest(),
+            "stderr_total_chars": len(self.stderr),
+            "stderr_sha256": hashlib.sha256(self.stderr.encode("utf-8")).hexdigest(),
+            "timed_out": self.timed_out,
+            "launch_error": self.launch_error,
+            "compact": True,
         }
 
 

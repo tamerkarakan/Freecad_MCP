@@ -106,6 +106,29 @@ class RuntimeBridgeTests(unittest.TestCase):
         self.assertEqual(payload["stdout_total_chars"], len(long_stream))
         self.assertEqual(payload["stderr_total_chars"], len(long_stream))
 
+    def test_compact_dict_omits_argv_and_stream_text(self) -> None:
+        result = FreeCadExecutionResult(
+            executable=Path(sys.executable),
+            argv=[sys.executable, "-c", "print('x')"],
+            timeout_sec=10,
+            duration_ms=1,
+            returncode=0,
+            stdout="stream-output",
+            stderr="stream-error",
+            timed_out=False,
+        )
+
+        payload = result.to_compact_dict()
+
+        self.assertTrue(payload["compact"])
+        self.assertNotIn("argv", payload)
+        self.assertNotIn("stdout", payload)
+        self.assertNotIn("stderr", payload)
+        self.assertEqual(payload["stdout_total_chars"], len("stream-output"))
+        self.assertEqual(payload["stderr_total_chars"], len("stream-error"))
+        self.assertIn("stdout_sha256", payload)
+        self.assertIn("stderr_sha256", payload)
+
     def test_parse_prefixed_json_ignores_noise(self) -> None:
         parsed = parse_prefixed_json('noise\n__FREECAD_MCP_JSON__{"version": ["1"]}\n')
 

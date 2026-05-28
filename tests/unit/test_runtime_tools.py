@@ -31,6 +31,25 @@ class RuntimeToolServiceTests(unittest.TestCase):
         with self.assertRaises(ToolInputError):
             service.python_exec({"executable": sys.executable, "code": "print('blocked')"})
 
+    def test_python_exec_compact_output_omits_stream_text(self) -> None:
+        service = RuntimeToolService()
+
+        result = service.python_exec(
+            {
+                "executable": sys.executable,
+                "code": "print('spark-compact')",
+                "allow_unsafe": True,
+                "compact_output": True,
+                "timeout_sec": 10,
+            }
+        )
+
+        self.assertTrue(result["execution"]["ok"])
+        self.assertTrue(result["execution"]["compact"])
+        self.assertNotIn("stdout", result["execution"])
+        self.assertGreater(result["execution"]["stdout_total_chars"], 0)
+        self.assertEqual(result["audit"]["compact_output"], True)
+
     def test_status_reports_discovery_without_probe(self) -> None:
         service = RuntimeToolService()
 
