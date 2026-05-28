@@ -17,8 +17,8 @@ from freecad_mcp.mcp_stdio import build_server
 
 
 def main() -> int:
-    server = build_server(ROOT)
-    tools = [tool.to_mcp() for tool in server.tools.values()]
+    service = build_server(ROOT)
+    tools = [definition.to_mcp() for definition in service.definitions()]
 
     docs = ROOT / "docs"
     docs.mkdir(exist_ok=True)

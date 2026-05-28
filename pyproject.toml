@@ -3,6 +3,9 @@ name = "freecad-hybrid-mcp"
 version = "0.1.0"
 description = "Hybrid MCP server experiments for FreeCAD source intelligence and runtime control."
 requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0",
+]
 
 [tool.unittest]
 start-directory = "tests"

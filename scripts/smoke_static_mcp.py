@@ -24,6 +24,12 @@ def send(process: subprocess.Popen[str], payload: dict[str, Any]) -> dict[str, A
     return json.loads(line)
 
 
+def notify(process: subprocess.Popen[str], payload: dict[str, Any]) -> None:
+    assert process.stdin is not None
+    process.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    process.stdin.flush()
+
+
 def main() -> int:
     process = subprocess.Popen(
         [sys.executable, "server.py"],
@@ -47,6 +53,7 @@ def main() -> int:
                 },
             },
         )
+        notify(process, {"jsonrpc": "2.0", "method": "notifications/initialized"})
         tools = send(process, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
         described = send(
             process,
@@ -101,7 +108,7 @@ def main() -> int:
         stderr = process.stderr.read() if process.stderr else ""
         process.wait(timeout=10)
 
-    assert initialized["result"]["capabilities"]["tools"]["listChanged"] is False
+    assert "tools" in initialized["result"]["capabilities"]
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
     assert "freecad_command_describe" in tool_names
     assert "freecad_session_status" in tool_names
@@ -123,7 +130,7 @@ def main() -> int:
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"
     assert "discovery" in status["result"]["structuredContent"]
     assert unsafe["result"]["isError"] is True
-    assert "unsafe" in unsafe["result"]["structuredContent"]["error"]
+    assert "unsafe" in unsafe["result"]["content"][0]["text"]
     assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/roadmap-status" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/workbench-bridge" for resource in resources["result"]["resources"])

@@ -1,12 +1,21 @@
-"""Minimal stdio MCP server for FreeCAD hybrid tools."""
+"""Stdio MCP server for FreeCAD hybrid tools, backed by the official MCP SDK.
+
+The protocol/transport (initialize handshake, capability negotiation, JSON-RPC
+framing, notifications) is owned by the `mcp` SDK. This module keeps the FreeCAD
+tool surface (CompositeToolService) plus the resource/prompt content as plain,
+synchronous, unit-testable helpers, and wires thin async SDK handlers on top.
+"""
 
 from __future__ import annotations
 
-import json
-import sys
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any
+
+import anyio
+import mcp.types as types
+from mcp.server.lowlevel import Server
+from mcp.server.lowlevel.helper_types import ReadResourceContents
+from mcp.server.stdio import stdio_server
 
 from freecad_mcp import __version__
 from freecad_mcp.cad_tools import CadToolService
@@ -14,19 +23,115 @@ from freecad_mcp.gui_tools import GuiToolService
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
-from freecad_mcp.tooling import ToolDefinition, ToolInputError
-
-
-PROTOCOL_VERSION = "2025-06-18"
+from freecad_mcp.tooling import ToolInputError
 
 JsonObject = dict[str, Any]
 
+SERVER_NAME = "freecad-hybrid-mcp"
+INSTRUCTIONS = (
+    "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
+    "typed process-per-call CAD operations, persistent FreeCADCmd worker sessions, "
+    "and opt-in FreeCAD GUI attach tools."
+)
 
-@dataclass(frozen=True)
-class JsonRpcError(Exception):
-    code: int
-    message: str
-    data: Any | None = None
+RESOURCE_DESCRIPTORS: list[JsonObject] = [
+    {
+        "uri": "freecad://docs/architecture",
+        "name": "architecture",
+        "title": "Architecture",
+        "description": "Current architecture and bridge policy.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/session-state",
+        "name": "session_state",
+        "title": "Session State",
+        "description": "Cross-session handoff state.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/roadmap-status",
+        "name": "roadmap_status",
+        "title": "Roadmap Status",
+        "description": "Completed, blocked, and future roadmap scope.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/testing",
+        "name": "testing",
+        "title": "Testing",
+        "description": "Verification gates and smoke tests.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/sketcher-capabilities",
+        "name": "sketcher_capabilities",
+        "title": "Sketcher Capabilities",
+        "description": "Headless Sketcher typed-tool coverage and GUI-only boundaries.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/gui-attach-plan",
+        "name": "gui_attach_plan",
+        "title": "GUI Attach Plan",
+        "description": "GUI bridge contract for active document, active view, selection, and subelement reads.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/vision-debug-pipeline",
+        "name": "vision_debug_pipeline",
+        "title": "Vision Debug Pipeline",
+        "description": "Screenshot and vision-model policy for FreeCAD GUI debugging and image-to-sketch ambiguity.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/workbench-bridge",
+        "name": "workbench_bridge",
+        "title": "Workbench Bridge",
+        "description": "FreeCAD Workbench-hosted GUI bridge setup and autostart options.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/techdraw-cam-fem-plan",
+        "name": "techdraw_cam_fem_plan",
+        "title": "TechDraw CAM FEM Plan",
+        "description": "Source-backed typed-wrapper plan for TechDraw, CAM, and FEM.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://schemas/tools",
+        "name": "tool_schemas",
+        "title": "MCP Tool Schemas",
+        "description": "Generated tool schema snapshot.",
+        "mimeType": "application/json",
+    },
+    {
+        "uri": "freecad://inventory/summary",
+        "name": "inventory_summary",
+        "title": "FreeCAD Inventory Summary",
+        "description": "Compact generated inventory summary.",
+        "mimeType": "application/json",
+    },
+]
+
+PROMPT_DESCRIPTORS: list[JsonObject] = [
+    {
+        "name": "freecad_design_task",
+        "title": "FreeCAD Design Task",
+        "description": "Plan and execute a FreeCAD design task using typed tools first.",
+        "arguments": [
+            {"name": "task", "description": "The design or automation task.", "required": True}
+        ],
+    },
+    {
+        "name": "freecad_phase_gate",
+        "title": "FreeCAD Phase Gate",
+        "description": "Review a phase for tests, docs, risks, and runtime evidence.",
+        "arguments": [
+            {"name": "phase", "description": "Phase name or number.", "required": True}
+        ],
+    },
+]
 
 
 class CompositeToolService:
@@ -35,13 +140,13 @@ class CompositeToolService:
     def __init__(self, *services: object):
         self.services = services
 
-    def definitions(self) -> list[ToolDefinition]:
-        definitions: list[ToolDefinition] = []
+    def definitions(self) -> list:
+        definitions: list = []
         for service in self.services:
             definitions.extend(service.definitions())
         return definitions
 
-    def definition_map(self) -> dict[str, ToolDefinition]:
+    def definition_map(self) -> dict:
         return {definition.name: definition for definition in self.definitions()}
 
     def shutdown(self) -> None:
@@ -51,284 +156,62 @@ class CompositeToolService:
                 shutdown()
 
 
-class McpServer:
-    """JSON-RPC request dispatcher for the hybrid tool surface."""
+def build_server(repo_root: Path | None = None) -> CompositeToolService:
+    """Build the composite FreeCAD tool surface."""
+    root = (repo_root or Path.cwd()).resolve()
+    return CompositeToolService(
+        StaticToolService(InventoryStore(root)),
+        RuntimeToolService(),
+        PersistentToolService(workspace_root=root),
+        CadToolService(),
+        GuiToolService(),
+    )
 
-    def __init__(self, tool_service: StaticToolService):
-        self.tool_service = tool_service
-        self.tools = tool_service.definition_map()
 
-    def handle_message(self, message: JsonObject) -> JsonObject | None:
-        request_id = message.get("id")
-        method = message.get("method")
-        if not method:
-            raise JsonRpcError(-32600, "Invalid request: missing method")
-
-        # JSON-RPC notifications do not receive responses.
-        is_notification = "id" not in message
-        if is_notification:
-            self._handle_notification(method)
-            return None
-
-        try:
-            result = self._handle_request(method, message.get("params") or {})
-        except JsonRpcError as exc:
-            return error_response(request_id, exc.code, exc.message, exc.data)
-        except ToolInputError as exc:
-            return error_response(request_id, -32602, str(exc))
-        except Exception as exc:  # pragma: no cover - defensive protocol guard
-            return error_response(request_id, -32603, "Internal error", {"detail": str(exc)})
-        return {"jsonrpc": "2.0", "id": request_id, "result": result}
-
-    def _handle_notification(self, method: str) -> None:
-        if method in {"notifications/initialized", "notifications/cancelled"}:
-            return
-        # Unknown notifications are ignored to stay tolerant of client extras.
-
-    def _handle_request(self, method: str, params: JsonObject) -> JsonObject:
-        if method == "initialize":
-            return self._initialize(params)
-        if method == "ping":
-            return {}
-        if method == "tools/list":
-            return {"tools": [tool.to_mcp() for tool in self.tools.values()]}
-        if method == "tools/call":
-            return self._tools_call(params)
-        if method == "resources/list":
-            return self._resources_list()
-        if method == "resources/templates/list":
-            return self._resource_templates_list()
-        if method == "resources/read":
-            return self._resources_read(params)
-        if method == "prompts/list":
-            return self._prompts_list()
-        if method == "prompts/get":
-            return self._prompts_get(params)
-        raise JsonRpcError(-32601, f"Method not found: {method}")
-
-    def _initialize(self, params: JsonObject) -> JsonObject:
+def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
+    """Render a workflow prompt into MCP message content. Pure and testable."""
+    if name == "freecad_design_task":
+        task = arguments.get("task", "")
         return {
-            "protocolVersion": PROTOCOL_VERSION,
-            "capabilities": {
-                "tools": {"listChanged": False},
-                "resources": {"subscribe": False, "listChanged": False},
-                "prompts": {"listChanged": False},
-            },
-            "serverInfo": {
-                "name": "freecad-hybrid-mcp",
-                "title": "FreeCAD Hybrid MCP",
-                "version": __version__,
-            },
-            "instructions": (
-                "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
-                "typed process-per-call CAD operations, persistent FreeCADCmd worker sessions, "
-                "and opt-in FreeCAD GUI attach tools."
-            ),
+            "description": "FreeCAD design task workflow",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": (
+                            "Use FreeCAD typed MCP tools before low-level Python. "
+                            "Inspect available source/tool schemas if needed, create or open the document, "
+                            "apply operations with save/output paths, run geometry checks, and report exact files. "
+                            f"Task: {task}"
+                        ),
+                    },
+                }
+            ],
         }
-
-    def _tools_call(self, params: JsonObject) -> JsonObject:
-        name = params.get("name")
-        if not isinstance(name, str) or not name:
-            raise JsonRpcError(-32602, "Tool name is required")
-        arguments = params.get("arguments") or {}
-        if not isinstance(arguments, dict):
-            raise JsonRpcError(-32602, "Tool arguments must be an object")
-        tool = self.tools.get(name)
-        if not tool:
-            raise JsonRpcError(-32602, f"Unknown tool: {name}")
-
-        try:
-            structured = tool.handler(arguments)
-        except ToolInputError as exc:
-            return tool_result({"error": str(exc)}, is_error=True)
-        return tool_result(structured, is_error=False)
-
-    def _resources_list(self) -> JsonObject:
+    if name == "freecad_phase_gate":
+        phase = arguments.get("phase", "")
         return {
-            "resources": [
+            "description": "FreeCAD MCP phase gate",
+            "messages": [
                 {
-                    "uri": "freecad://docs/architecture",
-                    "name": "architecture",
-                    "title": "Architecture",
-                    "description": "Current architecture and bridge policy.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/session-state",
-                    "name": "session_state",
-                    "title": "Session State",
-                    "description": "Cross-session handoff state.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/roadmap-status",
-                    "name": "roadmap_status",
-                    "title": "Roadmap Status",
-                    "description": "Completed, blocked, and future roadmap scope.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/testing",
-                    "name": "testing",
-                    "title": "Testing",
-                    "description": "Verification gates and smoke tests.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/sketcher-capabilities",
-                    "name": "sketcher_capabilities",
-                    "title": "Sketcher Capabilities",
-                    "description": "Headless Sketcher typed-tool coverage and GUI-only boundaries.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/gui-attach-plan",
-                    "name": "gui_attach_plan",
-                    "title": "GUI Attach Plan",
-                    "description": "GUI bridge contract for active document, active view, selection, and subelement reads.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/vision-debug-pipeline",
-                    "name": "vision_debug_pipeline",
-                    "title": "Vision Debug Pipeline",
-                    "description": "Screenshot and vision-model policy for FreeCAD GUI debugging and image-to-sketch ambiguity.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/workbench-bridge",
-                    "name": "workbench_bridge",
-                    "title": "Workbench Bridge",
-                    "description": "FreeCAD Workbench-hosted GUI bridge setup and autostart options.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://docs/techdraw-cam-fem-plan",
-                    "name": "techdraw_cam_fem_plan",
-                    "title": "TechDraw CAM FEM Plan",
-                    "description": "Source-backed typed-wrapper plan for TechDraw, CAM, and FEM.",
-                    "mimeType": "text/markdown",
-                },
-                {
-                    "uri": "freecad://schemas/tools",
-                    "name": "tool_schemas",
-                    "title": "MCP Tool Schemas",
-                    "description": "Generated tool schema snapshot.",
-                    "mimeType": "application/json",
-                },
-                {
-                    "uri": "freecad://inventory/summary",
-                    "name": "inventory_summary",
-                    "title": "FreeCAD Inventory Summary",
-                    "description": "Compact generated inventory summary.",
-                    "mimeType": "application/json",
-                },
-            ]
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": (
+                            "Review the phase for: tool schema drift, path safety, FreeCAD runtime smoke, "
+                            "unit tests, docs/session handoff, known risks, and git cleanliness. "
+                            f"Phase: {phase}"
+                        ),
+                    },
+                }
+            ],
         }
-
-    def _resource_templates_list(self) -> JsonObject:
-        return {"resourceTemplates": []}
-
-    def _resources_read(self, params: JsonObject) -> JsonObject:
-        uri = params.get("uri")
-        if not isinstance(uri, str) or not uri:
-            raise JsonRpcError(-32602, "Resource uri is required")
-        contents = read_resource(Path.cwd(), uri)
-        if contents is None:
-            raise JsonRpcError(-32602, f"Unknown resource: {uri}")
-        return {"contents": [contents]}
-
-    def _prompts_list(self) -> JsonObject:
-        return {
-            "prompts": [
-                {
-                    "name": "freecad_design_task",
-                    "title": "FreeCAD Design Task",
-                    "description": "Plan and execute a FreeCAD design task using typed tools first.",
-                    "arguments": [
-                        {"name": "task", "description": "The design or automation task.", "required": True}
-                    ],
-                },
-                {
-                    "name": "freecad_phase_gate",
-                    "title": "FreeCAD Phase Gate",
-                    "description": "Review a phase for tests, docs, risks, and runtime evidence.",
-                    "arguments": [
-                        {"name": "phase", "description": "Phase name or number.", "required": True}
-                    ],
-                },
-            ]
-        }
-
-    def _prompts_get(self, params: JsonObject) -> JsonObject:
-        name = params.get("name")
-        arguments = params.get("arguments") or {}
-        if not isinstance(name, str) or not name:
-            raise JsonRpcError(-32602, "Prompt name is required")
-        if not isinstance(arguments, dict):
-            raise JsonRpcError(-32602, "Prompt arguments must be an object")
-        if name == "freecad_design_task":
-            task = arguments.get("task", "")
-            return {
-                "description": "FreeCAD design task workflow",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": {
-                            "type": "text",
-                            "text": (
-                                "Use FreeCAD typed MCP tools before low-level Python. "
-                                "Inspect available source/tool schemas if needed, create or open the document, "
-                                "apply operations with save/output paths, run geometry checks, and report exact files. "
-                                f"Task: {task}"
-                            ),
-                        },
-                    }
-                ],
-            }
-        if name == "freecad_phase_gate":
-            phase = arguments.get("phase", "")
-            return {
-                "description": "FreeCAD MCP phase gate",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": {
-                            "type": "text",
-                            "text": (
-                                "Review the phase for: tool schema drift, path safety, FreeCAD runtime smoke, "
-                                "unit tests, docs/session handoff, known risks, and git cleanliness. "
-                                f"Phase: {phase}"
-                            ),
-                        },
-                    }
-                ],
-            }
-        raise JsonRpcError(-32602, f"Unknown prompt: {name}")
-
-
-def tool_result(payload: JsonObject, *, is_error: bool) -> JsonObject:
-    text = json.dumps(payload, ensure_ascii=False, indent=2)
-    return {
-        "content": [{"type": "text", "text": text}],
-        "structuredContent": payload,
-        "isError": is_error,
-    }
-
-
-def error_response(
-    request_id: Any,
-    code: int,
-    message: str,
-    data: Any | None = None,
-) -> JsonObject:
-    error: JsonObject = {"code": code, "message": message}
-    if data is not None:
-        error["data"] = data
-    return {"jsonrpc": "2.0", "id": request_id, "error": error}
+    raise ToolInputError(f"Unknown prompt: {name}")
 
 
 def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
+    """Resolve a freecad:// resource URI to its content payload, or None."""
     mapping = {
         "freecad://docs/architecture": repo_root / "docs" / "ARCHITECTURE.md",
         "freecad://docs/session-state": repo_root / "docs" / "SESSION_STATE.md",
@@ -351,6 +234,8 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         inventory_path = repo_root / "docs" / "freecad_tool_inventory.json"
         if not inventory_path.exists():
             return None
+        import json
+
         inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
         commands = inventory.get("commands", [])
         modules: dict[str, int] = {}
@@ -367,65 +252,109 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
     return None
 
 
-def serve_stdio(server: McpServer, stdin: TextIO | None = None, stdout: TextIO | None = None) -> int:
-    input_stream = stdin or sys.stdin
-    output_stream = stdout or sys.stdout
-    try:
-        for raw_line in input_stream:
-            line = raw_line.strip()
-            if not line:
-                continue
-            try:
-                message = json.loads(line)
-                if not isinstance(message, dict):
-                    raise JsonRpcError(-32600, "Invalid request")
-                response = server.handle_message(message)
-            except json.JSONDecodeError as exc:
-                response = error_response(None, -32700, "Parse error", {"detail": str(exc)})
-            except JsonRpcError as exc:
-                response = error_response(None, exc.code, exc.message, exc.data)
-
-            if response is not None:
-                try:
-                    encoded = json.dumps(response, ensure_ascii=False, separators=(",", ":"))
-                except Exception as exc:  # pragma: no cover - defensive protocol guard
-                    response_id = response.get("id") if isinstance(response, dict) else None
-                    fallback = error_response(
-                        response_id,
-                        -32603,
-                        "Internal error",
-                        {"detail": f"failed to encode response: {exc}"},
-                    )
-                    encoded = json.dumps(fallback, ensure_ascii=False, separators=(",", ":"))
-
-                try:
-                    output_stream.write(encoded + "\n")
-                    output_stream.flush()
-                except Exception:  # pragma: no cover - transport already closed
-                    return 0
-        return 0
-    finally:
-        tool_service = getattr(server, "tool_service", None)
-        shutdown = getattr(tool_service, "shutdown", None)
-        if callable(shutdown):
-            shutdown()
-
-
-def build_server(repo_root: Path | None = None) -> McpServer:
+def create_mcp_server(repo_root: Path | None = None) -> tuple[Server, CompositeToolService]:
+    """Build the SDK Server with handlers delegating to the FreeCAD tool surface."""
     root = (repo_root or Path.cwd()).resolve()
-    store = InventoryStore(root)
-    tools = CompositeToolService(
-        StaticToolService(store),
-        RuntimeToolService(),
-        PersistentToolService(workspace_root=root),
-        CadToolService(),
-        GuiToolService(),
-    )
-    return McpServer(tools)
+    tool_service = build_server(root)
+    tools = tool_service.definition_map()
+    server: Server = Server(name=SERVER_NAME, version=__version__, instructions=INSTRUCTIONS)
+
+    @server.list_tools()
+    async def _list_tools() -> list[types.Tool]:
+        return [
+            types.Tool(
+                name=definition.name,
+                title=definition.title,
+                description=definition.description,
+                inputSchema=definition.input_schema,
+            )
+            for definition in tool_service.definitions()
+        ]
+
+    # validate_input=False keeps argument validation inside each tool handler, as
+    # before the SDK migration, so tool behavior is unchanged.
+    @server.call_tool(validate_input=False)
+    async def _call_tool(name: str, arguments: JsonObject):
+        tool = tools.get(name)
+        if tool is None:
+            raise ToolInputError(f"Unknown tool: {name}")
+        # A returned dict becomes structuredContent + JSON-text content; a raised
+        # exception becomes an isError result. Both match MCP semantics.
+        return tool.handler(arguments or {})
+
+    @server.list_resources()
+    async def _list_resources() -> list[types.Resource]:
+        return [
+            types.Resource(
+                uri=descriptor["uri"],
+                name=descriptor["name"],
+                title=descriptor["title"],
+                description=descriptor["description"],
+                mimeType=descriptor["mimeType"],
+            )
+            for descriptor in RESOURCE_DESCRIPTORS
+        ]
+
+    @server.list_resource_templates()
+    async def _list_resource_templates() -> list:
+        return []
+
+    @server.read_resource()
+    async def _read_resource(uri) -> list[ReadResourceContents]:
+        contents = read_resource(root, str(uri))
+        if contents is None:
+            raise ToolInputError(f"Unknown resource: {uri}")
+        return [ReadResourceContents(content=contents["text"], mime_type=contents["mimeType"])]
+
+    @server.list_prompts()
+    async def _list_prompts() -> list[types.Prompt]:
+        return [
+            types.Prompt(
+                name=descriptor["name"],
+                title=descriptor["title"],
+                description=descriptor["description"],
+                arguments=[
+                    types.PromptArgument(
+                        name=argument["name"],
+                        description=argument["description"],
+                        required=argument.get("required", False),
+                    )
+                    for argument in descriptor["arguments"]
+                ],
+            )
+            for descriptor in PROMPT_DESCRIPTORS
+        ]
+
+    @server.get_prompt()
+    async def _get_prompt(name: str, arguments: JsonObject | None) -> types.GetPromptResult:
+        rendered = render_prompt(name, arguments or {})
+        return types.GetPromptResult(
+            description=rendered["description"],
+            messages=[
+                types.PromptMessage(
+                    role=message["role"],
+                    content=types.TextContent(type="text", text=message["content"]["text"]),
+                )
+                for message in rendered["messages"]
+            ],
+        )
+
+    return server, tool_service
+
+
+async def serve(repo_root: Path | None = None) -> None:
+    server, tool_service = create_mcp_server(repo_root)
+    init_options = server.create_initialization_options()
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await server.run(read_stream, write_stream, init_options)
+    finally:
+        tool_service.shutdown()
 
 
 def main() -> int:
-    return serve_stdio(build_server(Path.cwd()))
+    anyio.run(serve)
+    return 0
 
 
 if __name__ == "__main__":

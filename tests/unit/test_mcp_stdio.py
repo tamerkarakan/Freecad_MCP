@@ -1,102 +1,108 @@
 from __future__ import annotations
 
-import json
 import unittest
-from io import StringIO
+from pathlib import Path
 
-from freecad_mcp.mcp_stdio import McpServer, serve_stdio
-from freecad_mcp.tooling import ToolDefinition
+from freecad_mcp.mcp_stdio import (
+    PROMPT_DESCRIPTORS,
+    RESOURCE_DESCRIPTORS,
+    CompositeToolService,
+    build_server,
+    create_mcp_server,
+    read_resource,
+    render_prompt,
+)
+from freecad_mcp.tooling import ToolDefinition, ToolInputError
 
 
-class McpStdioTests(unittest.TestCase):
-    def test_initialize_and_tools_list_shape(self) -> None:
-        server = McpServer(FakeToolService())
+ROOT = Path(__file__).resolve().parents[2]
 
-        initialized = server.handle_message(
-            {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {"protocolVersion": "2025-06-18"},
-            }
-        )
-        tools = server.handle_message({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
 
-        self.assertEqual(initialized["result"]["capabilities"]["tools"]["listChanged"], False)
-        self.assertEqual(tools["result"]["tools"][0]["name"], "demo")
-        self.assertIn("inputSchema", tools["result"]["tools"][0])
+class CompositeToolServiceTests(unittest.TestCase):
+    def test_aggregates_definitions_and_map(self) -> None:
+        composite = CompositeToolService(FakeToolService())
 
-    def test_tool_call_returns_structured_content_and_text_fallback(self) -> None:
-        server = McpServer(FakeToolService())
+        self.assertEqual([d.name for d in composite.definitions()], ["demo"])
+        self.assertIn("demo", composite.definition_map())
 
-        response = server.handle_message(
-            {
-                "jsonrpc": "2.0",
-                "id": 3,
-                "method": "tools/call",
-                "params": {"name": "demo", "arguments": {"value": "spark"}},
-            }
-        )
-
-        result = response["result"]
-        self.assertFalse(result["isError"])
-        self.assertEqual(result["structuredContent"]["echo"], "spark")
-        self.assertEqual(json.loads(result["content"][0]["text"])["echo"], "spark")
-
-    def test_resources_and_prompts_are_listed(self) -> None:
-        server = McpServer(FakeToolService())
-
-        resources = server.handle_message({"jsonrpc": "2.0", "id": 4, "method": "resources/list"})
-        resource_templates = server.handle_message(
-            {"jsonrpc": "2.0", "id": 5, "method": "resources/templates/list"}
-        )
-        prompts = server.handle_message({"jsonrpc": "2.0", "id": 6, "method": "prompts/list"})
-        prompt = server.handle_message(
-            {
-                "jsonrpc": "2.0",
-                "id": 7,
-                "method": "prompts/get",
-                "params": {"name": "freecad_design_task", "arguments": {"task": "make a cube"}},
-            }
-        )
-
-        self.assertIn("resources", resources["result"])
-        self.assertTrue(
-            any(resource["uri"] == "freecad://docs/roadmap-status" for resource in resources["result"]["resources"])
-        )
-        self.assertEqual(resource_templates["result"]["resourceTemplates"], [])
-        self.assertIn("prompts", prompts["result"])
-        self.assertIn("make a cube", prompt["result"]["messages"][0]["content"]["text"])
-
-    def test_serve_stdio_falls_back_when_response_is_not_serializable(self) -> None:
-        server = BrokenResponseServer()
-        stdin = StringIO('{"jsonrpc":"2.0","id":9,"method":"ping"}\n')
-        stdout = StringIO()
-
-        exit_code = serve_stdio(server, stdin=stdin, stdout=stdout)
-
-        self.assertEqual(exit_code, 0)
-        payload = json.loads(stdout.getvalue().strip())
-        self.assertEqual(payload["error"]["code"], -32603)
-        self.assertIn("failed to encode response", payload["error"]["data"]["detail"])
-
-    def test_serve_stdio_shuts_down_tool_service_on_eof(self) -> None:
+    def test_shutdown_fans_out_to_services(self) -> None:
         service = FakeToolService()
-        server = McpServer(service)
-        stdin = StringIO("")
-        stdout = StringIO()
+        composite = CompositeToolService(service)
 
-        exit_code = serve_stdio(server, stdin=stdin, stdout=stdout)
+        composite.shutdown()
 
-        self.assertEqual(exit_code, 0)
         self.assertTrue(service.was_shutdown)
 
 
+class BuildServerTests(unittest.TestCase):
+    def test_exposes_core_tool_surface(self) -> None:
+        tools = build_server(ROOT).definition_map()
+
+        for name in (
+            "freecad_command_describe",
+            "freecad_session_status",
+            "freecad_session_start",
+            "freecad_gui_attach",
+            "freecad_partdesign_pad",
+        ):
+            self.assertIn(name, tools)
+
+
+class ResourceTests(unittest.TestCase):
+    def test_descriptors_include_known_uris(self) -> None:
+        uris = {descriptor["uri"] for descriptor in RESOURCE_DESCRIPTORS}
+
+        self.assertIn("freecad://docs/roadmap-status", uris)
+        self.assertIn("freecad://docs/workbench-bridge", uris)
+        self.assertIn("freecad://schemas/tools", uris)
+
+    def test_read_known_resource_returns_content(self) -> None:
+        contents = read_resource(ROOT, "freecad://docs/architecture")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "text/markdown")
+        self.assertIn("Architecture", contents["text"])
+
+    def test_read_unknown_resource_returns_none(self) -> None:
+        self.assertIsNone(read_resource(ROOT, "freecad://docs/does-not-exist"))
+
+
+class PromptTests(unittest.TestCase):
+    def test_descriptors_list_both_prompts(self) -> None:
+        names = {descriptor["name"] for descriptor in PROMPT_DESCRIPTORS}
+
+        self.assertEqual(names, {"freecad_design_task", "freecad_phase_gate"})
+
+    def test_render_design_task_includes_task(self) -> None:
+        rendered = render_prompt("freecad_design_task", {"task": "make a cube"})
+
+        self.assertIn("make a cube", rendered["messages"][0]["content"]["text"])
+
+    def test_render_phase_gate_includes_phase(self) -> None:
+        rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})
+
+        self.assertIn("Phase: smoke", rendered["messages"][0]["content"]["text"])
+
+    def test_render_unknown_prompt_raises(self) -> None:
+        with self.assertRaises(ToolInputError):
+            render_prompt("nope", {})
+
+
+class SdkServerWiringTests(unittest.TestCase):
+    def test_create_mcp_server_builds_with_tool_surface(self) -> None:
+        server, tool_service = create_mcp_server(ROOT)
+        try:
+            self.assertTrue(hasattr(server, "run"))
+            self.assertIn("freecad_command_describe", tool_service.definition_map())
+        finally:
+            tool_service.shutdown()
+
+
 class FakeToolService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.was_shutdown = False
 
-    def definitions(self):
+    def definitions(self) -> list[ToolDefinition]:
         return [
             ToolDefinition(
                 name="demo",
@@ -107,13 +113,12 @@ class FakeToolService:
             )
         ]
 
-    def definition_map(self):
+    def definition_map(self) -> dict[str, ToolDefinition]:
         return {definition.name: definition for definition in self.definitions()}
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         self.was_shutdown = True
 
 
-class BrokenResponseServer:
-    def handle_message(self, message):
-        return {"jsonrpc": "2.0", "id": message.get("id"), "result": {"bad": {1, 2, 3}}}
+if __name__ == "__main__":
+    unittest.main()
