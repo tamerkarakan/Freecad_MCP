@@ -482,6 +482,27 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
             ],
             "evidence": "Import/export commands are distributed across Part, Mesh, TechDraw, Spreadsheet, and Import modules.",
         },
+        {
+            "family": "freecad.cam",
+            "priority": "P3",
+            "tools": [
+                "freecad_cam_path_create",
+                "freecad_cam_path_inspect",
+                "freecad_cam_path_export",
+            ],
+            "evidence": f"CAM module exposes {counts.get('CAM', 0)} scanned commands; first typed slice avoids job/toolbit/postprocessor mutation.",
+        },
+        {
+            "family": "freecad.fem",
+            "priority": "P3",
+            "tools": [
+                "freecad_fem_analysis_create",
+                "freecad_fem_material_create",
+                "freecad_fem_constraint_create",
+                "freecad_fem_inspect",
+            ],
+            "evidence": f"FEM module exposes {counts.get('Fem', 0)} scanned commands; first typed slice avoids solver execution.",
+        },
     ]
 
 

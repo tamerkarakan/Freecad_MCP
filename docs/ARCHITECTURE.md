@@ -83,6 +83,8 @@ Implemented groups:
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.
 - TechDraw first slice: create page/template, create part view, inspect page/view graph, and export headless DXF.
+- CAM first slice: create simple `Path::Feature` objects from explicit commands, inspect command summaries, and export raw G-code without invoking a machine postprocessor.
+- FEM first slice: create analysis containers, solid material objects, fixed/force constraints, and inspect analysis membership without running solvers.
 
 Process-per-call typed tools use explicit file paths and output paths. Persistent worker tools use `session_id` plus bridge-local `document_id` for in-memory workflows.
 

@@ -22,6 +22,8 @@
 | P2 | `freecad.assembly` | `freecad_assembly_create`, `freecad_assembly_insert`, `freecad_assembly_create_joint`, `freecad_assembly_solve`, `freecad_assembly_bom` | Assembly module exposes 31 scanned commands. |
 | P2 | `freecad.techdraw` | `freecad_techdraw_page_create`, `freecad_techdraw_view_create`, `freecad_techdraw_inspect`, `freecad_techdraw_page_export` | TechDraw module exposes 127 scanned commands and headless App APIs for DrawPage/DrawViewPart/DXF export. |
 | P2 | `freecad.import_export` | `freecad_import_file`, `freecad_export_file`, `freecad_supported_formats` | Import/export commands are distributed across Part, Mesh, TechDraw, Spreadsheet, and Import modules. |
+| P3 | `freecad.cam` | `freecad_cam_path_create`, `freecad_cam_path_inspect`, `freecad_cam_path_export` | CAM module exposes 49 scanned commands; first typed slice avoids job/toolbit/postprocessor mutation. |
+| P3 | `freecad.fem` | `freecad_fem_analysis_create`, `freecad_fem_material_create`, `freecad_fem_constraint_create`, `freecad_fem_inspect` | FEM module exposes 102 scanned commands; first typed slice avoids solver execution. |
 
 ## Workbench Command Counts
 

@@ -799,6 +799,137 @@ def main() -> int:
         if not Path(techdraw_export["exported_path"]).exists() or techdraw_export["bytes"] <= 0:
             raise RuntimeError(f"TechDraw export missing: {techdraw_export}")
 
+        cam_doc = temp / "cam.FCStd"
+        cam_gcode = temp / "toolpath.ngc"
+        cam_path = assert_ok(
+            service.definition_map()["freecad_cam_path_create"].handler(
+                {
+                    "document_name": "CAMSmoke",
+                    "path_name": "Toolpath",
+                    "commands": [
+                        {"name": "G0", "parameters": {"X": 0.0, "Y": 0.0, "Z": 5.0}},
+                        {"name": "G1", "parameters": {"X": 1.0, "Y": 2.0, "Z": -1.0, "F": 100.0}},
+                    ],
+                    "output_path": str(cam_doc),
+                    "overwrite": True,
+                }
+            ),
+            "cam path create",
+        )
+        if cam_path["path"]["type_id"] != "Path::Feature" or cam_path["path"]["cam"]["command_count"] != 2:
+            raise RuntimeError(f"CAM path mismatch: {cam_path}")
+        cam_inspect = assert_ok(
+            service.definition_map()["freecad_cam_path_inspect"].handler(
+                {"document_path": str(cam_doc), "path_name": "Toolpath"}
+            ),
+            "cam path inspect",
+        )
+        if cam_inspect["count"] != 1:
+            raise RuntimeError(f"CAM inspect mismatch: {cam_inspect}")
+        cam_export = assert_ok(
+            service.definition_map()["freecad_cam_path_export"].handler(
+                {
+                    "document_path": str(cam_doc),
+                    "path_name": "Toolpath",
+                    "output_path": str(cam_gcode),
+                    "overwrite": True,
+                }
+            ),
+            "cam path export",
+        )
+        if not Path(cam_export["exported_path"]).exists() or "G1" not in Path(cam_export["exported_path"]).read_text(encoding="utf-8"):
+            raise RuntimeError(f"CAM export mismatch: {cam_export}")
+
+        fem_doc = temp / "fem.FCStd"
+        fem_base = assert_ok(
+            service.definition_map()["freecad_part_create_primitive"].handler(
+                {
+                    "document_name": "FEMSmoke",
+                    "primitive": "box",
+                    "object_name": "FemBox",
+                    "properties": {"Length": 10.0, "Width": 3.0, "Height": 2.0},
+                    "output_path": str(fem_doc),
+                    "overwrite": True,
+                }
+            ),
+            "fem base box",
+        )
+        if fem_base["object"]["shape"]["solids"] != 1:
+            raise RuntimeError(f"FEM base box mismatch: {fem_base}")
+        fem_analysis = assert_ok(
+            service.definition_map()["freecad_fem_analysis_create"].handler(
+                {
+                    "document_path": str(fem_doc),
+                    "analysis_name": "Analysis",
+                    "output_path": str(fem_doc),
+                    "overwrite": True,
+                }
+            ),
+            "fem analysis create",
+        )
+        if fem_analysis["analysis"]["type_id"] != "Fem::FemAnalysis":
+            raise RuntimeError(f"FEM analysis mismatch: {fem_analysis}")
+        fem_material = assert_ok(
+            service.definition_map()["freecad_fem_material_create"].handler(
+                {
+                    "document_path": str(fem_doc),
+                    "analysis_name": "Analysis",
+                    "material_name": "Steel",
+                    "material": {
+                        "Name": "Steel",
+                        "YoungsModulus": "210000 MPa",
+                        "PoissonRatio": "0.30",
+                        "Density": "7900 kg/m^3",
+                    },
+                    "output_path": str(fem_doc),
+                    "overwrite": True,
+                }
+            ),
+            "fem material create",
+        )
+        if fem_material["material"]["type_id"] != "App::MaterialObjectPython":
+            raise RuntimeError(f"FEM material mismatch: {fem_material}")
+        fem_fixed = assert_ok(
+            service.definition_map()["freecad_fem_constraint_create"].handler(
+                {
+                    "document_path": str(fem_doc),
+                    "analysis_name": "Analysis",
+                    "constraint_type": "fixed",
+                    "constraint_name": "FixedFace",
+                    "references": [{"object_name": "FemBox", "sub_element": "Face1"}],
+                    "output_path": str(fem_doc),
+                    "overwrite": True,
+                }
+            ),
+            "fem fixed constraint create",
+        )
+        if fem_fixed["constraint"]["type_id"] != "Fem::ConstraintFixed":
+            raise RuntimeError(f"FEM fixed constraint mismatch: {fem_fixed}")
+        fem_force = assert_ok(
+            service.definition_map()["freecad_fem_constraint_create"].handler(
+                {
+                    "document_path": str(fem_doc),
+                    "analysis_name": "Analysis",
+                    "constraint_type": "force",
+                    "constraint_name": "ForceFace",
+                    "references": [{"object_name": "FemBox", "sub_element": "Face2"}],
+                    "force": "1000 N",
+                    "direction_reference": {"object_name": "FemBox", "sub_element": "Edge1"},
+                    "output_path": str(fem_doc),
+                    "overwrite": True,
+                }
+            ),
+            "fem force constraint create",
+        )
+        if fem_force["constraint"]["type_id"] != "Fem::ConstraintForce":
+            raise RuntimeError(f"FEM force constraint mismatch: {fem_force}")
+        fem_inspect = assert_ok(
+            service.definition_map()["freecad_fem_inspect"].handler({"document_path": str(fem_doc)}),
+            "fem inspect",
+        )
+        if fem_inspect["analysis_count"] != 1 or fem_inspect["object_count"] < 4:
+            raise RuntimeError(f"FEM inspect mismatch: {fem_inspect}")
+
     print("typed CAD smoke OK")
     return 0
 

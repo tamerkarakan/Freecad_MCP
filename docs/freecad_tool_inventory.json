@@ -417,6 +417,27 @@
         "freecad_supported_formats"
       ],
       "evidence": "Import/export commands are distributed across Part, Mesh, TechDraw, Spreadsheet, and Import modules."
+    },
+    {
+      "family": "freecad.cam",
+      "priority": "P3",
+      "tools": [
+        "freecad_cam_path_create",
+        "freecad_cam_path_inspect",
+        "freecad_cam_path_export"
+      ],
+      "evidence": "CAM module exposes 49 scanned commands; first typed slice avoids job/toolbit/postprocessor mutation."
+    },
+    {
+      "family": "freecad.fem",
+      "priority": "P3",
+      "tools": [
+        "freecad_fem_analysis_create",
+        "freecad_fem_material_create",
+        "freecad_fem_constraint_create",
+        "freecad_fem_inspect"
+      ],
+      "evidence": "FEM module exposes 102 scanned commands; first typed slice avoids solver execution."
     }
   ],
   "commands": [

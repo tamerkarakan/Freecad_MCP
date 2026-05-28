@@ -77,6 +77,13 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_techdraw_view_create` | Create a TechDraw part view from document source objects. | `TechDraw::DrawViewPart`, `DrawPage.addView` |
 | `freecad_techdraw_inspect` | Inspect TechDraw pages, views, and source object links. | TechDraw App object graph |
 | `freecad_techdraw_page_export` | Export a TechDraw page as DXF in headless mode. | `TechDraw.writeDXFPage` |
+| `freecad_cam_path_create` | Create a simple CAM path from explicit command specs. | `Path.Command`, `Path.Path`, `Path::Feature` |
+| `freecad_cam_path_inspect` | Inspect CAM path commands. | `Path::Feature.Path.Commands` |
+| `freecad_cam_path_export` | Export raw path G-code without postprocessor execution. | `Path.Path.toGCode` |
+| `freecad_fem_analysis_create` | Create a FEM analysis container. | `ObjectsFem.makeAnalysis` |
+| `freecad_fem_material_create` | Create a FEM material and add it to an analysis. | `ObjectsFem.makeMaterialSolid` |
+| `freecad_fem_constraint_create` | Create fixed/force constraints and add them to an analysis. | `ObjectsFem.makeConstraintFixed`, `ObjectsFem.makeConstraintForce` |
+| `freecad_fem_inspect` | Inspect analysis membership, materials, constraints, and references. | FEM object graph |
 | `freecad_import_file` | Import CAD file into active document. | Import/Part/Mesh commands |
 | `freecad_export_file` | Export selected/all objects. | Import/Part/Mesh commands |
 | `freecad_supported_formats` | Report detected import/export formats. | Source/runtime registry |

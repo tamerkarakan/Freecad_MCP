@@ -108,6 +108,8 @@ Typed CAD tool groups are also available:
 - import/export and mesh tools
 - Assembly: create/insert/link native JointObject proxies/recompute/BOM
 - TechDraw: create page/template, create part view, inspect pages/views, export headless DXF
+- CAM: create simple `Path::Feature` from explicit commands, inspect, and export raw G-code
+- FEM: create analysis containers, material objects, fixed/force constraints, and inspect analysis membership
 
 The server also exposes MCP resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, TechDraw/CAM/FEM typed-wrapper planning, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
 

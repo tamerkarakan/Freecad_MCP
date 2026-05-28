@@ -163,6 +163,76 @@ def mesh_summary(obj):
     }
 
 
+def cam_summary(obj):
+    type_id = getattr(obj, "TypeId", "")
+    if not str(type_id).startswith("Path::"):
+        return None
+    summary = {"type": type_id}
+    path = getattr(obj, "Path", None)
+    if path is not None:
+        commands = list(getattr(path, "Commands", []) or [])
+        gcode = path.toGCode() if hasattr(path, "toGCode") else ""
+        summary["command_count"] = len(commands)
+        summary["commands"] = [
+            {
+                "name": str(getattr(command, "Name", "")),
+                "parameters": dict(getattr(command, "Parameters", {}) or {}),
+            }
+            for command in commands[:50]
+        ]
+        summary["gcode_preview"] = gcode[:1000]
+        summary["gcode_truncated"] = len(gcode) > 1000
+    return summary
+
+
+def fem_reference_summary(refs):
+    rows = []
+    for ref in refs or []:
+        try:
+            obj, subelements = ref
+        except Exception:
+            rows.append({"repr": repr(ref)})
+            continue
+        if isinstance(subelements, str):
+            subelements = [subelements]
+        rows.append(
+            {
+                "object_name": getattr(obj, "Name", str(obj)),
+                "subelements": list(subelements or []),
+            }
+        )
+    return rows
+
+
+def fem_summary(obj):
+    type_id = getattr(obj, "TypeId", "")
+    if not (str(type_id).startswith("Fem::") or str(type_id) == "App::MaterialObjectPython"):
+        return None
+    summary = {"type": type_id}
+    if type_id == "Fem::FemAnalysis":
+        summary["members"] = [getattr(member, "Name", str(member)) for member in getattr(obj, "Group", [])]
+        summary["member_count"] = len(summary["members"])
+    if hasattr(obj, "References"):
+        summary["references"] = fem_reference_summary(getattr(obj, "References", []))
+    if hasattr(obj, "Material"):
+        try:
+            summary["material"] = dict(obj.Material)
+        except Exception:
+            summary["material"] = str(obj.Material)
+    if hasattr(obj, "Force"):
+        summary["force"] = quantity_summary(obj.Force)
+    if hasattr(obj, "Direction"):
+        try:
+            direction_obj, direction_subs = obj.Direction
+            summary["direction"] = {
+                "object_name": getattr(direction_obj, "Name", str(direction_obj)),
+                "subelements": list(direction_subs or []),
+            }
+        except Exception:
+            summary["direction"] = str(obj.Direction)
+    return summary
+
+
 def constraint_summary(constraint, index=None):
     summary = {
         "index": index,
@@ -262,6 +332,8 @@ def object_summary(obj):
         "placement": placement_summary(obj),
         "shape": shape_summary(obj),
         "mesh": mesh_summary(obj),
+        "cam": cam_summary(obj),
+        "fem": fem_summary(obj),
         "sketch": sketch_summary(obj),
         "techdraw": techdraw_summary(obj),
     }
@@ -1218,6 +1290,7 @@ def action_supported_formats(args):
         "import": [".FCStd", ".step", ".stp", ".iges", ".igs", ".brep", ".brp", ".stl", ".obj", ".ply", ".off"],
         "export": [".FCStd", ".step", ".stp", ".iges", ".igs", ".brep", ".brp", ".stl", ".obj", ".ply", ".off"],
         "techdraw_page_export": [".dxf"],
+        "cam_path_export": [".gcode", ".nc", ".ngc", ".tap", ".txt"],
         "notes": "Formats depend on the actual FreeCAD build and installed modules.",
     }
 
@@ -1512,6 +1585,195 @@ def action_techdraw_page_export(args):
     }
 
 
+def make_path_command(spec):
+    import Path
+
+    if isinstance(spec, str):
+        return Path.Command(spec)
+    if not isinstance(spec, dict):
+        raise ValueError("CAM command must be a string or object")
+    name = spec.get("name") or spec.get("command")
+    if not name:
+        raise ValueError("CAM command object requires name")
+    parameters = spec.get("parameters")
+    if parameters is None:
+        return Path.Command(str(name))
+    return Path.Command(str(name), {str(key): float(value) for key, value in parameters.items()})
+
+
+def action_cam_path_create(args):
+    import Path
+
+    doc = open_or_new(args)
+    commands = [make_path_command(command) for command in args.get("commands") or []]
+    if not commands:
+        raise ValueError("commands must contain at least one CAM command")
+    doc.openTransaction("MCP create CAM path")
+    try:
+        obj = doc.addObject("Path::Feature", args.get("path_name") or "Toolpath")
+        obj.Path = Path.Path(commands)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "path": object_summary(obj), "document": document_summary(doc)}
+
+
+def action_cam_path_inspect(args):
+    doc = App.openDocument(args["document_path"])
+    paths = [
+        obj
+        for obj in doc.Objects
+        if str(getattr(obj, "TypeId", "")).startswith("Path::")
+        and (not args.get("path_name") or obj.Name == args.get("path_name") or obj.Label == args.get("path_name"))
+    ]
+    return {"paths": [object_summary(path) for path in paths], "count": len(paths), "document": document_summary(doc)}
+
+
+def action_cam_path_export(args):
+    doc = App.openDocument(args["document_path"])
+    path_obj = get_object(doc, args["path_name"])
+    output = safe_output_path(args["output_path"], args)
+    if os.path.exists(output) and not bool(args.get("overwrite", False)):
+        raise ValueError("output exists; pass overwrite=true: " + output)
+    path = getattr(path_obj, "Path", None)
+    if path is None or not hasattr(path, "toGCode"):
+        raise ValueError("object is not a CAM Path feature: " + args["path_name"])
+    gcode = path.toGCode()
+    with open(output, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(gcode)
+        if gcode and not gcode.endswith("\n"):
+            handle.write("\n")
+    return {"exported_path": output, "path": object_summary(path_obj), "bytes": os.path.getsize(output)}
+
+
+def get_or_create_fem_analysis(doc, name):
+    if name:
+        try:
+            return get_object(doc, name)
+        except ValueError:
+            pass
+    for obj in doc.Objects:
+        if getattr(obj, "TypeId", "") == "Fem::FemAnalysis":
+            return obj
+    import ObjectsFem
+
+    return ObjectsFem.makeAnalysis(doc, name or "Analysis")
+
+
+def fem_refs(doc, specs):
+    refs = []
+    for spec in specs or []:
+        obj = get_object(doc, spec["object_name"])
+        subelements = spec.get("subelements")
+        if subelements is None:
+            subelements = [spec.get("sub_element") or spec.get("subelement") or ""]
+        if isinstance(subelements, str):
+            subelements = [subelements]
+        refs.append((obj, tuple(str(sub) for sub in subelements if sub)))
+    return refs
+
+
+def action_fem_analysis_create(args):
+    import ObjectsFem
+
+    doc = open_or_new(args)
+    doc.openTransaction("MCP create FEM analysis")
+    try:
+        analysis = ObjectsFem.makeAnalysis(doc, args.get("analysis_name") or "Analysis")
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "analysis": object_summary(analysis), "document": document_summary(doc)}
+
+
+def action_fem_material_create(args):
+    import ObjectsFem
+
+    doc = App.openDocument(args["document_path"])
+    analysis = get_or_create_fem_analysis(doc, args.get("analysis_name"))
+    material_data = args.get("material") or {}
+    doc.openTransaction("MCP create FEM material")
+    try:
+        material = ObjectsFem.makeMaterialSolid(doc, args.get("material_name") or "FemMaterial")
+        if material_data:
+            material.Material = {str(key): str(value) for key, value in material_data.items()}
+        if args.get("references"):
+            material.References = fem_refs(doc, args.get("references"))
+        analysis.addObject(material)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "analysis": object_summary(analysis), "material": object_summary(material), "document": document_summary(doc)}
+
+
+def action_fem_constraint_create(args):
+    import ObjectsFem
+
+    doc = App.openDocument(args["document_path"])
+    analysis = get_or_create_fem_analysis(doc, args.get("analysis_name"))
+    constraint_type = (args.get("constraint_type") or "fixed").lower()
+    doc.openTransaction("MCP create FEM constraint")
+    try:
+        if constraint_type == "fixed":
+            constraint = ObjectsFem.makeConstraintFixed(doc, args.get("constraint_name") or "ConstraintFixed")
+        elif constraint_type == "force":
+            constraint = ObjectsFem.makeConstraintForce(doc, args.get("constraint_name") or "ConstraintForce")
+            if args.get("force") is not None:
+                constraint.Force = str(args["force"])
+            if args.get("direction_reference"):
+                direction_spec = args["direction_reference"]
+                direction_obj = get_object(doc, direction_spec["object_name"])
+                direction_subs = direction_spec.get("subelements") or [direction_spec.get("sub_element") or ""]
+                if isinstance(direction_subs, str):
+                    direction_subs = [direction_subs]
+                constraint.Direction = (direction_obj, [str(sub) for sub in direction_subs if sub])
+            elif args.get("direction_vector") is not None and hasattr(constraint, "DirectionVector"):
+                constraint.DirectionVector = vector(args["direction_vector"])
+        else:
+            raise ValueError("unsupported constraint_type: " + str(constraint_type))
+        if args.get("references"):
+            constraint.References = fem_refs(doc, args.get("references"))
+        analysis.addObject(constraint)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "analysis": object_summary(analysis),
+        "constraint": object_summary(constraint),
+        "document": document_summary(doc),
+    }
+
+
+def action_fem_inspect(args):
+    doc = App.openDocument(args["document_path"])
+    fem_objects = [
+        obj
+        for obj in doc.Objects
+        if str(getattr(obj, "TypeId", "")).startswith("Fem::") or str(getattr(obj, "TypeId", "")) == "App::MaterialObjectPython"
+    ]
+    analyses = [obj for obj in fem_objects if getattr(obj, "TypeId", "") == "Fem::FemAnalysis"]
+    return {
+        "analyses": [object_summary(analysis) for analysis in analyses],
+        "fem_objects": [object_summary(obj) for obj in fem_objects],
+        "analysis_count": len(analyses),
+        "object_count": len(fem_objects),
+        "document": document_summary(doc),
+    }
+
+
 DISPATCH = {
     "document_new": action_document_new,
     "document_open": action_document_open,
@@ -1555,6 +1817,13 @@ DISPATCH = {
     "techdraw_view_create": action_techdraw_view_create,
     "techdraw_inspect": action_techdraw_inspect,
     "techdraw_page_export": action_techdraw_page_export,
+    "cam_path_create": action_cam_path_create,
+    "cam_path_inspect": action_cam_path_inspect,
+    "cam_path_export": action_cam_path_export,
+    "fem_analysis_create": action_fem_analysis_create,
+    "fem_material_create": action_fem_material_create,
+    "fem_constraint_create": action_fem_constraint_create,
+    "fem_inspect": action_fem_inspect,
 }
 
 
@@ -1675,6 +1944,13 @@ class CadToolService:
             self._tool("freecad_techdraw_view_create", "Create TechDraw Part View", "Create a TechDraw DrawViewPart on a page from source document objects.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}, "source_objects": {"type": "array", "items": {"type": "string"}}, "view_name": {"type": "string"}, "direction": {"type": "array", "items": {"type": "number"}}, "x_direction": {"type": "array", "items": {"type": "number"}}, "scale": {"type": "number"}, "x": {"type": "number"}, "y": {"type": "number"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "page_name", "source_objects"], "techdraw_view_create"),
             self._tool("freecad_techdraw_inspect", "Inspect TechDraw", "Inspect TechDraw pages and views in a document.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}}, ["document_path"], "techdraw_inspect"),
             self._tool("freecad_techdraw_page_export", "Export TechDraw Page", "Export a TechDraw page through headless TechDraw APIs. DXF is currently supported.", {"document_path": {"type": "string"}, "page_name": {"type": "string"}, "output_path": {"type": "string"}, "format": {"type": "string", "enum": ["dxf"]}, "overwrite": {"type": "boolean"}}, ["document_path", "page_name", "output_path"], "techdraw_page_export"),
+            self._tool("freecad_cam_path_create", "Create CAM Path", "Create a simple CAM Path::Feature from explicit G-code command specs.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "path_name": {"type": "string"}, "commands": {"type": "array", "items": {"oneOf": [{"type": "string"}, {"type": "object"}]}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, ["commands"], "cam_path_create"),
+            self._tool("freecad_cam_path_inspect", "Inspect CAM Path", "Inspect CAM Path::Feature objects and command summaries.", {"document_path": {"type": "string"}, "path_name": {"type": "string"}}, ["document_path"], "cam_path_inspect"),
+            self._tool("freecad_cam_path_export", "Export CAM Path G-code", "Export a CAM Path::Feature to raw G-code without invoking a machine postprocessor.", {"document_path": {"type": "string"}, "path_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, ["document_path", "path_name", "output_path"], "cam_path_export"),
+            self._tool("freecad_fem_analysis_create", "Create FEM Analysis", "Create a FEM analysis container.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "analysis_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, [], "fem_analysis_create"),
+            self._tool("freecad_fem_material_create", "Create FEM Material", "Create a FEM solid material and add it to an analysis.", {"document_path": {"type": "string"}, "analysis_name": {"type": "string"}, "material_name": {"type": "string"}, "material": {"type": "object"}, "references": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "fem_material_create"),
+            self._tool("freecad_fem_constraint_create", "Create FEM Constraint", "Create a fixture-safe FEM fixed or force constraint and add it to an analysis.", {"document_path": {"type": "string"}, "analysis_name": {"type": "string"}, "constraint_type": {"type": "string", "enum": ["fixed", "force"]}, "constraint_name": {"type": "string"}, "references": {"type": "array", "items": {"type": "object"}}, "force": {"type": "string"}, "direction_reference": {"type": "object"}, "direction_vector": {"type": "array", "items": {"type": "number"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "fem_constraint_create"),
+            self._tool("freecad_fem_inspect", "Inspect FEM Analysis", "Inspect FEM analyses, materials, and constraints in a document.", {"document_path": {"type": "string"}}, ["document_path"], "fem_inspect"),
         ]
 
     def definition_map(self) -> dict[str, ToolDefinition]:

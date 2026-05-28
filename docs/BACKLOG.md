@@ -2,12 +2,12 @@
 
 ## Now
 
-- Add CAM/FEM fixture-backed typed wrappers after source-backed property contracts are narrowed.
+- Add MCP SDK adapter if the Python SDK becomes available in the runtime; bundled Python currently does not include the `mcp` package.
 
 ## Next
 
-- Add MCP SDK adapter if the Python SDK becomes available in the runtime; bundled Python currently does not include the `mcp` package.
 - Revisit high-level Sketcher `Group` and `Text` wrappers only after the FreeCAD 1.1.1 constructor crash/typing issue is resolved upstream or a safe API path is found.
+- Extend CAM/FEM beyond first slice only with fixture-backed job/solver contracts.
 
 ## Later
 

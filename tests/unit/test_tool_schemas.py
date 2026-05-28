@@ -98,6 +98,20 @@ class ToolSchemaTests(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
 
+    def test_cam_and_fem_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_cam_path_create",
+            "freecad_cam_path_inspect",
+            "freecad_cam_path_export",
+            "freecad_fem_analysis_create",
+            "freecad_fem_material_create",
+            "freecad_fem_constraint_create",
+            "freecad_fem_inspect",
+        ]:
+            self.assertIn(name, tools)
+
 
 if __name__ == "__main__":
     unittest.main()

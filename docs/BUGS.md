@@ -8,7 +8,7 @@
 - Assembly joint creation now creates native JointObject proxies and opt-in GUI connector-reference smoke populates `Reference1`/`Reference2`; broader solver correctness fixtures are still pending.
 - Mesh boolean support depends on the actual FreeCAD build and may return tool errors on unsupported operations.
 - TechDraw typed tools currently support headless DXF export only; SVG/PDF export uses `TechDrawGui` APIs and should be validated behind GUI attach/workbench mode.
-- CAM/FEM typed wrappers remain design-first because toolbit/postprocessor/solver dependencies need fixture-backed property contracts before default mutation tools are safe.
+- CAM/FEM first typed slices avoid machine postprocessor and solver execution; job/toolbit/postprocessor/solver workflows still need fixture-backed property contracts before default mutation tools are safe.
 - File reads/imports accept caller-provided paths; write paths are workspace-gated by default.
 - Generated inventory is static; dynamically named commands can be missed.
 - Python `GetResources` parsing is conservative and can miss non-literal metadata.
