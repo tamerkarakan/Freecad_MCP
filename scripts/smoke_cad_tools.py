@@ -70,6 +70,7 @@ def main() -> int:
         boolean_doc = temp / "boolean.FCStd"
         open_sketch_doc = temp / "open_sketch.FCStd"
         advanced_sketch_doc = temp / "advanced_sketch.FCStd"
+        connected_sketch_doc = temp / "connected_sketch.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
 
@@ -590,6 +591,43 @@ def main() -> int:
         expected_min_constraints = expected_profile_constraints + len(radius_constraint_indices)
         if validation["geometry_count"] < expected_profile_geometry or validation["constraint_count"] < expected_min_constraints:
             raise RuntimeError(f"advanced sketch validation mismatch: {validation}")
+
+        assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "ConnectedSketchSmoke",
+                    "sketch_name": "ConnectedSketch",
+                    "output_path": str(connected_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "connected sketch create",
+        )
+        connected_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(connected_sketch_doc),
+                    "sketch_name": "ConnectedSketch",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                        {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
+                        {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                        {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
+                    ],
+                    "connect_sequence": True,
+                    "close_sequence": True,
+                    "require_closed": True,
+                    "output_path": str(connected_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "connected sketch add geometry",
+        )
+        if len(connected_geometry["added_indices"]) != 4 or len(connected_geometry["constraint_indices"]) != 4:
+            raise RuntimeError(f"connected sketch did not add expected geometry/constraints: {connected_geometry}")
+        closed_validation = connected_geometry.get("closed_validation", {})
+        if closed_validation.get("open_vertices"):
+            raise RuntimeError(f"connected sketch is not closed: {connected_geometry}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

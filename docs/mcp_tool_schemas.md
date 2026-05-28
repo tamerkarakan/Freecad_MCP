@@ -980,6 +980,18 @@ Add typed geometry to a worker Sketcher object.
         "type": "object"
       }
     },
+    "connect_sequence": {
+      "type": "boolean",
+      "description": "Add Coincident constraints between adjacent endpoint-capable geometry in the submitted order."
+    },
+    "close_sequence": {
+      "type": "boolean",
+      "description": "Also add a Coincident constraint from the last endpoint-capable geometry back to the first."
+    },
+    "require_closed": {
+      "type": "boolean",
+      "description": "Fail before saving if the resulting sequence still has open vertices."
+    },
     "output_path": {
       "type": "string"
     },
@@ -2965,6 +2977,18 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
       "items": {
         "type": "object"
       }
+    },
+    "connect_sequence": {
+      "type": "boolean",
+      "description": "Add Coincident constraints between adjacent endpoint-capable geometry in the submitted order."
+    },
+    "close_sequence": {
+      "type": "boolean",
+      "description": "Also add a Coincident constraint from the last endpoint-capable geometry back to the first."
+    },
+    "require_closed": {
+      "type": "boolean",
+      "description": "Fail before saving if the resulting sequence still has open vertices."
     },
     "output_path": {
       "type": "string"

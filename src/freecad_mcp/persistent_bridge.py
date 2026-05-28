@@ -670,6 +670,42 @@ def make_sketch_geometries(item):
     raise ValueError("unsupported sketch geometry: " + str(kind))
 
 
+def sketch_geometry_has_endpoints(geom):
+    return hasattr(geom, "StartPoint") and hasattr(geom, "EndPoint")
+
+
+def sketch_closed_validation(sketch):
+    solve_code = sketch.solve()
+    return {
+        "solve_code": solve_code,
+        "open_vertices": [point_list(vertex) for vertex in getattr(sketch, "OpenVertices", [])],
+        "conflicting_constraints": list(getattr(sketch, "ConflictingConstraints", [])),
+        "redundant_constraints": list(getattr(sketch, "RedundantConstraints", [])),
+        "malformed_constraints": list(getattr(sketch, "MalformedConstraints", [])),
+    }
+
+
+def add_sketch_geometry_batch(sketch, items, *, connect_sequence=False, close_sequence=False):
+    import Sketcher
+
+    added = []
+    constraint_indices = []
+    chain_indices = []
+    previous_index = None
+    for item in items:
+        for geom in make_sketch_geometries(item):
+            index = sketch.addGeometry(geom, bool(item.get("construction", False)))
+            added.append(index)
+            if sketch_geometry_has_endpoints(geom):
+                if connect_sequence and previous_index is not None:
+                    constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", previous_index, 2, index, 1)))
+                previous_index = index
+                chain_indices.append(index)
+    if close_sequence and len(chain_indices) > 1:
+        constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", chain_indices[-1], 2, chain_indices[0], 1)))
+    return added, constraint_indices
+
+
 def make_constraint(spec):
     import Sketcher
 
@@ -819,19 +855,38 @@ def action_sketch_create(params):
 def action_sketch_add_geometry(params):
     doc = get_doc(params)
     sketch = get_object(doc, params.get("sketch_name") or "")
-    added = []
+    connect_sequence = bool(params.get("connect_sequence", False))
+    close_sequence = bool(params.get("close_sequence", False))
+    require_closed = bool(params.get("require_closed", False))
+    closed_validation = None
     doc.openTransaction("MCP worker add sketch geometry")
     try:
-        for item in params.get("geometry") or []:
-            for geom in make_sketch_geometries(item):
-                added.append(sketch.addGeometry(geom, bool(item.get("construction", False))))
+        added, constraint_indices = add_sketch_geometry_batch(
+            sketch,
+            params.get("geometry") or [],
+            connect_sequence=connect_sequence,
+            close_sequence=close_sequence,
+        )
+        if require_closed:
+            closed_validation = sketch_closed_validation(sketch)
+            if closed_validation["open_vertices"]:
+                raise ValueError("sketch geometry sequence is not closed; open vertices: " + str(closed_validation["open_vertices"]))
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
         raise
     doc.recompute()
     saved = save_doc(doc, params)
-    return {"saved_path": saved, "added_indices": added, "sketch": object_summary(sketch), "document": document_summary(doc)}
+    result = {
+        "saved_path": saved,
+        "added_indices": added,
+        "constraint_indices": constraint_indices,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
+    if closed_validation is not None:
+        result["closed_validation"] = closed_validation
+    return result
 
 
 def action_sketch_add_constraint(params):

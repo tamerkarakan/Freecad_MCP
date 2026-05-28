@@ -5,6 +5,7 @@
 - GUI attach tools now expose active document/view and selection/preselection through a local bridge, opt-in live GUI smoke passes, and a module-path Workbench host exists; installed/addon packaging is still pending.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
+- Reference-image tracing can produce visually plausible but topologically open Sketcher geometry if raw lines/arcs/B-splines are added without `Coincident` constraints. Use the connected sequence guard on `freecad_sketch_add_geometry` for ordered closed contours; the user-provided local sample `runs/reference_profile_sketch.FCStd` is an example of the bad pattern, with 24 geometry items, 0 constraints, and open vertices.
 - Assembly joint creation now creates native JointObject proxies and opt-in GUI connector-reference smoke populates `Reference1`/`Reference2`; broader solver correctness fixtures are still pending.
 - Mesh boolean support depends on the actual FreeCAD build and may return tool errors on unsupported operations.
 - TechDraw typed tools currently support headless DXF export only; SVG/PDF export uses `TechDrawGui` APIs and should be validated behind GUI attach/workbench mode.

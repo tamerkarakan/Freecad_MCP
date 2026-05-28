@@ -816,6 +816,42 @@ def make_sketch_geometries(item):
     raise ValueError("unsupported sketch geometry: " + str(kind))
 
 
+def sketch_geometry_has_endpoints(geom):
+    return hasattr(geom, "StartPoint") and hasattr(geom, "EndPoint")
+
+
+def sketch_closed_validation(sketch):
+    solve_code = sketch.solve()
+    return {
+        "solve_code": solve_code,
+        "open_vertices": [point_list(vertex) for vertex in getattr(sketch, "OpenVertices", [])],
+        "conflicting_constraints": list(getattr(sketch, "ConflictingConstraints", [])),
+        "redundant_constraints": list(getattr(sketch, "RedundantConstraints", [])),
+        "malformed_constraints": list(getattr(sketch, "MalformedConstraints", [])),
+    }
+
+
+def add_sketch_geometry_batch(sketch, items, *, connect_sequence=False, close_sequence=False):
+    import Sketcher
+
+    added = []
+    constraint_indices = []
+    chain_indices = []
+    previous_index = None
+    for item in items:
+        for geom in make_sketch_geometries(item):
+            index = sketch.addGeometry(geom, bool(item.get("construction", False)))
+            added.append(index)
+            if sketch_geometry_has_endpoints(geom):
+                if connect_sequence and previous_index is not None:
+                    constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", previous_index, 2, index, 1)))
+                previous_index = index
+                chain_indices.append(index)
+    if close_sequence and len(chain_indices) > 1:
+        constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", chain_indices[-1], 2, chain_indices[0], 1)))
+    return added, constraint_indices
+
+
 def make_constraint(spec):
     import Sketcher
 
@@ -952,15 +988,35 @@ def action_sketch_add_geometry(args):
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     items = args.get("geometry") or []
-    added = []
+    connect_sequence = bool(args.get("connect_sequence", False))
+    close_sequence = bool(args.get("close_sequence", False))
+    require_closed = bool(args.get("require_closed", False))
+    closed_validation = None
     doc.openTransaction("MCP add sketch geometry")
-    for item in items:
-        for geom in make_sketch_geometries(item):
-            added.append(sketch.addGeometry(geom, bool(item.get("construction", False))))
+    added, constraint_indices = add_sketch_geometry_batch(
+        sketch,
+        items,
+        connect_sequence=connect_sequence,
+        close_sequence=close_sequence,
+    )
+    if require_closed:
+        closed_validation = sketch_closed_validation(sketch)
+        if closed_validation["open_vertices"]:
+            doc.abortTransaction()
+            raise ValueError("sketch geometry sequence is not closed; open vertices: " + str(closed_validation["open_vertices"]))
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)
-    return {"saved_path": saved, "added_indices": added, "sketch": object_summary(sketch), "document": document_summary(doc)}
+    result = {
+        "saved_path": saved,
+        "added_indices": added,
+        "constraint_indices": constraint_indices,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
+    if closed_validation is not None:
+        result["closed_validation"] = closed_validation
+    return result
 
 
 def action_sketch_add_constraint(args):
@@ -1867,7 +1923,7 @@ class CadToolService:
                 "freecad_sketch_add_geometry",
                 "Add Sketch Geometry",
                 "Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch.",
-                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "geometry": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "geometry": {"type": "array", "items": {"type": "object"}}, "connect_sequence": {"type": "boolean", "description": "Add Coincident constraints between adjacent endpoint-capable geometry in the submitted order."}, "close_sequence": {"type": "boolean", "description": "Also add a Coincident constraint from the last endpoint-capable geometry back to the first."}, "require_closed": {"type": "boolean", "description": "Fail before saving if the resulting sequence still has open vertices."}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "geometry"],
                 "sketch_add_geometry",
             ),

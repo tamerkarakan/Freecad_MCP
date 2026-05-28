@@ -50,7 +50,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |
 | `freecad_part_check_geometry` | Run geometry validation. | `Part_CheckGeometry` |
 | `freecad_sketch_create` | Create a Sketcher object. | Sketcher commands/API |
-| `freecad_sketch_add_geometry` | Add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry. | Sketcher App API |
+| `freecad_sketch_add_geometry` | Add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints and closed-profile validation. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
 | `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
 | `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |

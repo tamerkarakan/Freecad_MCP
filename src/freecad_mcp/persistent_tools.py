@@ -252,6 +252,18 @@ class PersistentToolService:
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "geometry": {"type": "array", "items": {"type": "object"}},
+                    "connect_sequence": {
+                        "type": "boolean",
+                        "description": "Add Coincident constraints between adjacent endpoint-capable geometry in the submitted order.",
+                    },
+                    "close_sequence": {
+                        "type": "boolean",
+                        "description": "Also add a Coincident constraint from the last endpoint-capable geometry back to the first.",
+                    },
+                    "require_closed": {
+                        "type": "boolean",
+                        "description": "Fail before saving if the resulting sequence still has open vertices.",
+                    },
                     **SAVE_PROPS,
                 },
                 ["document_id", "sketch_name", "geometry"],

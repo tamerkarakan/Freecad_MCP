@@ -78,6 +78,43 @@ def main() -> int:
             if sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
                 raise RuntimeError(f"worker sketch create failed: {sketch}")
 
+            closed_chain_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerClosedChain",
+                    }
+                ),
+                "worker_closed_chain_sketch_create",
+            )
+            if closed_chain_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+                raise RuntimeError(f"worker closed chain sketch create failed: {closed_chain_sketch}")
+
+            closed_chain = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerClosedChain",
+                        "geometry": [
+                            {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                            {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
+                            {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                            {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
+                        ],
+                        "connect_sequence": True,
+                        "close_sequence": True,
+                        "require_closed": True,
+                    }
+                ),
+                "worker_closed_chain_sketch_add_geometry",
+            )
+            if len(closed_chain["added_indices"]) != 4 or len(closed_chain["constraint_indices"]) != 4:
+                raise RuntimeError(f"worker closed chain did not add expected geometry/constraints: {closed_chain}")
+            if closed_chain.get("closed_validation", {}).get("open_vertices"):
+                raise RuntimeError(f"worker closed chain is not closed: {closed_chain}")
+
             profile = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_profile"].handler(
                     {
