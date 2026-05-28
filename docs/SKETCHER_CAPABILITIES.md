@@ -6,11 +6,11 @@ The typed Sketcher MCP surface targets headless `Sketcher::SketchObject` APIs th
 
 | Tool | Capability |
 | --- | --- |
-| `freecad_sketch_create` | Create a Sketcher object in a new or existing document. |
+| `freecad_sketch_create` | Create a Sketcher object in a new or existing document, optionally inside a PartDesign Body attached to `XY`, `XZ`, or `YZ` origin plane. |
 | `freecad_sketch_add_geometry` | Add point, line/line segment, circle/3-point circle, circle arc, ellipse, ellipse arc, hyperbola arc, parabola arc, B-spline, and polyline geometry. It can optionally connect the submitted endpoint-capable geometry sequence with `Coincident` constraints, close the sequence, and fail before saving when open vertices remain. |
 | `freecad_sketch_add_constraint` | Add raw `Sketcher.Constraint` entries with optional name, datum, driving, active, virtual-space, visibility, and label metadata. |
 | `freecad_sketch_add_profile` | Add rectangle, polyline, regular polygon, circle, and slot helper profiles with optional constraints/construction mode. |
-| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments; it rejects endpoint drift before adding constraints, can `Block` geometry, validates face creation, and can enforce curve-preservation contracts such as required segment types, minimum curve count, and no line/polyline fallback. |
+| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments; it rejects endpoint drift before adding constraints, can `Block` geometry, validates face creation, can attach to a PartDesign Body origin plane, and can enforce curve-preservation contracts such as required segment types, minimum curve count, and no line/polyline fallback. |
 | `freecad_sketch_profile_validate` | Validate existing sketches for pad readiness, isolated points, branch vertices, near-duplicate micro-offset vertices, closed wires, face creation, native geometry type counts, curve intent mismatches, and optional full constraint. |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend `line`, `arc`, or `bspline` before creating sketch geometry. |
 | `freecad_sketch_edit_geometry` | Delete geometry, delete all geometry, set/toggle construction, add/delete external geometry, carbon-copy, move geometry, expose/delete internal geometry, and detect/remove degenerated geometry. |
@@ -34,6 +34,10 @@ This guard intentionally does not guess arbitrary nearby endpoints. For branched
 For production-style profiles, prefer `freecad_sketch_profile_create`. It treats each loop as an explicit ordered contour and checks that adjacent endpoints already coincide within `endpoint_tolerance` before adding `Coincident` constraints. This prevents the solver from dragging a visually traced curve into a different shape. When the reference image clearly contains curves, pass a curve contract such as `required_segment_types=["bspline","arc"]`, `minimum_curve_segments`, `forbid_polyline_fallback=true`, and `forbid_all_line_loops=true`; the tool rejects line/polyline approximations instead of accepting a degraded fallback. Segment-level `expected_type` with `fallback_policy="fail"` can also make a specific trace segment fail if the submitted actual geometry is not the intended native type. `freecad_sketch_profile_validate` then verifies the result can create Part faces, has no isolated point geometry, has no branch endpoints, has no tiny near-duplicate endpoint offsets, reports native geometry type counts, and can compare existing geometry indices against declared intent.
 
 Use `freecad_curve_fit_analyze` before choosing between `arc` and `bspline` when a trace is ambiguous. It fits the submitted points as a line and as a circular arc; if those simpler fits exceed tolerance, it recommends B-spline/freeform instead of letting the agent rely only on visual intuition.
+
+## PartDesign Body Attachment
+
+FreeCAD GUI asks whether to create a Body and which plane to use before a Sketcher profile can drive PartDesign features. The MCP equivalent is to pass `body_name` and `attachment_plane` (`XY`, `XZ`, or `YZ`) to `freecad_sketch_create` or `freecad_sketch_profile_create`. The tool creates or reuses the Body, adds the sketch to it, sets `AttachmentSupport` to the Body origin plane, and sets `MapMode="FlatFace"`. Use `freecad_partdesign_pad` afterward when the intended result is a PartDesign solid feature rather than a standalone Part extrusion.
 
 ## GUI-Only Boundary
 

@@ -807,6 +807,133 @@ Extrude a source shape inside an in-memory worker document.
 }
 ```
 
+## `freecad_worker_partdesign_body_create`
+
+Create or reuse a PartDesign Body with origin planes inside an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_pad`
+
+Create a PartDesign Pad from a worker Sketcher profile inside a Body, attaching the sketch to an origin plane when needed.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "pad_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "length": {
+      "type": "number"
+    },
+    "length2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.
@@ -909,7 +1036,7 @@ Run shape validity checks inside an in-memory worker document.
 
 ## `freecad_worker_sketch_create`
 
-Create a Sketcher object inside an in-memory worker document.
+Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane.
 
 ```json
 {
@@ -929,6 +1056,20 @@ Create a Sketcher object inside an in-memory worker document.
     },
     "sketch_name": {
       "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
     },
     "output_path": {
       "type": "string"
@@ -1118,7 +1259,7 @@ Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.
 
 ```json
 {
@@ -1138,6 +1279,20 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "sketch_name": {
       "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
     },
     "loops": {
       "type": "array",
@@ -2860,6 +3015,147 @@ Extrude a source shape.
 }
 ```
 
+## `freecad_partdesign_body_create`
+
+Create or reuse a PartDesign Body with origin planes.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  }
+}
+```
+
+## `freecad_partdesign_pad`
+
+Create a PartDesign Pad from a Sketcher profile inside a Body, attaching the sketch to an origin plane when needed.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "pad_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "length": {
+      "type": "number"
+    },
+    "length2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_part_revolve`
 
 Revolve a source shape.
@@ -3110,7 +3406,7 @@ Run shape validity checks.
 
 ## `freecad_sketch_create`
 
-Create a Sketcher object.
+Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane.
 
 ```json
 {
@@ -3124,6 +3420,20 @@ Create a Sketcher object.
     },
     "sketch_name": {
       "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
     },
     "output_path": {
       "type": "string"
@@ -3344,7 +3654,7 @@ Add common closed/open Sketcher profiles such as rectangle, polyline, regular po
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.
 
 ```json
 {
@@ -3358,6 +3668,20 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "sketch_name": {
       "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
     },
     "loops": {
       "type": "array",

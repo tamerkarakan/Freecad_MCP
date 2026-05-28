@@ -52,6 +52,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_document_export",
             "freecad_worker_part_create_primitive",
             "freecad_worker_part_boolean",
+            "freecad_worker_partdesign_body_create",
+            "freecad_worker_partdesign_pad",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -117,6 +119,18 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_fem_inspect",
         ]:
             self.assertIn(name, tools)
+
+    def test_partdesign_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_partdesign_body_create",
+            "freecad_partdesign_pad",
+        ]:
+            self.assertIn(name, tools)
+        sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("body_name", sketch_props)
+        self.assertIn("attachment_plane", sketch_props)
 
     def test_sketch_profile_tools_are_exposed(self) -> None:
         tools = CadToolService().definition_map()

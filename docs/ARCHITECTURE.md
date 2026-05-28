@@ -55,6 +55,7 @@ The server also exposes a long-lived `freecadcmd-worker` mode. It starts a `Free
 | Document lifecycle | Worker new/open/save/recompute/close/export by `document_id` |
 | Object basics | Worker object list/get/set properties/delete |
 | Part basics | Worker primitive creation, boolean, extrude, revolve, and geometry check in an in-memory document |
+| PartDesign basics | Worker Body creation, Sketch-to-origin-plane attachment, and Pad feature creation |
 | Sketcher basics and advanced operations | Worker create/add geometry/add constraints/add profiles/profile create/profile validate/edit geometry/edit constraints/transform/auto-constrain/validate, including curve-preserving profile contracts and native geometry type validation |
 | Mesh basics | Worker import/export/evaluate/repair/boolean |
 | Assembly basics | Worker create/insert/native joint proxy/recompute/BOM |
@@ -79,7 +80,8 @@ Implemented groups:
 - Document lifecycle: new, open, save, recompute, export.
 - Object inspection and mutation: list, get, set simple properties, delete.
 - Part operations: create primitives, boolean, direct or parametric extrude, revolve, fillet, chamfer, check geometry.
-- Sketcher typed coverage: create sketches; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; analyze trace points for line/arc/B-spline fit; create/update constraints; create and validate loop-based pad-ready profiles with optional curve-preservation and intent guards; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
+- PartDesign operations: create/reuse Body objects, attach Sketcher profiles to Body origin planes (`XY`, `XZ`, `YZ`), and create Pad features that keep the Body Tip and solid result consistent.
+- Sketcher typed coverage: create sketches; optionally attach sketches to PartDesign Body origin planes; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; analyze trace points for line/arc/B-spline fit; create/update constraints; create and validate loop-based pad-ready profiles with optional curve-preservation and intent guards; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.
 - TechDraw first slice: create page/template, create part view, inspect page/view graph, and export headless DXF.

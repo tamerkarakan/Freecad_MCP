@@ -8,6 +8,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-2
 - Phase 2 process-per-call `FreeCADCmd` runtime bridge with typed document/object/Part/Sketcher/import-export/mesh/Assembly tools.
 - Expanded Sketcher typed coverage for geometry, profiles, constraints, transforms, diagnostics, and auto-constraints.
 - Loop-based Sketcher profile builder/validator for pad-ready traced profiles, endpoint drift rejection, curve-preservation contracts, native geometry type/intent reporting, curve fit analysis, Part face validation, and no-cheat topology checks.
+- PartDesign Body/plane attachment and Pad creation for Sketcher profiles that need the same Body + origin plane workflow FreeCAD GUI prompts for.
 - Persistent `freecadcmd-worker` sessions with document/object/Part/Sketcher/mesh/Assembly operations and crash cleanup.
 - GUI attach bridge tools for active document, active view, selection/preselection, selection set, and view fit.
 - Opt-in live GUI smoke that validates GUI selection records and Assembly connector references.

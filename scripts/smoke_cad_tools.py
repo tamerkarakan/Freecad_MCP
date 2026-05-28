@@ -72,6 +72,7 @@ def main() -> int:
         advanced_sketch_doc = temp / "advanced_sketch.FCStd"
         connected_sketch_doc = temp / "connected_sketch.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
+        partdesign_doc = temp / "partdesign.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
 
@@ -704,6 +705,51 @@ def main() -> int:
             raise RuntimeError(f"profile validation did not report native curve types: {profile_validation}")
         if profile_validation["validation"]["intent_mismatches"]:
             raise RuntimeError(f"profile validation reported unexpected intent mismatch: {profile_validation}")
+
+        partdesign_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "PartDesignSmoke",
+                    "sketch_name": "BodySketch",
+                    "body_name": "Body",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [8, 0, 0]},
+                                {"type": "line", "start": [8, 0, 0], "end": [8, 4, 0]},
+                                {"type": "line", "start": [8, 4, 0], "end": [0, 4, 0]},
+                                {"type": "line", "start": [0, 4, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign attached sketch profile",
+        )
+        if not partdesign_profile["attachment"]["attached"] or partdesign_profile["attachment"]["plane"] != "XY":
+            raise RuntimeError(f"partdesign profile was not attached to XY plane: {partdesign_profile}")
+        partdesign_pad = assert_ok(
+            service.definition_map()["freecad_partdesign_pad"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "Body",
+                    "sketch_name": "BodySketch",
+                    "attachment_plane": "XY",
+                    "pad_name": "Pad",
+                    "length": 6,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign pad",
+        )
+        if partdesign_pad["pad"]["shape"]["solids"] != 1 or partdesign_pad["body"]["partdesign"]["tip"] != "Pad":
+            raise RuntimeError(f"partdesign pad did not produce a body solid: {partdesign_pad}")
         drift_rejected = assert_tool_failed(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

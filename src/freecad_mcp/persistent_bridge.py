@@ -201,6 +201,36 @@ def sketch_summary(obj):
     }
 
 
+def partdesign_summary(obj):
+    type_id = getattr(obj, "TypeId", "")
+    if not str(type_id).startswith("PartDesign::"):
+        return None
+    summary = {"type": type_id}
+    if type_id == "PartDesign::Body":
+        summary["members"] = [getattr(member, "Name", str(member)) for member in getattr(obj, "Group", [])]
+        summary["tip"] = getattr(getattr(obj, "Tip", None), "Name", None)
+        origin = getattr(obj, "Origin", None)
+        summary["origin"] = getattr(origin, "Name", None)
+        planes = []
+        if origin is not None:
+            for item in getattr(origin, "OutList", []) or []:
+                if getattr(item, "TypeId", "") == "App::Plane":
+                    planes.append({"name": item.Name, "label": item.Label})
+        summary["planes"] = planes
+    elif type_id.startswith("PartDesign::Pad"):
+        profile = getattr(obj, "Profile", None)
+        summary["profile"] = getattr(profile, "Name", None)
+        if hasattr(obj, "Length"):
+            summary["length"] = quantity_summary(obj.Length)
+        if hasattr(obj, "Length2"):
+            summary["length2"] = quantity_summary(obj.Length2)
+        if hasattr(obj, "Midplane"):
+            summary["midplane"] = bool(obj.Midplane)
+        if hasattr(obj, "Reversed"):
+            summary["reversed"] = bool(obj.Reversed)
+    return summary
+
+
 def object_summary(obj):
     return {
         "name": obj.Name,
@@ -211,6 +241,7 @@ def object_summary(obj):
         "shape": shape_summary(obj),
         "mesh": mesh_summary(obj),
         "sketch": sketch_summary(obj),
+        "partdesign": partdesign_summary(obj),
     }
 
 
@@ -249,6 +280,84 @@ def get_object(doc, name):
         if candidate.Label == name:
             return candidate
     raise ValueError("object not found: " + name)
+
+
+def normalize_partdesign_plane(value):
+    raw = str(value or "XY").upper().replace("_PLANE", "").replace("-PLANE", "").replace(" PLANE", "")
+    if raw not in {"XY", "XZ", "YZ"}:
+        raise ValueError("attachment_plane must be one of XY, XZ, or YZ")
+    return raw
+
+
+def find_body_origin_plane(body, plane_name):
+    plane = normalize_partdesign_plane(plane_name)
+    origin = getattr(body, "Origin", None)
+    for item in getattr(origin, "OutList", []) or []:
+        if getattr(item, "TypeId", "") == "App::Plane" and (item.Name.startswith(plane + "_Plane") or item.Label.startswith(plane + "-plane")):
+            return item
+    raise ValueError("origin plane not found for body " + body.Name + ": " + plane)
+
+
+def find_partdesign_body(doc, name):
+    obj = doc.getObject(name) if name else None
+    if obj is None and name:
+        for candidate in doc.Objects:
+            if candidate.Label == name:
+                obj = candidate
+                break
+    if obj is not None and getattr(obj, "TypeId", "") != "PartDesign::Body":
+        raise ValueError("object is not a PartDesign Body: " + name)
+    return obj
+
+
+def find_body_for_object(obj):
+    for parent in getattr(obj, "InList", []) or []:
+        if getattr(parent, "TypeId", "") == "PartDesign::Body":
+            return parent
+    return None
+
+
+def get_or_create_partdesign_body(doc, params, *, default_if_requested=True):
+    requested = params.get("body_name")
+    requested_partdesign = any(key in params for key in ("body_name", "attachment_plane", "plane", "create_body_if_missing"))
+    if not requested and not requested_partdesign and not default_if_requested:
+        return None, False
+    body_name = str(requested or "Body")
+    body = find_partdesign_body(doc, body_name)
+    created = False
+    create_if_missing = bool(params.get("create_body_if_missing", True))
+    if body is None:
+        if not create_if_missing:
+            raise ValueError("PartDesign Body not found: " + body_name)
+        body = doc.addObject("PartDesign::Body", body_name)
+        created = True
+    return body, created
+
+
+def attach_sketch_to_partdesign_body(doc, sketch, params, *, body=None):
+    requested = any(key in params for key in ("body_name", "attachment_plane", "plane", "create_body_if_missing"))
+    if body is None:
+        body = find_body_for_object(sketch)
+    if body is None:
+        if not requested:
+            return {"attached": False, "body_created": False}
+        body, created = get_or_create_partdesign_body(doc, params)
+    else:
+        created = False
+    if sketch not in getattr(body, "Group", []):
+        body.addObject(sketch)
+    plane_name = normalize_partdesign_plane(params.get("attachment_plane") or params.get("plane") or "XY")
+    plane = find_body_origin_plane(body, plane_name)
+    sketch.AttachmentSupport = [(plane, "")]
+    sketch.MapMode = "FlatFace"
+    return {
+        "attached": True,
+        "body_created": created,
+        "body_name": body.Name,
+        "plane": plane_name,
+        "plane_object": plane.Name,
+        "map_mode": str(getattr(sketch, "MapMode", "")),
+    }
 
 
 def safe_output_path(path, params):
@@ -593,6 +702,69 @@ def action_part_extrude(params):
         "mode": mode,
         "feature_parameters": feature_parameters,
         "object": object_summary(result),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_body_create(params):
+    doc = get_doc(params)
+    doc.openTransaction("MCP worker create PartDesign body")
+    try:
+        body, created = get_or_create_partdesign_body(doc, params)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "created": created,
+        "body": object_summary(body),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_pad(params):
+    doc = get_doc(params)
+    sketch = get_object(doc, params.get("sketch_name") or "")
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(sketch)
+    doc.openTransaction("MCP worker create PartDesign pad")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, params)
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, params, body=body)
+        pad = doc.addObject("PartDesign::Pad", params.get("pad_name") or params.get("result_name") or "Pad")
+        body.addObject(pad)
+        pad.Profile = sketch
+        if hasattr(pad, "Length"):
+            pad.Length = float(params.get("length", params.get("length_fwd", 10.0)))
+        if params.get("length2") is not None and hasattr(pad, "Length2"):
+            pad.Length2 = float(params["length2"])
+        if params.get("midplane") is not None and hasattr(pad, "Midplane"):
+            pad.Midplane = bool(params["midplane"])
+        if params.get("reversed") is not None and hasattr(pad, "Reversed"):
+            pad.Reversed = bool(params["reversed"])
+        body.Tip = pad
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(params.get("require_solid", True)):
+        shape = getattr(pad, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Pad did not produce a solid")
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "pad": object_summary(pad),
+        "attachment": attachment,
         "document": document_summary(doc),
     }
 
@@ -1302,13 +1474,14 @@ def action_sketch_create(params):
     doc.openTransaction("MCP worker create sketch")
     try:
         sketch = doc.addObject("Sketcher::SketchObject", params.get("sketch_name") or "Sketch")
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, params)
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
         raise
     doc.recompute()
     saved = save_doc(doc, params)
-    return {"saved_path": saved, "sketch": object_summary(sketch), "document": document_summary(doc)}
+    return {"saved_path": saved, "sketch": object_summary(sketch), "attachment": attachment, "document": document_summary(doc)}
 
 
 def action_sketch_add_geometry(params):
@@ -1402,6 +1575,7 @@ def action_sketch_profile_create(params):
         elif bool(params.get("replace_existing", False)):
             sketch.deleteAllConstraints()
             sketch.deleteAllGeometry()
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, params)
         loops = params.get("loops") or []
         if not loops:
             raise ValueError("loops is required")
@@ -1439,6 +1613,7 @@ def action_sketch_profile_create(params):
         "constraint_indices": all_constraints,
         "block_constraint_indices": block_indices,
         "validation": validation,
+        "attachment": attachment,
         "document": document_summary(doc),
     }
 
@@ -1967,6 +2142,8 @@ ACTIONS = {
     "part_create_primitive": action_part_create_primitive,
     "part_boolean": action_part_boolean,
     "part_extrude": action_part_extrude,
+    "partdesign_body_create": action_partdesign_body_create,
+    "partdesign_pad": action_partdesign_pad,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,

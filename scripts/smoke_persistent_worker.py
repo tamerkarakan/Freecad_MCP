@@ -188,6 +188,67 @@ def main() -> int:
             if worker_profile_validation["validation"]["geometry_type_counts"].get("bspline") != 1 or worker_profile_validation["validation"]["geometry_type_counts"].get("arc") != 1:
                 raise RuntimeError(f"worker profile validation did not report native curve types: {worker_profile_validation}")
 
+            partdesign_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerPartDesignSmoke",
+                    }
+                ),
+                "worker_partdesign_document_new",
+            )
+            partdesign_document_id = partdesign_document["document"]["document_id"]
+            worker_body_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "sketch_name": "WorkerBodySketch",
+                        "body_name": "WorkerBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0, 70, 0], "end": [8, 70, 0]},
+                                    {"type": "line", "start": [8, 70, 0], "end": [8, 74, 0]},
+                                    {"type": "line", "start": [8, 74, 0], "end": [0, 74, 0]},
+                                    {"type": "line", "start": [0, 74, 0], "end": [0, 70, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_profile_create",
+            )
+            if not worker_body_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker body profile did not attach to PartDesign body: {worker_body_profile}")
+            worker_pad = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pad"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "body_name": "WorkerBody",
+                        "sketch_name": "WorkerBodySketch",
+                        "attachment_plane": "XY",
+                        "pad_name": "WorkerPad",
+                        "length": 6,
+                    }
+                ),
+                "worker_partdesign_pad",
+            )
+            if worker_pad["pad"]["shape"]["solids"] != 1 or worker_pad["body"]["partdesign"]["tip"] != "WorkerPad":
+                raise RuntimeError(f"worker PartDesign Pad did not produce a body solid: {worker_pad}")
+            closed_partdesign_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": partdesign_document_id}
+                ),
+                "worker_partdesign_document_close",
+            )
+            if closed_partdesign_doc["document_count"] != 1:
+                raise RuntimeError(f"worker PartDesign document close failed: {closed_partdesign_doc}")
+
             worker_line_fallback = service.definition_map()["freecad_worker_sketch_profile_create"].handler(
                 {
                     "session_id": session_id,
