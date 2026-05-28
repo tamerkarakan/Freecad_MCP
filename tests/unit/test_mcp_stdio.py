@@ -61,6 +61,9 @@ class McpStdioTests(unittest.TestCase):
         )
 
         self.assertIn("resources", resources["result"])
+        self.assertTrue(
+            any(resource["uri"] == "freecad://docs/roadmap-status" for resource in resources["result"]["resources"])
+        )
         self.assertEqual(resource_templates["result"]["resourceTemplates"], [])
         self.assertIn("prompts", prompts["result"])
         self.assertIn("make a cube", prompt["result"]["messages"][0]["content"]["text"])

@@ -161,6 +161,13 @@ class McpServer:
                     "mimeType": "text/markdown",
                 },
                 {
+                    "uri": "freecad://docs/roadmap-status",
+                    "name": "roadmap_status",
+                    "title": "Roadmap Status",
+                    "description": "Completed, blocked, and future roadmap scope.",
+                    "mimeType": "text/markdown",
+                },
+                {
                     "uri": "freecad://docs/testing",
                     "name": "testing",
                     "title": "Testing",
@@ -318,6 +325,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
     mapping = {
         "freecad://docs/architecture": repo_root / "docs" / "ARCHITECTURE.md",
         "freecad://docs/session-state": repo_root / "docs" / "SESSION_STATE.md",
+        "freecad://docs/roadmap-status": repo_root / "docs" / "ROADMAP_STATUS.md",
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",

@@ -44,8 +44,9 @@
 - Persistent worker startup also uses a temp `.py` script for long worker payloads and keeps that file until session close to avoid Windows script-load races.
 - Persistent worker manager now drops and cleans up crashed/stopped sessions after request/status errors, with fake-worker crash injection unit coverage.
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
-- Current MCP tool count is 96.
+- Current MCP tool count is 107.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
+- Roadmap status is finalized in `docs/ROADMAP_STATUS.md` and exposed as an MCP resource; there are no unblocked roadmap items left in the current scope.
 - GUI attach design for active document, active view, selection, preselection, and subelement records is documented in `docs/GUI_ATTACH_PLAN.md` and exposed as an MCP resource.
 - GUI attach client/server slice is implemented: `scripts/freecad_gui_bridge_server.py` runs inside FreeCAD GUI, while MCP tools expose attach/list/detach/status, active document/view reads, selection/preselection reads, selection set, and view fit.
 - Opt-in GUI attach smoke exists at `scripts/smoke_gui_attach.py`; it launches FreeCAD GUI, starts the bridge with a token, selects two `Face1` records, reads them through `freecad_gui_selection_get`, calls view fit, closes the GUI process, and creates a Fixed Assembly joint with populated `Reference1`/`Reference2`. Last local run passed with report under `runs/gui-smoke/`.
@@ -61,5 +62,5 @@
 4. Re-run a Sketcher profile smoke if extrude behavior changes again.
 5. Run unit tests for `runtime_bridge` and `mcp_stdio` when touching transport/serialization code.
 6. Run persistent worker smoke when touching session lifecycle or worker tools.
-7. Use `docs/GUI_ATTACH_PLAN.md`, `docs/WORKBENCH_BRIDGE.md`, and `docs/TECHDRAW_CAM_FEM_PLAN.md` before extending GUI/Workbench/TechDraw/CAM/FEM tools.
+7. Use `docs/ROADMAP_STATUS.md`, `docs/GUI_ATTACH_PLAN.md`, `docs/WORKBENCH_BRIDGE.md`, and `docs/TECHDRAW_CAM_FEM_PLAN.md` before extending GUI/Workbench/TechDraw/CAM/FEM tools.
 8. Push only after verification passes.
