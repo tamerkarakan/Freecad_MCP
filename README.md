@@ -67,6 +67,9 @@ Available persistent worker tools:
 - `freecad_worker_session_start/list/status/close`
 - `freecad_worker_document_new/open/save/recompute/close/export`
 - `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry`
+- `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/edit_geometry/edit_constraints/transform/auto_constrain/validate`
+- `freecad_worker_mesh_import/export/evaluate/repair/boolean`
+- `freecad_worker_assembly_create/insert/create_joint/solve/bom`
 - `freecad_worker_object_list/get/set_properties/delete`
 
 Typed CAD tool groups are also available:

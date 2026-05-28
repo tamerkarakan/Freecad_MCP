@@ -804,6 +804,886 @@
       }
     },
     {
+      "name": "freecad_worker_sketch_create",
+      "title": "Worker Create Sketch",
+      "description": "Create a Sketcher object inside an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_add_geometry",
+      "title": "Worker Add Sketch Geometry",
+      "description": "Add typed geometry to a worker Sketcher object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "geometry": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "geometry"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_add_constraint",
+      "title": "Worker Add Sketch Constraint",
+      "description": "Add typed constraints to a worker Sketcher object.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "constraints"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_add_profile",
+      "title": "Worker Add Sketch Profile",
+      "description": "Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "object"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "profile"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_edit_geometry",
+      "title": "Worker Edit Sketch Geometry",
+      "description": "Delete, move, toggle construction, or manage external Sketcher geometry.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "operations"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_edit_constraints",
+      "title": "Worker Edit Sketch Constraints",
+      "description": "Delete, rename, set datum, toggle driving/active/virtual, and validate constraints.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "operations"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_transform",
+      "title": "Worker Transform Sketch",
+      "description": "Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name",
+          "operations"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_auto_constrain",
+      "title": "Worker Auto-Constrain Sketch",
+      "description": "Detect/apply missing Sketcher coincident, vertical/horizontal, equality, and redundant constraints.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_sketch_validate",
+      "title": "Worker Validate Sketch",
+      "description": "Solve and summarize Sketcher state, constraints, missing constraints, and constraint errors.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "solve": {
+            "type": "boolean"
+          },
+          "detect_missing": {
+            "type": "boolean"
+          },
+          "include_constraint_errors": {
+            "type": "boolean"
+          },
+          "include_construction": {
+            "type": "boolean"
+          },
+          "precision": {
+            "type": "number"
+          },
+          "angle_precision": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "sketch_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_mesh_import",
+      "title": "Worker Import Mesh",
+      "description": "Import a mesh file into an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "input_path": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "input_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_mesh_export",
+      "title": "Worker Export Mesh",
+      "description": "Export selected/all mesh objects from an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "output_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_mesh_evaluate",
+      "title": "Worker Evaluate Mesh",
+      "description": "Summarize mesh object quality fields inside an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_mesh_repair",
+      "title": "Worker Repair Mesh",
+      "description": "Repair mesh copies and assign them back, or create a replacement mesh object when needed.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_mesh_boolean",
+      "title": "Worker Mesh Boolean",
+      "description": "Run mesh union/difference/intersection inside an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "object_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "union",
+              "difference",
+              "intersection"
+            ]
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "object_names"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_assembly_create",
+      "title": "Worker Create Assembly",
+      "description": "Create an Assembly container inside an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_assembly_insert",
+      "title": "Worker Assembly Insert",
+      "description": "Insert an object into a worker Assembly as an App::Link.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "object_name": {
+            "type": "string"
+          },
+          "link_name": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "assembly_name",
+          "object_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_assembly_create_joint",
+      "title": "Worker Create Assembly Joint",
+      "description": "Create a native Assembly joint proxy inside an in-memory worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          },
+          "joint_name": {
+            "type": "string"
+          },
+          "joint_type": {
+            "type": "string"
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id",
+          "assembly_name"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_assembly_solve",
+      "title": "Worker Solve Assembly",
+      "description": "Recompute a worker Assembly document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_assembly_bom",
+      "title": "Worker Assembly BOM",
+      "description": "Return a compact row list for an Assembly or the whole worker document.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "assembly_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
       "name": "freecad_worker_object_list",
       "title": "Worker List Objects",
       "description": "List objects from an in-memory worker document.",

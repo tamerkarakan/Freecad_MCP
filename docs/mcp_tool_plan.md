@@ -17,6 +17,9 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
 | `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
+| `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents. | Sketcher App API |
+| `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
+| `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
 | `freecad_worker_object_list/get/set_properties/delete` | Inspect and mutate in-memory worker document objects. | FreeCAD process |
 | `freecad_python_exec` | Execute controlled Python snippets for diagnostics, with optional compact execution metadata. | FreeCAD process |
 | `freecad_document_new` | Create a new FreeCAD document. | FreeCAD API |

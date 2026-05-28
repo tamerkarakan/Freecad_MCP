@@ -2,7 +2,6 @@
 
 ## Now
 
-- Broaden persistent worker coverage to Sketcher, mesh, and assembly typed operations.
 - Add GUI attach design spike for active document, active view, and selection/subelement reads.
 
 ## Next
@@ -12,6 +11,7 @@
 - Add an explicit typed option for advanced extrude modes such as shell-only, solid, taper, and symmetric extrusion.
 - Add connector-reference smoke coverage for Assembly joints once stable example documents exist.
 - Add MCP SDK adapter if the Python SDK becomes available in the runtime.
+- Add crash injection and automatic unhealthy-session cleanup coverage for persistent worker mode.
 
 ## Later
 

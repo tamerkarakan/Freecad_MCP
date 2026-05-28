@@ -65,6 +65,157 @@ def main() -> int:
             if not document_id:
                 raise RuntimeError(f"missing document_id: {document}")
 
+            sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                    }
+                ),
+                "worker_sketch_create",
+            )
+            if sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+                raise RuntimeError(f"worker sketch create failed: {sketch}")
+
+            profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "profile": {
+                            "type": "rectangle",
+                            "origin": [0, 0, 0],
+                            "width": 4,
+                            "height": 2,
+                            "constrain": True,
+                        },
+                    }
+                ),
+                "worker_sketch_add_profile",
+            )
+            if profile["sketch"]["sketch"]["geometry_count"] != 4:
+                raise RuntimeError(f"worker sketch profile mismatch: {profile}")
+
+            sketch_extrude = worker_result(
+                service.definition_map()["freecad_worker_part_extrude"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "source_object": "WorkerSketch",
+                        "vector": [0, 0, 4],
+                        "result_name": "WorkerSketchExtrude",
+                    }
+                ),
+                "worker_sketch_part_extrude",
+            )
+            if sketch_extrude["mode"] != "face_from_closed_wire" or sketch_extrude["object"]["shape"]["solids"] != 1:
+                raise RuntimeError(f"worker sketch extrude is not a solid: {sketch_extrude}")
+
+            line = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "geometry": [{"type": "line", "start": [6, 0, 0], "end": [9, 0, 0]}],
+                    }
+                ),
+                "worker_sketch_add_geometry",
+            )
+            line_index = line["added_indices"][0]
+            constraint = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "constraints": [{"type": "Horizontal", "first": line_index}],
+                    }
+                ),
+                "worker_sketch_add_constraint",
+            )
+            if not constraint["added_indices"]:
+                raise RuntimeError(f"worker sketch constraint missing: {constraint}")
+
+            edit_geometry = worker_result(
+                service.definition_map()["freecad_worker_sketch_edit_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "operations": [{"operation": "set_construction", "geometry_index": line_index, "construction": True}],
+                    }
+                ),
+                "worker_sketch_edit_geometry",
+            )
+            if not edit_geometry["reports"] or not edit_geometry["reports"][0]["construction"]:
+                raise RuntimeError(f"worker sketch edit geometry failed: {edit_geometry}")
+
+            transform = worker_result(
+                service.definition_map()["freecad_worker_sketch_transform"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "operations": [{"operation": "copy", "geometry_indices": [line_index], "vector": [0, 1, 0]}],
+                    }
+                ),
+                "worker_sketch_transform",
+            )
+            if not transform["reports"] or not transform["reports"][0].get("added_indices"):
+                raise RuntimeError(f"worker sketch transform failed: {transform}")
+
+            edit_constraints = worker_result(
+                service.definition_map()["freecad_worker_sketch_edit_constraints"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "operations": [
+                            {
+                                "operation": "rename",
+                                "constraint_index": constraint["added_indices"][0],
+                                "name": "worker_horizontal",
+                            }
+                        ],
+                    }
+                ),
+                "worker_sketch_edit_constraints",
+            )
+            if not edit_constraints["reports"]:
+                raise RuntimeError(f"worker sketch edit constraints failed: {edit_constraints}")
+
+            auto = worker_result(
+                service.definition_map()["freecad_worker_sketch_auto_constrain"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "operations": [{"operation": "detect_vertical_horizontal"}],
+                    }
+                ),
+                "worker_sketch_auto_constrain",
+            )
+            if "count" not in auto["reports"][0]:
+                raise RuntimeError(f"worker sketch auto-constrain report mismatch: {auto}")
+
+            validation = worker_result(
+                service.definition_map()["freecad_worker_sketch_validate"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "detect_missing": True,
+                        "include_constraint_errors": True,
+                    }
+                ),
+                "worker_sketch_validate",
+            )
+            if validation["geometry_count"] < 4:
+                raise RuntimeError(f"worker sketch validation mismatch: {validation}")
+
             created = worker_result(
                 service.definition_map()["freecad_worker_part_create_primitive"].handler(
                     {
@@ -134,6 +285,59 @@ def main() -> int:
             if not checks["checks"] or not checks["checks"][0]["is_valid"]:
                 raise RuntimeError(f"worker geometry check failed: {checks}")
 
+            mesh_source = temp / "worker-fuse.stl"
+            mesh_source_export = worker_result(
+                service.definition_map()["freecad_worker_document_export"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_names": ["WorkerFuse"],
+                        "output_path": str(mesh_source),
+                        "overwrite": True,
+                    }
+                ),
+                "worker_document_export_stl",
+            )
+            if not Path(mesh_source_export["exported_path"]).exists():
+                raise RuntimeError(f"worker STL export missing: {mesh_source_export}")
+
+            mesh_import = worker_result(
+                service.definition_map()["freecad_worker_mesh_import"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "input_path": str(mesh_source),
+                    }
+                ),
+                "worker_mesh_import",
+            )
+            if not mesh_import["imported"] or not mesh_import["imported"][0]["mesh"]:
+                raise RuntimeError(f"worker mesh import failed: {mesh_import}")
+            mesh_name = mesh_import["imported"][0]["name"]
+
+            mesh_eval = worker_result(
+                service.definition_map()["freecad_worker_mesh_evaluate"].handler(
+                    {"session_id": session_id, "document_id": document_id, "object_names": [mesh_name]}
+                ),
+                "worker_mesh_evaluate",
+            )
+            if not mesh_eval["meshes"] or mesh_eval["meshes"][0]["mesh"]["facets"] <= 0:
+                raise RuntimeError(f"worker mesh evaluate failed: {mesh_eval}")
+
+            mesh_repair = worker_result(
+                service.definition_map()["freecad_worker_mesh_repair"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_names": [mesh_name],
+                        "actions": ["harmonize_normals", "unsupported_smoke_action"],
+                    }
+                ),
+                "worker_mesh_repair",
+            )
+            if not mesh_repair["reports"] or not mesh_repair["reports"][0]["errors"]:
+                raise RuntimeError(f"worker mesh repair unsupported-action report missing: {mesh_repair}")
+
             exported = temp / "worker-fuse.step"
             export = worker_result(
                 service.definition_map()["freecad_worker_document_export"].handler(
@@ -181,6 +385,67 @@ def main() -> int:
             bbox = obj["object"]["shape"]["bound_box"]
             if [bbox["xmax"], bbox["ymax"], bbox["zmax"]] != [8.0, 5.0, 3.0]:
                 raise RuntimeError(f"worker bbox mismatch: {obj}")
+
+            assembly = worker_result(
+                service.definition_map()["freecad_worker_assembly_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "assembly_name": "WorkerAssembly",
+                    }
+                ),
+                "worker_assembly_create",
+            )
+            if assembly["assembly"]["type_id"] != "Assembly::AssemblyObject":
+                raise RuntimeError(f"worker assembly create failed: {assembly}")
+
+            link = worker_result(
+                service.definition_map()["freecad_worker_assembly_insert"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "assembly_name": "WorkerAssembly",
+                        "object_name": "WorkerBox",
+                        "link_name": "WorkerBoxLink",
+                    }
+                ),
+                "worker_assembly_insert",
+            )
+            if link["link"]["type_id"] != "App::Link":
+                raise RuntimeError(f"worker assembly insert failed: {link}")
+
+            joint = worker_result(
+                service.definition_map()["freecad_worker_assembly_create_joint"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "assembly_name": "WorkerAssembly",
+                        "joint_name": "WorkerFixedJoint",
+                        "joint_type": "Fixed",
+                    }
+                ),
+                "worker_assembly_create_joint",
+            )
+            if not joint["joint_fields"]["has_proxy"] or joint["joint_fields"]["joint_type"] != "Fixed":
+                raise RuntimeError(f"worker assembly joint failed: {joint}")
+
+            bom = worker_result(
+                service.definition_map()["freecad_worker_assembly_bom"].handler(
+                    {"session_id": session_id, "document_id": document_id, "assembly_name": "WorkerAssembly"}
+                ),
+                "worker_assembly_bom",
+            )
+            if bom["count"] < 1:
+                raise RuntimeError(f"worker assembly BOM failed: {bom}")
+
+            solved = worker_result(
+                service.definition_map()["freecad_worker_assembly_solve"].handler(
+                    {"session_id": session_id, "document_id": document_id}
+                ),
+                "worker_assembly_solve",
+            )
+            if solved["document"]["object_count"] < objects["document"]["object_count"]:
+                raise RuntimeError(f"worker assembly solve/recompute changed object count unexpectedly: {solved}")
 
             saved = worker_result(
                 service.definition_map()["freecad_worker_document_save"].handler(

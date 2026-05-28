@@ -222,6 +222,254 @@ class PersistentToolService:
                 "part_check_geometry",
             ),
             self._worker_tool(
+                "freecad_worker_sketch_create",
+                "Worker Create Sketch",
+                "Create a Sketcher object inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id"],
+                "sketch_create",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_add_geometry",
+                "Worker Add Sketch Geometry",
+                "Add typed geometry to a worker Sketcher object.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "geometry": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "geometry"],
+                "sketch_add_geometry",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_add_constraint",
+                "Worker Add Sketch Constraint",
+                "Add typed constraints to a worker Sketcher object.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "constraints": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "constraints"],
+                "sketch_add_constraint",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_add_profile",
+                "Worker Add Sketch Profile",
+                "Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "profile": {"type": "object"},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "profile"],
+                "sketch_add_profile",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_edit_geometry",
+                "Worker Edit Sketch Geometry",
+                "Delete, move, toggle construction, or manage external Sketcher geometry.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "operations": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "operations"],
+                "sketch_edit_geometry",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_edit_constraints",
+                "Worker Edit Sketch Constraints",
+                "Delete, rename, set datum, toggle driving/active/virtual, and validate constraints.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "operations": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "operations"],
+                "sketch_edit_constraints",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_transform",
+                "Worker Transform Sketch",
+                "Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "operations": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name", "operations"],
+                "sketch_transform",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_auto_constrain",
+                "Worker Auto-Constrain Sketch",
+                "Detect/apply missing Sketcher coincident, vertical/horizontal, equality, and redundant constraints.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "operations": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "sketch_name"],
+                "sketch_auto_constrain",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_validate",
+                "Worker Validate Sketch",
+                "Solve and summarize Sketcher state, constraints, missing constraints, and constraint errors.",
+                {
+                    "document_id": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "solve": {"type": "boolean"},
+                    "detect_missing": {"type": "boolean"},
+                    "include_constraint_errors": {"type": "boolean"},
+                    "include_construction": {"type": "boolean"},
+                    "precision": {"type": "number"},
+                    "angle_precision": {"type": "number"},
+                },
+                ["document_id", "sketch_name"],
+                "sketch_validate",
+            ),
+            self._worker_tool(
+                "freecad_worker_mesh_import",
+                "Worker Import Mesh",
+                "Import a mesh file into an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "input_path": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "input_path"],
+                "mesh_import",
+            ),
+            self._worker_tool(
+                "freecad_worker_mesh_export",
+                "Worker Export Mesh",
+                "Export selected/all mesh objects from an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "output_path": {"type": "string"},
+                    "object_names": {"type": "array", "items": {"type": "string"}},
+                    "overwrite": {"type": "boolean"},
+                    "allow_external_paths": SAVE_PROPS["allow_external_paths"],
+                },
+                ["document_id", "output_path"],
+                "mesh_export",
+            ),
+            self._worker_tool(
+                "freecad_worker_mesh_evaluate",
+                "Worker Evaluate Mesh",
+                "Summarize mesh object quality fields inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "object_names": {"type": "array", "items": {"type": "string"}},
+                },
+                ["document_id"],
+                "mesh_evaluate",
+            ),
+            self._worker_tool(
+                "freecad_worker_mesh_repair",
+                "Worker Repair Mesh",
+                "Repair mesh copies and assign them back, or create a replacement mesh object when needed.",
+                {
+                    "document_id": {"type": "string"},
+                    "object_names": {"type": "array", "items": {"type": "string"}},
+                    "actions": {"type": "array", "items": {"type": "string"}},
+                    "result_name": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id"],
+                "mesh_repair",
+            ),
+            self._worker_tool(
+                "freecad_worker_mesh_boolean",
+                "Worker Mesh Boolean",
+                "Run mesh union/difference/intersection inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "object_names": {"type": "array", "items": {"type": "string"}},
+                    "operation": {"type": "string", "enum": ["union", "difference", "intersection"]},
+                    "result_name": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "object_names"],
+                "mesh_boolean",
+            ),
+            self._worker_tool(
+                "freecad_worker_assembly_create",
+                "Worker Create Assembly",
+                "Create an Assembly container inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "assembly_name": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id"],
+                "assembly_create",
+            ),
+            self._worker_tool(
+                "freecad_worker_assembly_insert",
+                "Worker Assembly Insert",
+                "Insert an object into a worker Assembly as an App::Link.",
+                {
+                    "document_id": {"type": "string"},
+                    "assembly_name": {"type": "string"},
+                    "object_name": {"type": "string"},
+                    "link_name": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "assembly_name", "object_name"],
+                "assembly_insert",
+            ),
+            self._worker_tool(
+                "freecad_worker_assembly_create_joint",
+                "Worker Create Assembly Joint",
+                "Create a native Assembly joint proxy inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "assembly_name": {"type": "string"},
+                    "joint_name": {"type": "string"},
+                    "joint_type": {"type": "string"},
+                    "references": {"type": "array", "items": {"type": "object"}},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "assembly_name"],
+                "assembly_create_joint",
+            ),
+            self._worker_tool(
+                "freecad_worker_assembly_solve",
+                "Worker Solve Assembly",
+                "Recompute a worker Assembly document.",
+                {
+                    "document_id": {"type": "string"},
+                    **SAVE_PROPS,
+                },
+                ["document_id"],
+                "assembly_solve",
+            ),
+            self._worker_tool(
+                "freecad_worker_assembly_bom",
+                "Worker Assembly BOM",
+                "Return a compact row list for an Assembly or the whole worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "assembly_name": {"type": "string"},
+                },
+                ["document_id"],
+                "assembly_bom",
+            ),
+            self._worker_tool(
                 "freecad_worker_object_list",
                 "Worker List Objects",
                 "List objects from an in-memory worker document.",
@@ -314,6 +562,12 @@ class PersistentToolService:
                 raise ToolInputError(f"{key} is required")
         if method == "object_delete" and not args.get("object_name") and not args.get("object_names"):
             raise ToolInputError("object_name or object_names is required")
+        if method in {"part_boolean", "mesh_boolean"} and len(args.get("object_names") or []) < 2:
+            raise ToolInputError("object_names must contain at least two objects")
+        if method == "assembly_create_joint":
+            references = args.get("references") or []
+            if references and len(references) != 2:
+                raise ToolInputError("references must contain exactly two connector references")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=180)
         params = {key: value for key, value in args.items() if key not in {"session_id", "timeout_sec"}}
         return self.manager.request(session_id, method, params, timeout_sec=timeout_sec)

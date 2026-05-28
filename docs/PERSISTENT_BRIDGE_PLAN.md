@@ -25,11 +25,13 @@ Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`.
 - Document lifecycle: new/open/save/recompute/close.
 - Object basics: list/get/set properties/delete.
 - Part basics: primitive creation, boolean, extrude, revolve, and geometry check.
+- Sketcher coverage: create, add geometry/constraints/profiles, edit geometry/constraints, transform, auto-constrain, and validate.
+- Mesh coverage: import, export, evaluate, repair, and boolean operations where supported by the FreeCAD build.
+- Assembly coverage: create assembly containers, insert links, create native JointObject proxies, recompute, and BOM rows.
 - Document export from in-memory worker documents.
-- Tests: unit worker lifecycle/framing tests and real FreeCAD worker smoke.
+- Tests: unit worker lifecycle/framing/schema tests and real FreeCAD worker smoke across Part, Sketcher, mesh, and Assembly.
 
 ## Remaining Persistent Work
 
-- Broaden worker tools to reuse Sketcher, mesh, and assembly typed CAD operations.
 - Add crash injection and automatic unhealthy-session cleanup coverage.
 - Add GUI attach and Workbench-hosted bridge modes for live selection/view workflows.

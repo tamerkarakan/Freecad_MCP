@@ -125,6 +125,27 @@ class PersistentBridgeTests(unittest.TestCase):
                 {"session_id": "missing", "document_id": "Doc"}
             )
 
+    def test_worker_boolean_requires_two_objects_before_worker_request(self) -> None:
+        service = PersistentToolService(manager=PersistentBridgeManager(worker_script=FAKE_WORKER_SCRIPT))
+
+        with self.assertRaises(ToolInputError):
+            service.definition_map()["freecad_worker_mesh_boolean"].handler(
+                {"session_id": "missing", "document_id": "Doc", "object_names": ["Mesh"]}
+            )
+
+    def test_worker_assembly_joint_requires_reference_pair_before_worker_request(self) -> None:
+        service = PersistentToolService(manager=PersistentBridgeManager(worker_script=FAKE_WORKER_SCRIPT))
+
+        with self.assertRaises(ToolInputError):
+            service.definition_map()["freecad_worker_assembly_create_joint"].handler(
+                {
+                    "session_id": "missing",
+                    "document_id": "Doc",
+                    "assembly_name": "Assembly",
+                    "references": [{"object_name": "Box", "sub_element": "Face1"}],
+                }
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,6 @@
 
 ## Open
 
-- Persistent worker mode currently covers session/document/object basics, document export, and several Part operations; Sketcher, mesh, and assembly typed operations still use process-per-call tools.
 - GUI selection, active view, and selected edge/face state are not exposed yet.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint ergonomics are intentionally not wrapped yet because their FreeCAD 1.1.1 constructor combinations need stable fixtures.
@@ -19,6 +18,7 @@
 
 ## Closed
 
+- Persistent worker mode previously covered only session/document/object basics, document export, and several Part operations; it now exposes worker Sketcher, mesh, and Assembly typed operations with real FreeCAD smoke coverage.
 - Closed Sketcher/profile extrusion previously produced a shell-only `Part::Feature`; `freecad_part_extrude` now builds a planar face from closed wires before extrusion so rectangle profiles become solids.
 - `freecad_mesh_repair` previously attempted to mutate `Mesh::Feature.Mesh` directly and could hit immutable mesh errors; it now repairs a copy and assigns it back, with replacement-object fallback.
 - Response serialization errors in `serve_stdio` previously could terminate the stdio loop; they now fall back to a structured `-32603` error response.
