@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from freecad_mcp.static_tools import InventoryStore, StaticToolService
+from freecad_mcp.static_tools import InventoryStore, StaticToolService, safe_source_path
 from freecad_mcp.tooling import ToolInputError
 
 
@@ -41,6 +41,43 @@ class StaticToolServiceTests(unittest.TestCase):
 
             with self.assertRaises(ToolInputError):
                 service.source_search({"query": "x" * 501})
+
+
+class SafeSourcePathTests(unittest.TestCase):
+    def test_accepts_nested_in_root_path(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "src" / "Mod").mkdir(parents=True)
+
+            target = safe_source_path(root, "src/Mod")
+
+            self.assertTrue(target.is_relative_to(root.resolve()))
+
+    def test_rejects_absolute_and_parent_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for bad in ("../secret.txt", "src/../../etc", "/etc/passwd", "C:/Windows", "a/../../b"):
+                with self.assertRaises(ToolInputError):
+                    safe_source_path(root, bad)
+
+    def test_rejects_symlink_escape(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "root"
+            (root / "src").mkdir(parents=True)
+            outside = Path(tmp) / "outside"
+            outside.mkdir()
+            (outside / "secret.txt").write_text("top secret", encoding="utf-8")
+
+            link = root / "src" / "escape"
+            try:
+                link.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation not permitted on this platform")
+
+            # The link resolves outside the root, so the resolved-path containment
+            # check must reject traversal through it.
+            with self.assertRaises(ToolInputError):
+                safe_source_path(root, "src/escape/secret.txt")
 
 
 class fake_repo:

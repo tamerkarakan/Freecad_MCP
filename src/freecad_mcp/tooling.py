@@ -53,3 +53,25 @@ def bounded_int(args: JsonObject, key: str, *, default: int, minimum: int, maxim
     if value < minimum or value > maximum:
         raise ToolInputError(f"{key} must be between {minimum} and {maximum}")
     return value
+
+
+def load_runtime_script(name: str) -> str:
+    """Load an embedded FreeCAD runtime script shipped under ``runtime_scripts/``.
+
+    These scripts execute inside a FreeCADCmd subprocess (they are never imported),
+    so they live as standalone ``.py`` files for editor highlighting, per-line
+    debugging, and reviewable diffs instead of multi-thousand-line in-module string
+    literals. Reading uses universal newlines, so a script keeps the same content
+    regardless of how line endings are stored on disk.
+    """
+    from pathlib import Path
+
+    script_path = Path(__file__).resolve().parent / "runtime_scripts" / name
+    try:
+        return script_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"embedded FreeCAD runtime script {name!r} is missing or unreadable at "
+            f"{script_path}; ensure the runtime_scripts/ directory ships with the package "
+            f"(it must be committed alongside the modules that load it): {exc}"
+        ) from exc

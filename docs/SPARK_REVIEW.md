@@ -16,8 +16,8 @@
 
 ## Remaining Watch Items
 
-- Persistent bridge is still a plan, not implemented.
+- Persistent bridge is now implemented (worker session/document/object/Part/Sketcher/mesh/Assembly tools) with unit and opt-in real-FreeCAD smoke coverage; the original "still a plan" note is resolved.
 - `freecad_python_exec` remains intentionally dangerous and requires explicit opt-in.
 - File reads/imports can still access caller-provided paths; only writes are workspace-gated by default.
 - Mesh boolean support depends on the actual FreeCAD build.
-- Assembly joint creation is currently placeholder metadata; connector solving needs persistent GUI/workbench mode.
+- Assembly joint creation now creates native `JointObject` proxies; broader connector-solver correctness still needs fixtures, and live connector references are populated through GUI/workbench selection records.

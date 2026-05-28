@@ -385,18 +385,27 @@ def build_matcher(
 
 
 def safe_source_path(freecad_root: Path, source_path: str) -> Path:
+    """Resolve a caller-supplied relative path against the FreeCAD root, safely.
+
+    The security boundary is a single real-path containment check: the candidate
+    is fully resolved (which dereferences every symlink in the chain) and must
+    land inside the resolved root. Because resolution follows symlinks, a link
+    that points outside the root is rejected here, so no separate, race-prone
+    per-segment symlink pass is required. Parent-directory segments are rejected
+    lexically before any filesystem access, so resolution can never be coaxed
+    above the root through ``..`` traversal.
+    """
     normalized = source_path.replace("\\", "/")
     if normalized.startswith("/") or ":" in normalized:
         raise ToolInputError("path must be relative to the FreeCAD root")
-    target = (freecad_root / normalized).resolve()
+    parts = [part for part in normalized.split("/") if part not in ("", ".")]
+    if any(part == ".." for part in parts):
+        raise ToolInputError("path must not contain parent-directory segments")
+
     root = freecad_root.resolve()
-    if target != root and root not in target.parents:
+    target = root.joinpath(*parts).resolve()
+    if not target.is_relative_to(root):
         raise ToolInputError("path escapes the FreeCAD root")
-    unresolved = freecad_root.resolve()
-    for part in Path(normalized).parts:
-        unresolved = unresolved / part
-        if unresolved.exists() and unresolved.is_symlink():
-            raise ToolInputError("path contains a symlink segment")
     return target
 
 

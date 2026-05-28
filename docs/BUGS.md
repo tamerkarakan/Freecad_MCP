@@ -21,6 +21,8 @@
 - `scripts/freecad_gui_bridge_server.py` is an opt-in local script, not a signed FreeCAD Workbench yet; run it only from the local repo path and prefer a bearer token for attached GUI sessions.
 - Even with response truncation, some Windows MCP clients may still report `Transport closed` under extreme runtime output/IO conditions; continue validating in long smoke sessions.
 - `freecad_part_extrude` currently supports wire/face-like profiles; directly extruding an existing solid shape can return the FreeCAD OCC error `Solids are not Processed`.
+- Embedded FreeCAD runtime scripts now live in `src/freecad_mcp/runtime_scripts/*.py` and are read at import; they are package data and must ship with the package, otherwise the stdio server fails to start (the loader raises a clear, named error rather than a bare traceback).
+- The `safe_source_path` symlink-escape unit test only runs where symlink creation is permitted; it self-skips (with a visible reason) on Windows without Developer Mode/privilege, so that branch is currently exercised only on POSIX.
 
 ## Closed
 

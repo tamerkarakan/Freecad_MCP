@@ -30,9 +30,13 @@ Current checks:
 - Unit guard for GUI bridge attach/call/detach/error handling against a fake local HTTP bridge (`test_gui_bridge.py`).
 - Unit guard for Workbench bridge registration and autostart environment handling with fake `FreeCAD`/`FreeCADGui` modules (`test_workbench_bridge.py`).
 - Opt-in live FreeCAD GUI attach smoke (`FREECAD_MCP_GUI_SMOKE=1 scripts\verify.ps1` or `scripts/smoke_gui_attach.py`) launches FreeCAD GUI, starts the bridge, selects two Part faces, reads them via MCP GUI tools, fits the view, closes the GUI process, and verifies a Fixed Assembly joint populated from those selection records.
+- Unit guard for `CadToolService` host-side dispatch/validation (required-field, `compact_execution`, `timeout` bounds, `object_delete` selector, missing-FreeCADCmd), plus `CAD_ACTION_SCRIPT` and `FREECAD_WORKER_SCRIPT` integrity (compilable, retain `__ARGS_B64__`/worker protocol markers) and runtime-script loading/missing-script error (`test_cad_tools.py`, `test_persistent_bridge.py`).
+- Unit guard for `safe_source_path` in-root acceptance, absolute/parent-traversal rejection, and (POSIX-only) symlink-escape rejection (`test_static_tools.py`).
+- Unit guard for the persistent worker session cap (`max_sessions`) and de-tautologized worker selector guards using a real worker session with message-matched assertions (`test_persistent_bridge.py`).
 
 Expected future checks:
 
 - MCP tool schema tests.
+- Run the unit suite on at least one POSIX CI leg so the `safe_source_path` symlink-escape test executes (it self-skips where symlink creation is not permitted, e.g. Windows without Developer Mode).
 - Real imported third-party fixture files once small license-clean samples are chosen.
 - Installed/addon-style Workbench bridge integration tests after packaging is chosen.

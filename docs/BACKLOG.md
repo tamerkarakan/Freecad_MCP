@@ -12,6 +12,8 @@
 - Expand GUI live bridge into full live FreeCAD access. Go beyond active document/view/selection/preselection/view-fit into live drawing observation, command execution boundaries, transaction status, console forwarding, document dirty state, and safe GUI-side mutation policies.
 - Improve image-to-sketch guidance. When visual tracing cannot confidently distinguish native geometry such as B-spline vs circular arc vs polyline, the MCP/tool prompt flow should ask the user for a choice or expose a small decision report instead of silently degrading curves. Preserve curve intent; line/polyline fallback must be explicit.
 - Research and extend Sketcher and PartDesign coverage from both FreeCAD documentation and the local FreeCAD source checkout. Include GUI commands where safe through GUI/workbench bridge paths, and add typed wrappers only with source evidence, fixture-backed behavior, and smoke tests.
+- Bound `StaticToolService.source_search` rglob traversal with a file-count/time limit and early termination so a large FreeCAD source tree cannot hang or time out the tool.
+- Add a POSIX CI leg (or document enabling Windows Developer Mode) so the `safe_source_path` symlink-escape unit test runs instead of skipping.
 
 ## Blocked Or Waiting
 
