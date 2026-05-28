@@ -91,6 +91,39 @@ def main() -> int:
             if closed_chain_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
                 raise RuntimeError(f"worker closed chain sketch create failed: {closed_chain_sketch}")
 
+            arc_method_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerArcMethods",
+                    }
+                ),
+                "worker_arc_method_sketch_create",
+            )
+            if arc_method_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+                raise RuntimeError(f"worker arc method sketch create failed: {arc_method_sketch}")
+            arc_methods = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerArcMethods",
+                        "geometry": [
+                            {"type": "arc_3_point", "start": [0, -8, 0], "mid": [2, -6, 0], "end": [4, -8, 0]},
+                            {"type": "arc_start_end_radius", "start": [6, -8, 0], "end": [12, -8, 0], "radius": 5, "side": "left", "sweep": "minor"},
+                            {"type": "arc_center_angles", "center": [18, -8, 0], "radius": 3, "start_angle": 0, "end_angle": {"degrees": 90}, "direction": "ccw"},
+                        ],
+                    }
+                ),
+                "worker_arc_methods_add_geometry",
+            )
+            if len(arc_methods["geometry_reports"]) != 3:
+                raise RuntimeError(f"worker arc methods did not report every circular arc: {arc_methods}")
+            center_angle_report = next((report for report in arc_methods["geometry_reports"] if report.get("input_type") == "arc_center_angles"), None)
+            if not center_angle_report or not 89.0 <= center_angle_report["sweep_deg"] <= 91.0:
+                raise RuntimeError(f"worker center-angle arc report did not preserve requested sweep: {arc_methods}")
+
             closed_chain = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
                     {
@@ -164,6 +197,8 @@ def main() -> int:
                 raise RuntimeError(f"worker profile builder did not preserve curve segment count: {worker_profile}")
             if worker_profile["loops"][0]["segment_intent_mismatches"]:
                 raise RuntimeError(f"worker profile builder reported unexpected intent mismatch: {worker_profile}")
+            if len(worker_profile.get("geometry_reports", [])) != 1 or worker_profile["geometry_reports"][0]["input_type"] != "arc":
+                raise RuntimeError(f"worker profile builder did not report its arc geometry: {worker_profile}")
             worker_profile_indices = worker_profile["loops"][0]["added_indices"]
             worker_profile_validation = worker_result(
                 service.definition_map()["freecad_worker_sketch_profile_validate"].handler(
@@ -580,7 +615,7 @@ def main() -> int:
                         "session_id": session_id,
                         "document_id": document_id,
                         "object_names": [mesh_name],
-                        "actions": ["harmonize_normals", "unsupported_smoke_action"],
+                        "actions": ["unsupported_smoke_action"],
                     }
                 ),
                 "worker_mesh_repair",

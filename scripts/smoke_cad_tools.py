@@ -436,6 +436,12 @@ def main() -> int:
 
         advanced_geometry_items = [
             {"type": "point", "point": [0, 0, 0]},
+            {"type": "line_angle_length", "start": [0, -3, 0], "angle": {"degrees": 30}, "length": 5},
+            {"type": "circle_3_point", "points": [[0, -8, 0], [2, -6, 0], [4, -8, 0]]},
+            {"type": "arc_3_point", "start": [6, -8, 0], "mid": [8, -6, 0], "end": [10, -8, 0]},
+            {"type": "arc_start_mid_end", "start": [6, -12, 0], "mid": [8, -10, 0], "end": [10, -12, 0]},
+            {"type": "arc_start_end_radius", "start": [12, -8, 0], "end": [18, -8, 0], "radius": 5, "side": "left", "sweep": "minor"},
+            {"type": "arc_center_angles", "center": [24, -8, 0], "radius": 3, "start_angle": 0, "end_angle": {"degrees": 90}, "direction": "ccw"},
             {"type": "ellipse", "center": [4, 0, 0], "major_radius": 2, "minor_radius": 1},
             {
                 "type": "arc_of_ellipse",
@@ -468,6 +474,28 @@ def main() -> int:
             raise RuntimeError(f"advanced geometry added count mismatch: {advanced_geometry}")
         if advanced_geometry["sketch"]["sketch"]["geometry_count"] != len(added_advanced_geometry):
             raise RuntimeError(f"unexpected advanced geometry count: {advanced_geometry}")
+        arc_reports = advanced_geometry.get("geometry_reports", [])
+        if len(arc_reports) < 4:
+            raise RuntimeError(f"advanced arc geometry reports missing: {advanced_geometry}")
+        for report in arc_reports:
+            for field in ["actual_start", "actual_end", "center", "radius", "sweep_deg", "normal"]:
+                if field not in report:
+                    raise RuntimeError(f"arc report missing {field}: {advanced_geometry}")
+        center_angle_report = next((report for report in arc_reports if report.get("input_type") == "arc_center_angles"), None)
+        if not center_angle_report or not 89.0 <= center_angle_report["sweep_deg"] <= 91.0:
+            raise RuntimeError(f"center-angle arc report did not preserve requested sweep: {advanced_geometry}")
+        method_catalog = assert_ok(
+            service.definition_map()["freecad_sketch_geometry_method_catalog"].handler({}),
+            "sketch geometry method catalog",
+        )
+        catalog_types = {
+            method["type"]
+            for item in method_catalog["geometry_methods"]
+            for method in item["methods"]
+        }
+        for expected_type in ["line_angle_length", "arc_3_point", "arc_start_end_radius", "arc_center_angles", "circle_3_point", "bspline"]:
+            if expected_type not in catalog_types:
+                raise RuntimeError(f"sketch geometry method catalog missing {expected_type}: {method_catalog}")
 
         profile = assert_ok(
             service.definition_map()["freecad_sketch_add_profile"].handler(
@@ -630,6 +658,9 @@ def main() -> int:
         closed_validation = connected_geometry.get("closed_validation", {})
         if closed_validation.get("open_vertices"):
             raise RuntimeError(f"connected sketch is not closed: {connected_geometry}")
+        connected_arc_reports = connected_geometry.get("geometry_reports", [])
+        if len(connected_arc_reports) != 1 or not 179.0 <= connected_arc_reports[0]["sweep_deg"] <= 181.0:
+            raise RuntimeError(f"connected sketch did not report the circular arc correctly: {connected_geometry}")
 
         profile_builder = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
@@ -681,6 +712,8 @@ def main() -> int:
             raise RuntimeError(f"profile builder did not preserve curve segment count: {profile_builder}")
         if profile_builder["loops"][0]["segment_intent_mismatches"]:
             raise RuntimeError(f"profile builder reported unexpected segment intent mismatch: {profile_builder}")
+        if len(profile_builder.get("geometry_reports", [])) != 1 or profile_builder["geometry_reports"][0]["input_type"] != "arc":
+            raise RuntimeError(f"profile builder did not report its arc geometry: {profile_builder}")
         profile_indices = profile_builder["loops"][0]["added_indices"]
         profile_validation = assert_ok(
             service.definition_map()["freecad_sketch_profile_validate"].handler(

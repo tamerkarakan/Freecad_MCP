@@ -3935,6 +3935,39 @@ Compare line and circular-arc fit errors for traced sketch points and recommend 
 }
 ```
 
+## `freecad_sketch_geometry_method_catalog`
+
+Return the supported typed creation methods for Sketcher geometry, profiles, transform-generated geometry, and analysis tools.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  }
+}
+```
+
 ## `freecad_sketch_edit_geometry`
 
 Delete, move, toggle construction state, add external geometry, carbon-copy, and maintain internal/degenerated Sketcher geometry.

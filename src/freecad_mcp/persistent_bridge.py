@@ -102,6 +102,118 @@ def point_list(value):
     return list(value)
 
 
+def requested_arc_sweep(start_angle, end_angle, *, direction=None, sweep=None):
+    two_pi = 2.0 * math.pi
+    delta_ccw = (float(end_angle) - float(start_angle)) % two_pi
+    if abs(delta_ccw) < 1e-12:
+        raise ValueError("arc start and end resolve to the same point; use circle geometry for full circles")
+    delta_cw = delta_ccw - two_pi
+    direction_value = str(direction or "").lower()
+    if direction_value:
+        if direction_value == "ccw":
+            return delta_ccw
+        if direction_value == "cw":
+            return delta_cw
+        raise ValueError("unsupported arc direction: " + str(direction))
+    sweep_value = str(sweep or "minor").lower()
+    if sweep_value == "minor":
+        return delta_ccw if delta_ccw <= math.pi else delta_cw
+    if sweep_value == "major":
+        return delta_ccw if delta_ccw > math.pi else delta_cw
+    raise ValueError("unsupported arc sweep: " + str(sweep))
+
+
+def arc_point(center, radius, angle):
+    return App.Vector(center.x + radius * math.cos(angle), center.y + radius * math.sin(angle), center.z)
+
+
+def make_center_angle_arc(item):
+    import Part
+
+    center = vector(item.get("center"), [0, 0, 0])
+    radius = float(item["radius"])
+    start_angle = angle_radians(item["start_angle"])
+    end_angle = angle_radians(item["end_angle"])
+    if item.get("direction") or item.get("sweep"):
+        sweep = requested_arc_sweep(start_angle, end_angle, direction=item.get("direction"), sweep=item.get("sweep"))
+        return Part.ArcOfCircle(
+            arc_point(center, radius, start_angle),
+            arc_point(center, radius, start_angle + sweep / 2.0),
+            arc_point(center, radius, start_angle + sweep),
+        )
+    circle = Part.Circle(center, vector(item.get("normal"), [0, 0, 1]), radius)
+    return Part.ArcOfCircle(circle, start_angle, end_angle)
+
+
+def make_start_end_radius_arc(item):
+    import Part
+
+    start = vector(item["start"])
+    end = vector(item["end"])
+    radius = float(item["radius"])
+    side = str(item.get("side", "left")).lower()
+    if side not in {"left", "right"}:
+        raise ValueError("arc_start_end_radius side must be left or right")
+    sweep_mode = str(item.get("sweep", "minor")).lower()
+    if sweep_mode not in {"minor", "major"}:
+        raise ValueError("arc_start_end_radius sweep must be minor or major")
+    dx = end.x - start.x
+    dy = end.y - start.y
+    chord = math.hypot(dx, dy)
+    if chord <= 1e-12:
+        raise ValueError("arc_start_end_radius requires distinct start and end points")
+    if radius < chord / 2.0 - 1e-9:
+        raise ValueError("arc_start_end_radius radius is smaller than half the chord")
+    midpoint = App.Vector((start.x + end.x) / 2.0, (start.y + end.y) / 2.0, (start.z + end.z) / 2.0)
+    normal_left = App.Vector(-dy / chord, dx / chord, 0)
+    height = math.sqrt(max(radius * radius - (chord / 2.0) * (chord / 2.0), 0.0))
+    candidates = [midpoint + normal_left * height, midpoint - normal_left * height]
+    selected = None
+    selected_mid = None
+    for center in candidates:
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+        sweep = requested_arc_sweep(start_angle, end_angle, sweep=sweep_mode)
+        midpoint_on_arc = arc_point(center, radius, start_angle + sweep / 2.0)
+        side_value = "left" if dx * (midpoint_on_arc.y - start.y) - dy * (midpoint_on_arc.x - start.x) >= 0 else "right"
+        if side_value == side or height <= 1e-12:
+            selected = center
+            selected_mid = midpoint_on_arc
+            break
+    if selected is None or selected_mid is None:
+        raise ValueError("arc_start_end_radius could not satisfy requested side and sweep")
+    return Part.ArcOfCircle(start, selected_mid, end)
+
+
+def sketch_arc_geometry_report(geom, geometry_index, input_type):
+    if normalized_profile_segment_type(input_type) != "arc":
+        return None
+    try:
+        center = getattr(geom, "Center", getattr(getattr(geom, "Circle", None), "Center", None))
+        radius = getattr(geom, "Radius", getattr(getattr(geom, "Circle", None), "Radius", None))
+        normal = getattr(geom, "Axis", getattr(getattr(geom, "Circle", None), "Axis", None))
+        first = float(getattr(geom, "FirstParameter"))
+        last = float(getattr(geom, "LastParameter"))
+        return {
+            "geometry_index": int(geometry_index),
+            "input_type": input_type,
+            "native_type": type(geom).__name__,
+            "actual_start": point_list(geom.StartPoint),
+            "actual_end": point_list(geom.EndPoint),
+            "center": point_list(center) if center is not None else None,
+            "radius": float(radius) if radius is not None else None,
+            "sweep_deg": abs(math.degrees(last - first)),
+            "normal": point_list(normal) if normal is not None else None,
+        }
+    except Exception as exc:
+        return {
+            "geometry_index": int(geometry_index),
+            "input_type": input_type,
+            "native_type": type(geom).__name__,
+            "report_error": str(exc),
+        }
+
+
 def placement_summary(obj):
     if not hasattr(obj, "Placement"):
         return None
@@ -810,18 +922,28 @@ def make_sketch_geometries(item):
     import Part
 
     kind = item.get("type")
-    if kind in {"line", "line_segment"}:
+    if kind in {"line", "line_segment", "line_start_end"}:
         return [Part.LineSegment(vector(item["start"]), vector(item["end"]))]
+    if kind in {"line_angle_length", "line_by_angle"}:
+        start = vector(item["start"])
+        length = float(item["length"])
+        angle = angle_radians(item["angle"])
+        end = App.Vector(start.x + length * math.cos(angle), start.y + length * math.sin(angle), start.z)
+        return [Part.LineSegment(start, end)]
     if kind == "point":
         return [Part.Point(vector(item.get("point") or item.get("position")))]
-    if kind in {"circle", "circle_3_point"}:
-        if kind == "circle_3_point" or item.get("points"):
+    if kind in {"circle", "circle_center_radius", "circle_3_point", "circle_by_3_points"}:
+        if kind in {"circle_3_point", "circle_by_3_points"} or item.get("points"):
             points = item.get("points") or [item["point1"], item["point2"], item["point3"]]
             return [Part.Circle(vector(points[0]), vector(points[1]), vector(points[2]))]
         return [Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))]
-    if kind in {"arc", "arc_of_circle"}:
-        circle = Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))
-        return [Part.ArcOfCircle(circle, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
+    if kind in {"arc", "arc_of_circle", "arc_center_angles"}:
+        return [make_center_angle_arc(item)]
+    if kind in {"arc_3_point", "arc_by_3_points", "arc_start_mid_end"}:
+        points = item.get("points") or [item["start"], item["mid"], item["end"]]
+        return [Part.ArcOfCircle(vector(points[0]), vector(points[1]), vector(points[2]))]
+    if kind == "arc_start_end_radius":
+        return [make_start_end_radius_arc(item)]
     if kind == "ellipse":
         center = vector(item.get("center"), [0, 0, 0])
         if item.get("major_point") and item.get("minor_point"):
@@ -888,15 +1010,15 @@ CURVED_PROFILE_SEGMENT_TYPES = {
 
 def normalized_profile_segment_type(kind):
     value = str(kind or "").lower()
-    if value in {"line", "line_segment"}:
+    if value in {"line", "line_segment", "line_start_end", "line_angle_length", "line_by_angle"}:
         return "line"
     if value == "polyline":
         return "polyline"
     if value in {"bspline", "b_spline"}:
         return "bspline"
-    if value in {"arc", "arc_of_circle"}:
+    if value in {"arc", "arc_of_circle", "arc_center_angles", "arc_3_point", "arc_by_3_points", "arc_start_mid_end", "arc_start_end_radius"}:
         return "arc"
-    if value in {"circle", "circle_3_point"}:
+    if value in {"circle", "circle_center_radius", "circle_3_point", "circle_by_3_points"}:
         return "circle"
     if value == "ellipse":
         return "ellipse"
@@ -1004,12 +1126,16 @@ def add_sketch_geometry_batch(sketch, items, *, connect_sequence=False, close_se
 
     added = []
     constraint_indices = []
+    geometry_reports = []
     chain_indices = []
     previous_index = None
     for item in items:
         for geom in make_sketch_geometries(item):
             index = sketch.addGeometry(geom, bool(item.get("construction", False)))
             added.append(index)
+            report = sketch_arc_geometry_report(sketch.Geometry[index], index, item.get("type"))
+            if report is not None:
+                geometry_reports.append(report)
             if sketch_geometry_has_endpoints(geom):
                 if connect_sequence and previous_index is not None:
                     constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", previous_index, 2, index, 1)))
@@ -1017,7 +1143,7 @@ def add_sketch_geometry_batch(sketch, items, *, connect_sequence=False, close_se
                 chain_indices.append(index)
     if close_sequence and len(chain_indices) > 1:
         constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", chain_indices[-1], 2, chain_indices[0], 1)))
-    return added, constraint_indices
+    return added, constraint_indices, geometry_reports
 
 
 def endpoint_key(point, precision):
@@ -1320,8 +1446,13 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
 
     added = []
     constraint_indices = []
-    for geom, is_construction, _ in flat:
-        added.append(sketch.addGeometry(geom, is_construction))
+    geometry_reports = []
+    for geom, is_construction, segment_type in flat:
+        geometry_index = sketch.addGeometry(geom, is_construction)
+        added.append(geometry_index)
+        report = sketch_arc_geometry_report(sketch.Geometry[geometry_index], geometry_index, segment_type)
+        if report is not None:
+            geometry_reports.append(report)
     if len(added) > 1:
         for index in range(len(added) - 1):
             constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[index], 2, added[index + 1], 1)))
@@ -1334,6 +1465,7 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
         "curve_contract": curve_contract,
         "segment_intents": segment_intents,
         "segment_intent_mismatches": segment_intent_mismatches,
+        "geometry_reports": geometry_reports,
     }
 
 
@@ -1493,7 +1625,7 @@ def action_sketch_add_geometry(params):
     closed_validation = None
     doc.openTransaction("MCP worker add sketch geometry")
     try:
-        added, constraint_indices = add_sketch_geometry_batch(
+        added, constraint_indices, geometry_reports = add_sketch_geometry_batch(
             sketch,
             params.get("geometry") or [],
             connect_sequence=connect_sequence,
@@ -1513,6 +1645,7 @@ def action_sketch_add_geometry(params):
         "saved_path": saved,
         "added_indices": added,
         "constraint_indices": constraint_indices,
+        "geometry_reports": geometry_reports,
         "sketch": object_summary(sketch),
         "document": document_summary(doc),
     }
@@ -1583,11 +1716,13 @@ def action_sketch_profile_create(params):
         loop_reports = []
         all_added = []
         all_constraints = []
+        all_geometry_reports = []
         for index, loop in enumerate(loops):
             report = make_sketch_profile_loop(sketch, loop, params, loop_index=index, endpoint_tolerance=endpoint_tolerance)
             loop_reports.append(report)
             all_added.extend(report["added_indices"])
             all_constraints.extend(report["constraint_indices"])
+            all_geometry_reports.extend(report["geometry_reports"])
         block_indices = []
         lock_mode = str(params.get("lock_mode", "none"))
         if lock_mode not in {"none", "block"}:
@@ -1611,6 +1746,7 @@ def action_sketch_profile_create(params):
         "loops": loop_reports,
         "added_indices": all_added,
         "constraint_indices": all_constraints,
+        "geometry_reports": all_geometry_reports,
         "block_constraint_indices": block_indices,
         "validation": validation,
         "attachment": attachment,
@@ -1949,36 +2085,57 @@ def action_mesh_repair(params):
     names = params.get("object_names") or [obj.Name for obj in doc.Objects if hasattr(obj, "Mesh")]
     actions = params.get("actions") or ["harmonize_normals"]
     reports = []
+    supported_actions = {"harmonize_normals", "remove_duplicated_points"}
+    if not any(action in supported_actions for action in actions):
+        for name in names:
+            obj = get_object(doc, name)
+            reports.append(
+                {
+                    "object": obj.Name,
+                    "assigned_to": obj.Name,
+                    "actions": [],
+                    "errors": [{"action": action, "error": "unsupported action"} for action in actions],
+                    "mutated": False,
+                }
+            )
+        saved = save_doc(doc, params)
+        return {"saved_path": saved, "reports": reports, "document": document_summary(doc)}
     doc.openTransaction("MCP worker mesh repair")
     try:
         for name in names:
             obj = get_object(doc, name)
-            mesh = obj.Mesh.copy()
+            mesh = None
             done = []
             errors = []
+            def editable_mesh():
+                nonlocal mesh
+                if mesh is None:
+                    mesh = obj.Mesh.copy()
+                return mesh
             for action in actions:
-                if action == "harmonize_normals" and hasattr(mesh, "harmonizeNormals"):
+                if action == "harmonize_normals" and hasattr(obj.Mesh, "harmonizeNormals"):
                     try:
-                        mesh.harmonizeNormals()
+                        editable_mesh().harmonizeNormals()
                         done.append(action)
                     except Exception as exc:
                         errors.append({"action": action, "error": str(exc)})
-                elif action == "remove_duplicated_points" and hasattr(mesh, "removeDuplicatedPoints"):
+                elif action == "remove_duplicated_points" and hasattr(obj.Mesh, "removeDuplicatedPoints"):
                     try:
-                        mesh.removeDuplicatedPoints()
+                        editable_mesh().removeDuplicatedPoints()
                         done.append(action)
                     except Exception as exc:
                         errors.append({"action": action, "error": str(exc)})
                 else:
                     errors.append({"action": action, "error": "unsupported action"})
             assigned_to = obj.Name
-            try:
-                obj.Mesh = mesh
-            except Exception:
-                replacement = doc.addObject("Mesh::Feature", params.get("result_name") or (obj.Name + "_Repaired"))
-                replacement.Mesh = mesh
-                assigned_to = replacement.Name
-            reports.append({"object": obj.Name, "assigned_to": assigned_to, "actions": done, "errors": errors})
+            if done and mesh is not None:
+                try:
+                    obj.Mesh = mesh
+                except Exception:
+                    replacement = doc.addObject("Mesh::Feature", params.get("result_name") or (obj.Name + "_Repaired"))
+                    replacement.Mesh = mesh
+                    assigned_to = replacement.Name
+            reports.append({"object": obj.Name, "assigned_to": assigned_to, "actions": done, "errors": errors, "mutated": bool(done)})
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()

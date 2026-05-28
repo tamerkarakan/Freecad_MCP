@@ -139,6 +139,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_sketch_profile_create",
             "freecad_sketch_profile_validate",
             "freecad_curve_fit_analyze",
+            "freecad_sketch_geometry_method_catalog",
         ]:
             self.assertIn(name, tools)
 

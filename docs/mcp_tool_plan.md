@@ -52,12 +52,13 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |
 | `freecad_part_check_geometry` | Run geometry validation. | `Part_CheckGeometry` |
 | `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane. | Sketcher + PartDesign App API |
-| `freecad_sketch_add_geometry` | Add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints and closed-profile validation. | Sketcher App API |
+| `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, and circular-arc actual geometry reports. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
 | `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
 | `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, optional Block constraints, and optional PartDesign Body/plane attachment. | Sketcher + PartDesign App API |
 | `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, and intent-mismatch checks. | Sketcher + Part App API |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend line, arc, or B-spline before sketch creation. | Geometry analysis |
+| `freecad_sketch_geometry_method_catalog` | List supported typed Sketcher creation methods, including arc 3-point, start/end/radius, and center/angle forms. | Tool metadata |
 | `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |
 | `freecad_sketch_edit_constraints` | Delete/rename/update constraints, set datum/driving/active/virtual/visibility state, and clean redundant/invalid constraints. | Sketcher App API |
 | `freecad_sketch_transform` | Apply fillet/trim/extend/split/join/copy/move/symmetry/array and B-spline transform operations. | Sketcher App API |
