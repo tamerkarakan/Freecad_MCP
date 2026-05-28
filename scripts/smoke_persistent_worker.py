@@ -115,6 +115,47 @@ def main() -> int:
             if closed_chain.get("closed_validation", {}).get("open_vertices"):
                 raise RuntimeError(f"worker closed chain is not closed: {closed_chain}")
 
+            worker_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerProfileBuilder",
+                        "loops": [
+                            {
+                                "name": "spline_arc_loop",
+                                "segments": [
+                                    {"type": "line", "start": [0, 20, 0], "end": [10, 20, 0]},
+                                    {"type": "bspline", "poles": [[10, 20, 0], [12, 25, 0], [10, 30, 0]]},
+                                    {"type": "arc", "center": [5, 30, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                                    {"type": "line", "start": [0, 30, 0], "end": [0, 20, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_sketch_profile_create",
+            )
+            if not worker_profile["validation"]["ok"] or not worker_profile["validation"]["pad_ready"]:
+                raise RuntimeError(f"worker profile builder did not produce pad-ready profile: {worker_profile}")
+            if worker_profile["validation"]["degrees_of_freedom"] != 0:
+                raise RuntimeError(f"worker profile builder did not fully constrain profile: {worker_profile}")
+            worker_profile_validation = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_validate"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerProfileBuilder",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_sketch_profile_validate",
+            )
+            if not worker_profile_validation["validation"]["ok"]:
+                raise RuntimeError(f"worker profile validation mismatch: {worker_profile_validation}")
+
             profile = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_profile"].handler(
                     {

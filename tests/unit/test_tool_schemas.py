@@ -55,6 +55,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
+            "freecad_worker_sketch_profile_create",
+            "freecad_worker_sketch_profile_validate",
             "freecad_worker_sketch_add_geometry",
             "freecad_worker_sketch_add_constraint",
             "freecad_worker_sketch_validate",
@@ -109,6 +111,15 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_fem_material_create",
             "freecad_fem_constraint_create",
             "freecad_fem_inspect",
+        ]:
+            self.assertIn(name, tools)
+
+    def test_sketch_profile_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_sketch_profile_create",
+            "freecad_sketch_profile_validate",
         ]:
             self.assertIn(name, tools)
 

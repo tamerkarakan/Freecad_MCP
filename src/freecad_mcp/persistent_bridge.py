@@ -316,6 +316,40 @@ def planar_face_from_closed_wires(shape):
         return None
 
 
+def wire_face_validation(shape):
+    import Part
+
+    wires = list(getattr(shape, "Wires", []) or [])
+    reports = []
+    face_count = 0
+    for index, wire in enumerate(wires):
+        report = {
+            "index": index,
+            "closed": bool(wire.isClosed()),
+            "edge_count": len(getattr(wire, "Edges", []) or []),
+        }
+        if report["closed"]:
+            try:
+                face = Part.Face(wire)
+                report["face_valid"] = bool(face.isValid())
+                report["area"] = float(getattr(face, "Area", 0.0))
+                if report["face_valid"]:
+                    face_count += 1
+            except Exception as exc:
+                report["face_valid"] = False
+                report["face_error"] = str(exc)
+        else:
+            report["face_valid"] = False
+        reports.append(report)
+    return {
+        "wire_count": len(wires),
+        "closed_wire_count": sum(1 for report in reports if report["closed"]),
+        "face_count": face_count,
+        "faces_valid": bool(wires) and face_count == len(wires),
+        "wires": reports,
+    }
+
+
 FEATURE_EXTRUDE_KEYS = {
     "solid",
     "symmetric",
@@ -674,6 +708,26 @@ def sketch_geometry_has_endpoints(geom):
     return hasattr(geom, "StartPoint") and hasattr(geom, "EndPoint")
 
 
+def vector_distance(first, second):
+    return float((first - second).Length)
+
+
+def geometry_endpoint(geom, position):
+    if position == 1:
+        return geom.StartPoint
+    if position == 2:
+        return geom.EndPoint
+    raise ValueError("unsupported endpoint position: " + str(position))
+
+
+def geometry_is_self_closed(geom):
+    try:
+        shape = geom.toShape()
+        return bool(shape.isClosed())
+    except Exception:
+        return False
+
+
 def sketch_closed_validation(sketch):
     solve_code = sketch.solve()
     return {
@@ -704,6 +758,171 @@ def add_sketch_geometry_batch(sketch, items, *, connect_sequence=False, close_se
     if close_sequence and len(chain_indices) > 1:
         constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", chain_indices[-1], 2, chain_indices[0], 1)))
     return added, constraint_indices
+
+
+def endpoint_key(point, precision):
+    return (round(float(point.x), precision), round(float(point.y), precision), round(float(point.z), precision))
+
+
+def sketch_endpoint_records(sketch, precision=6, include_construction=False):
+    records = []
+    for index, geom in enumerate(sketch.Geometry):
+        try:
+            construction = bool(sketch.getConstruction(index))
+        except Exception:
+            construction = False
+        if construction and not include_construction:
+            continue
+        if sketch_geometry_has_endpoints(geom):
+            for position in (1, 2):
+                point = geometry_endpoint(geom, position)
+                records.append(
+                    {
+                        "geometry_index": index,
+                        "point_pos": position,
+                        "point": point_list(point),
+                        "key": endpoint_key(point, precision),
+                    }
+                )
+    return records
+
+
+def validate_sketch_profile(sketch, params):
+    precision = int(params.get("endpoint_key_precision", 6))
+    micro_offset_tolerance = float(params.get("micro_offset_tolerance", 0.05))
+    forbid_isolated_points = bool(params.get("forbid_isolated_points", True))
+    forbid_branch_points = bool(params.get("forbid_branch_points", True))
+    forbid_micro_offsets = bool(params.get("forbid_micro_offsets", True))
+    require_pad_ready = bool(params.get("require_pad_ready", True))
+    require_fully_constrained = bool(params.get("require_fully_constrained", False))
+
+    solve_code = sketch.solve()
+    try:
+        sketch.Document.recompute()
+    except Exception:
+        pass
+    face_validation = wire_face_validation(sketch.Shape)
+    open_vertices = [point_list(vertex) for vertex in getattr(sketch, "OpenVertices", [])]
+    isolated_points = []
+    for index, geom in enumerate(sketch.Geometry):
+        try:
+            construction = bool(sketch.getConstruction(index))
+        except Exception:
+            construction = False
+        if type(geom).__name__ == "Point" and not construction:
+            isolated_points.append(index)
+    records = sketch_endpoint_records(sketch, precision=precision)
+    clusters = {}
+    for record in records:
+        clusters.setdefault(record["key"], []).append(record)
+    branch_points = [
+        {"point": list(key), "endpoint_count": len(value), "endpoints": value}
+        for key, value in sorted(clusters.items())
+        if len(value) > 2
+    ]
+    unique_points = [value[0] for value in clusters.values()]
+    near_duplicate_vertices = []
+    for first_index in range(len(unique_points)):
+        for second_index in range(first_index + 1, len(unique_points)):
+            first = unique_points[first_index]
+            second = unique_points[second_index]
+            distance = math.dist(first["point"], second["point"])
+            if 1e-9 < distance < micro_offset_tolerance:
+                near_duplicate_vertices.append(
+                    {
+                        "first": first["point"],
+                        "second": second["point"],
+                        "distance": distance,
+                    }
+                )
+    conflicting = list(getattr(sketch, "ConflictingConstraints", []))
+    redundant = list(getattr(sketch, "RedundantConstraints", []))
+    malformed = list(getattr(sketch, "MalformedConstraints", []))
+    dof = getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None))
+    pad_ready = (
+        not open_vertices
+        and face_validation["wire_count"] > 0
+        and face_validation["closed_wire_count"] == face_validation["wire_count"]
+        and face_validation["faces_valid"]
+    )
+    issues = []
+    if open_vertices:
+        issues.append({"code": "open_vertices", "count": len(open_vertices)})
+    if forbid_isolated_points and isolated_points:
+        issues.append({"code": "isolated_points", "indices": isolated_points})
+    if forbid_branch_points and branch_points:
+        issues.append({"code": "branch_points", "count": len(branch_points)})
+    if forbid_micro_offsets and near_duplicate_vertices:
+        issues.append({"code": "near_duplicate_vertices", "count": len(near_duplicate_vertices)})
+    if conflicting:
+        issues.append({"code": "conflicting_constraints", "indices": conflicting})
+    if malformed:
+        issues.append({"code": "malformed_constraints", "indices": malformed})
+    if require_pad_ready and not pad_ready:
+        issues.append({"code": "not_pad_ready", "face_validation": face_validation})
+    if require_fully_constrained and dof != 0:
+        issues.append({"code": "not_fully_constrained", "degrees_of_freedom": dof})
+    return {
+        "ok": not issues,
+        "issues": issues,
+        "pad_ready": pad_ready,
+        "solve_code": solve_code,
+        "degrees_of_freedom": dof,
+        "open_vertices": open_vertices,
+        "isolated_points": isolated_points,
+        "branch_points": branch_points,
+        "near_duplicate_vertices": near_duplicate_vertices,
+        "conflicting_constraints": conflicting,
+        "redundant_constraints": redundant,
+        "malformed_constraints": malformed,
+        "face_validation": face_validation,
+    }
+
+
+def make_sketch_profile_loop(sketch, loop, *, loop_index, endpoint_tolerance):
+    import Sketcher
+
+    name = str(loop.get("name") or ("loop_" + str(loop_index)))
+    construction = bool(loop.get("construction", False))
+    segments = loop.get("segments") or loop.get("geometry") or []
+    if not segments:
+        raise ValueError("profile loop has no segments: " + name)
+    flat = []
+    for segment in segments:
+        for geom in make_sketch_geometries(segment):
+            flat.append((geom, bool(segment.get("construction", construction)), segment.get("type")))
+    if not flat:
+        raise ValueError("profile loop has no generated geometry: " + name)
+
+    if len(flat) == 1 and not sketch_geometry_has_endpoints(flat[0][0]):
+        if not geometry_is_self_closed(flat[0][0]):
+            raise ValueError("single profile loop segment is not endpoint-capable or self-closed: " + name)
+    else:
+        for geom, _, segment_type in flat:
+            if not sketch_geometry_has_endpoints(geom):
+                raise ValueError("profile loop segment must expose endpoints: " + name + " / " + str(segment_type))
+        for index in range(len(flat) - 1):
+            distance = vector_distance(geometry_endpoint(flat[index][0], 2), geometry_endpoint(flat[index + 1][0], 1))
+            if distance > endpoint_tolerance:
+                raise ValueError("profile loop endpoints are not colocated before constraining: " + name + " segment " + str(index) + " distance " + str(distance))
+        closing_distance = vector_distance(geometry_endpoint(flat[-1][0], 2), geometry_endpoint(flat[0][0], 1))
+        if closing_distance > endpoint_tolerance:
+            raise ValueError("profile loop does not close before constraining: " + name + " distance " + str(closing_distance))
+
+    added = []
+    constraint_indices = []
+    for geom, is_construction, _ in flat:
+        added.append(sketch.addGeometry(geom, is_construction))
+    if len(added) > 1:
+        for index in range(len(added) - 1):
+            constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[index], 2, added[index + 1], 1)))
+        constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[-1], 2, added[0], 1)))
+    return {
+        "name": name,
+        "added_indices": added,
+        "constraint_indices": constraint_indices,
+        "segment_count": len(flat),
+    }
 
 
 def make_constraint(spec):
@@ -928,6 +1147,67 @@ def action_sketch_add_profile(params):
         "sketch": object_summary(sketch),
         "document": document_summary(doc),
     }
+
+
+def action_sketch_profile_create(params):
+    import Sketcher
+
+    doc = get_doc(params)
+    sketch_name = params.get("sketch_name") or "ProfileSketch"
+    sketch = doc.getObject(sketch_name)
+    doc.openTransaction("MCP worker create sketch profile")
+    try:
+        if sketch is None:
+            sketch = doc.addObject("Sketcher::SketchObject", sketch_name)
+        elif bool(params.get("replace_existing", False)):
+            sketch.deleteAllConstraints()
+            sketch.deleteAllGeometry()
+        loops = params.get("loops") or []
+        if not loops:
+            raise ValueError("loops is required")
+        endpoint_tolerance = float(params.get("endpoint_tolerance", 1e-6))
+        loop_reports = []
+        all_added = []
+        all_constraints = []
+        for index, loop in enumerate(loops):
+            report = make_sketch_profile_loop(sketch, loop, loop_index=index, endpoint_tolerance=endpoint_tolerance)
+            loop_reports.append(report)
+            all_added.extend(report["added_indices"])
+            all_constraints.extend(report["constraint_indices"])
+        block_indices = []
+        lock_mode = str(params.get("lock_mode", "none"))
+        if lock_mode not in {"none", "block"}:
+            raise ValueError("unsupported lock_mode: " + lock_mode)
+        if lock_mode == "block":
+            for geometry_index in all_added:
+                block_indices.append(sketch.addConstraint(Sketcher.Constraint("Block", geometry_index)))
+        doc.recompute()
+        validation = validate_sketch_profile(sketch, params)
+        if bool(params.get("require_valid", True)) and not validation["ok"]:
+            raise ValueError("sketch profile validation failed: " + str(validation["issues"]))
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "sketch": object_summary(sketch),
+        "loops": loop_reports,
+        "added_indices": all_added,
+        "constraint_indices": all_constraints,
+        "block_constraint_indices": block_indices,
+        "validation": validation,
+        "document": document_summary(doc),
+    }
+
+
+def action_sketch_profile_validate(params):
+    doc = get_doc(params)
+    sketch = get_object(doc, params.get("sketch_name") or "")
+    validation = validate_sketch_profile(sketch, params)
+    return {"sketch": object_summary(sketch), "validation": validation, "document": document_summary(doc)}
 
 
 def action_sketch_edit_geometry(params):
@@ -1453,6 +1733,8 @@ ACTIONS = {
     "sketch_add_geometry": action_sketch_add_geometry,
     "sketch_add_constraint": action_sketch_add_constraint,
     "sketch_add_profile": action_sketch_add_profile,
+    "sketch_profile_create": action_sketch_profile_create,
+    "sketch_profile_validate": action_sketch_profile_validate,
     "sketch_edit_geometry": action_sketch_edit_geometry,
     "sketch_edit_constraints": action_sketch_edit_constraints,
     "sketch_transform": action_sketch_transform,

@@ -1116,6 +1116,144 @@ Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.
 }
 ```
 
+## `freecad_worker_sketch_profile_create`
+
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "loops": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "replace_existing": {
+      "type": "boolean"
+    },
+    "lock_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "block"
+      ]
+    },
+    "endpoint_tolerance": {
+      "type": "number"
+    },
+    "require_valid": {
+      "type": "boolean"
+    },
+    "require_pad_ready": {
+      "type": "boolean"
+    },
+    "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "forbid_isolated_points": {
+      "type": "boolean"
+    },
+    "forbid_branch_points": {
+      "type": "boolean"
+    },
+    "forbid_micro_offsets": {
+      "type": "boolean"
+    },
+    "micro_offset_tolerance": {
+      "type": "number"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "loops"
+  ]
+}
+```
+
+## `freecad_worker_sketch_profile_validate`
+
+Validate whether a worker Sketcher object is pad-ready: closed wires, face creation, open vertices, isolated points, branch points, and micro-offset checks.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "require_pad_ready": {
+      "type": "boolean"
+    },
+    "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "forbid_isolated_points": {
+      "type": "boolean"
+    },
+    "forbid_branch_points": {
+      "type": "boolean"
+    },
+    "forbid_micro_offsets": {
+      "type": "boolean"
+    },
+    "micro_offset_tolerance": {
+      "type": "number"
+    },
+    "endpoint_key_precision": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_worker_sketch_edit_geometry`
 
 Delete, move, toggle construction, or manage external Sketcher geometry.
@@ -3140,6 +3278,164 @@ Add common closed/open Sketcher profiles such as rectangle, polyline, regular po
     "document_path",
     "sketch_name",
     "profile"
+  ]
+}
+```
+
+## `freecad_sketch_profile_create`
+
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "loops": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "replace_existing": {
+      "type": "boolean"
+    },
+    "lock_mode": {
+      "type": "string",
+      "enum": [
+        "none",
+        "block"
+      ]
+    },
+    "endpoint_tolerance": {
+      "type": "number"
+    },
+    "require_valid": {
+      "type": "boolean"
+    },
+    "require_pad_ready": {
+      "type": "boolean"
+    },
+    "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "forbid_isolated_points": {
+      "type": "boolean"
+    },
+    "forbid_branch_points": {
+      "type": "boolean"
+    },
+    "forbid_micro_offsets": {
+      "type": "boolean"
+    },
+    "micro_offset_tolerance": {
+      "type": "number"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "loops"
+  ]
+}
+```
+
+## `freecad_sketch_profile_validate`
+
+Validate whether a Sketcher object is pad-ready: closed wires, face creation, open vertices, isolated points, branch points, and micro-offset checks.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "require_pad_ready": {
+      "type": "boolean"
+    },
+    "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "forbid_isolated_points": {
+      "type": "boolean"
+    },
+    "forbid_branch_points": {
+      "type": "boolean"
+    },
+    "forbid_micro_offsets": {
+      "type": "boolean"
+    },
+    "micro_offset_tolerance": {
+      "type": "number"
+    },
+    "endpoint_key_precision": {
+      "type": "integer"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
   ]
 }
 ```

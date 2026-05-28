@@ -71,6 +71,7 @@ def main() -> int:
         open_sketch_doc = temp / "open_sketch.FCStd"
         advanced_sketch_doc = temp / "advanced_sketch.FCStd"
         connected_sketch_doc = temp / "connected_sketch.FCStd"
+        profile_builder_doc = temp / "profile_builder.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
 
@@ -628,6 +629,69 @@ def main() -> int:
         closed_validation = connected_geometry.get("closed_validation", {})
         if closed_validation.get("open_vertices"):
             raise RuntimeError(f"connected sketch is not closed: {connected_geometry}")
+
+        profile_builder = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "ProfileBuilderSmoke",
+                    "sketch_name": "ProfileBuilderSketch",
+                    "loops": [
+                        {
+                            "name": "spline_arc_loop",
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                                {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
+                                {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
+                                {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(profile_builder_doc),
+                    "overwrite": True,
+                }
+            ),
+            "sketch profile create",
+        )
+        if not profile_builder["validation"]["ok"] or not profile_builder["validation"]["pad_ready"]:
+            raise RuntimeError(f"profile builder did not produce pad-ready profile: {profile_builder}")
+        if profile_builder["validation"]["degrees_of_freedom"] != 0:
+            raise RuntimeError(f"profile builder did not fully constrain profile: {profile_builder}")
+        profile_validation = assert_ok(
+            service.definition_map()["freecad_sketch_profile_validate"].handler(
+                {
+                    "document_path": str(profile_builder_doc),
+                    "sketch_name": "ProfileBuilderSketch",
+                    "require_fully_constrained": True,
+                }
+            ),
+            "sketch profile validate",
+        )
+        if not profile_validation["validation"]["ok"] or profile_validation["validation"]["face_validation"]["face_count"] != 1:
+            raise RuntimeError(f"profile validation mismatch: {profile_validation}")
+        drift_rejected = assert_tool_failed(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "ProfileBuilderRejectSmoke",
+                    "sketch_name": "RejectSketch",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                                {"type": "line", "start": [10, 0.5, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "endpoint_tolerance": 1e-6,
+                    "output_path": str(temp / "profile_builder_reject.FCStd"),
+                    "overwrite": True,
+                }
+            ),
+            "sketch profile endpoint drift rejection",
+        )
+        if "not colocated" not in drift_rejected["freecad"].get("error", ""):
+            raise RuntimeError(f"profile builder did not reject endpoint drift: {drift_rejected}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
