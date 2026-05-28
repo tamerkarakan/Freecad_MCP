@@ -704,6 +704,94 @@ def make_sketch_geometries(item):
     raise ValueError("unsupported sketch geometry: " + str(kind))
 
 
+CURVED_PROFILE_SEGMENT_TYPES = {
+    "arc",
+    "circle",
+    "ellipse",
+    "ellipse_arc",
+    "conic_arc",
+    "bspline",
+}
+
+
+def normalized_profile_segment_type(kind):
+    value = str(kind or "").lower()
+    if value in {"line", "line_segment"}:
+        return "line"
+    if value == "polyline":
+        return "polyline"
+    if value in {"bspline", "b_spline"}:
+        return "bspline"
+    if value in {"arc", "arc_of_circle"}:
+        return "arc"
+    if value in {"circle", "circle_3_point"}:
+        return "circle"
+    if value == "ellipse":
+        return "ellipse"
+    if value in {"arc_of_ellipse", "ellipse_arc"}:
+        return "ellipse_arc"
+    if value in {"arc_of_hyperbola", "hyperbola_arc", "arc_of_parabola", "parabola_arc"}:
+        return "conic_arc"
+    if value == "point":
+        return "point"
+    return value
+
+
+def normalized_profile_segment_set(value):
+    if value is None:
+        return set()
+    if isinstance(value, str):
+        return {normalized_profile_segment_type(value)}
+    return {normalized_profile_segment_type(item) for item in value}
+
+
+def loop_contract_value(loop, params, key, default=None):
+    if key in loop:
+        return loop.get(key)
+    return params.get(key, default)
+
+
+def enforce_profile_loop_curve_contract(loop, params, segments, name):
+    segment_types = [normalized_profile_segment_type(segment.get("type")) for segment in segments]
+    curve_types = [segment_type for segment_type in segment_types if segment_type in CURVED_PROFILE_SEGMENT_TYPES]
+    required_types = normalized_profile_segment_set(params.get("required_segment_types")) | normalized_profile_segment_set(loop.get("required_segment_types"))
+    required_types |= normalized_profile_segment_set(params.get("required_curve_types")) | normalized_profile_segment_set(loop.get("required_curve_types"))
+    allowed_types = normalized_profile_segment_set(loop_contract_value(loop, params, "allowed_segment_types"))
+    minimum_curve_segments = int(loop_contract_value(loop, params, "minimum_curve_segments", 0) or 0)
+    forbid_polyline_fallback = bool(loop_contract_value(loop, params, "forbid_polyline_fallback", False))
+    forbid_all_line_loops = bool(loop_contract_value(loop, params, "forbid_all_line_loops", False))
+
+    if allowed_types:
+        disallowed = sorted({segment_type for segment_type in segment_types if segment_type not in allowed_types})
+        if disallowed:
+            raise ValueError("profile loop contains disallowed segment types: " + name + " " + str(disallowed))
+    missing = sorted(required_types - set(segment_types))
+    if missing:
+        raise ValueError("profile loop missing required segment types: " + name + " " + str(missing))
+    if forbid_polyline_fallback and "polyline" in segment_types:
+        raise ValueError("profile loop polyline fallback is forbidden: " + name)
+    if forbid_all_line_loops and not curve_types:
+        raise ValueError("profile loop all-line fallback is forbidden: " + name)
+    if len(curve_types) < minimum_curve_segments:
+        raise ValueError(
+            "profile loop requires at least "
+            + str(minimum_curve_segments)
+            + " curve segments: "
+            + name
+            + " found "
+            + str(len(curve_types))
+        )
+    return {
+        "segment_types": segment_types,
+        "curve_segment_types": curve_types,
+        "curve_segment_count": len(curve_types),
+        "required_segment_types": sorted(required_types),
+        "minimum_curve_segments": minimum_curve_segments,
+        "forbid_polyline_fallback": forbid_polyline_fallback,
+        "forbid_all_line_loops": forbid_all_line_loops,
+    }
+
+
 def sketch_geometry_has_endpoints(geom):
     return hasattr(geom, "StartPoint") and hasattr(geom, "EndPoint")
 
@@ -879,7 +967,7 @@ def validate_sketch_profile(sketch, params):
     }
 
 
-def make_sketch_profile_loop(sketch, loop, *, loop_index, endpoint_tolerance):
+def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_tolerance):
     import Sketcher
 
     name = str(loop.get("name") or ("loop_" + str(loop_index)))
@@ -887,6 +975,7 @@ def make_sketch_profile_loop(sketch, loop, *, loop_index, endpoint_tolerance):
     segments = loop.get("segments") or loop.get("geometry") or []
     if not segments:
         raise ValueError("profile loop has no segments: " + name)
+    curve_contract = enforce_profile_loop_curve_contract(loop, params, segments, name)
     flat = []
     for segment in segments:
         for geom in make_sketch_geometries(segment):
@@ -922,6 +1011,7 @@ def make_sketch_profile_loop(sketch, loop, *, loop_index, endpoint_tolerance):
         "added_indices": added,
         "constraint_indices": constraint_indices,
         "segment_count": len(flat),
+        "curve_contract": curve_contract,
     }
 
 
@@ -1170,7 +1260,7 @@ def action_sketch_profile_create(params):
         all_added = []
         all_constraints = []
         for index, loop in enumerate(loops):
-            report = make_sketch_profile_loop(sketch, loop, loop_index=index, endpoint_tolerance=endpoint_tolerance)
+            report = make_sketch_profile_loop(sketch, loop, params, loop_index=index, endpoint_tolerance=endpoint_tolerance)
             loop_reports.append(report)
             all_added.extend(report["added_indices"])
             all_constraints.extend(report["constraint_indices"])

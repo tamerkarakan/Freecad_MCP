@@ -17,7 +17,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
 | `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
-| `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation. | Sketcher App API |
+| `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
 | `freecad_worker_object_list/get/set_properties/delete` | Inspect and mutate in-memory worker document objects. | FreeCAD process |
@@ -53,7 +53,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_sketch_add_geometry` | Add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints and closed-profile validation. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
 | `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
-| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection and optional Block constraints. | Sketcher App API |
+| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, and optional Block constraints. | Sketcher App API |
 | `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, and micro-offset checks. | Sketcher + Part App API |
 | `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |
 | `freecad_sketch_edit_constraints` | Delete/rename/update constraints, set datum/driving/active/virtual/visibility state, and clean redundant/invalid constraints. | Sketcher App API |

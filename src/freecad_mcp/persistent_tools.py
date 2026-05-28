@@ -298,7 +298,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_create",
                 "Worker Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.",
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -306,6 +306,12 @@ class PersistentToolService:
                     "replace_existing": {"type": "boolean"},
                     "lock_mode": {"type": "string", "enum": ["none", "block"]},
                     "endpoint_tolerance": {"type": "number"},
+                    "required_segment_types": {"type": "array", "items": {"type": "string"}},
+                    "required_curve_types": {"type": "array", "items": {"type": "string"}},
+                    "allowed_segment_types": {"type": "array", "items": {"type": "string"}},
+                    "minimum_curve_segments": {"type": "integer"},
+                    "forbid_polyline_fallback": {"type": "boolean"},
+                    "forbid_all_line_loops": {"type": "boolean"},
                     "require_valid": {"type": "boolean"},
                     "require_pad_ready": {"type": "boolean"},
                     "require_fully_constrained": {"type": "boolean"},

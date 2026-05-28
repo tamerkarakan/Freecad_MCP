@@ -647,6 +647,9 @@ def main() -> int:
                         }
                     ],
                     "lock_mode": "block",
+                    "required_segment_types": ["bspline", "arc"],
+                    "minimum_curve_segments": 2,
+                    "forbid_polyline_fallback": True,
                     "require_fully_constrained": True,
                     "output_path": str(profile_builder_doc),
                     "overwrite": True,
@@ -658,6 +661,8 @@ def main() -> int:
             raise RuntimeError(f"profile builder did not produce pad-ready profile: {profile_builder}")
         if profile_builder["validation"]["degrees_of_freedom"] != 0:
             raise RuntimeError(f"profile builder did not fully constrain profile: {profile_builder}")
+        if profile_builder["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
+            raise RuntimeError(f"profile builder did not preserve curve segment count: {profile_builder}")
         profile_validation = assert_ok(
             service.definition_map()["freecad_sketch_profile_validate"].handler(
                 {
@@ -692,6 +697,31 @@ def main() -> int:
         )
         if "not colocated" not in drift_rejected["freecad"].get("error", ""):
             raise RuntimeError(f"profile builder did not reject endpoint drift: {drift_rejected}")
+        line_fallback_rejected = assert_tool_failed(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "ProfileBuilderLineFallbackSmoke",
+                    "sketch_name": "LineFallbackSketch",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                                {"type": "line", "start": [10, 0, 0], "end": [10, 10, 0]},
+                                {"type": "line", "start": [10, 10, 0], "end": [0, 10, 0]},
+                                {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "forbid_all_line_loops": True,
+                    "minimum_curve_segments": 1,
+                    "output_path": str(temp / "profile_builder_line_fallback.FCStd"),
+                    "overwrite": True,
+                }
+            ),
+            "sketch profile line fallback rejection",
+        )
+        if "all-line fallback" not in line_fallback_rejected["freecad"].get("error", ""):
+            raise RuntimeError(f"profile builder did not reject line fallback: {line_fallback_rejected}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

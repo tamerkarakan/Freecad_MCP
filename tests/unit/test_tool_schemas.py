@@ -123,6 +123,15 @@ class ToolSchemaTests(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
 
+        props = tools["freecad_sketch_profile_create"].to_mcp()["inputSchema"]["properties"]
+        for name in [
+            "required_segment_types",
+            "minimum_curve_segments",
+            "forbid_polyline_fallback",
+            "forbid_all_line_loops",
+        ]:
+            self.assertIn(name, props)
+
 
 if __name__ == "__main__":
     unittest.main()

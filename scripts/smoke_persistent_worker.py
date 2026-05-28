@@ -133,6 +133,9 @@ def main() -> int:
                             }
                         ],
                         "lock_mode": "block",
+                        "required_segment_types": ["bspline", "arc"],
+                        "minimum_curve_segments": 2,
+                        "forbid_polyline_fallback": True,
                         "require_fully_constrained": True,
                     }
                 ),
@@ -142,6 +145,8 @@ def main() -> int:
                 raise RuntimeError(f"worker profile builder did not produce pad-ready profile: {worker_profile}")
             if worker_profile["validation"]["degrees_of_freedom"] != 0:
                 raise RuntimeError(f"worker profile builder did not fully constrain profile: {worker_profile}")
+            if worker_profile["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
+                raise RuntimeError(f"worker profile builder did not preserve curve segment count: {worker_profile}")
             worker_profile_validation = worker_result(
                 service.definition_map()["freecad_worker_sketch_profile_validate"].handler(
                     {
@@ -155,6 +160,31 @@ def main() -> int:
             )
             if not worker_profile_validation["validation"]["ok"]:
                 raise RuntimeError(f"worker profile validation mismatch: {worker_profile_validation}")
+
+            worker_line_fallback = service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerLineFallback",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 40, 0], "end": [10, 40, 0]},
+                                {"type": "line", "start": [10, 40, 0], "end": [10, 50, 0]},
+                                {"type": "line", "start": [10, 50, 0], "end": [0, 50, 0]},
+                                {"type": "line", "start": [0, 50, 0], "end": [0, 40, 0]},
+                            ],
+                        }
+                    ],
+                    "forbid_all_line_loops": True,
+                    "minimum_curve_segments": 1,
+                }
+            )
+            if worker_line_fallback.get("ok") and worker_line_fallback.get("worker", {}).get("ok"):
+                raise RuntimeError(f"worker profile builder allowed line fallback: {worker_line_fallback}")
+            worker_line_error = str(worker_line_fallback.get("worker", {}).get("error") or worker_line_fallback.get("error") or worker_line_fallback)
+            if "all-line fallback" not in worker_line_error:
+                raise RuntimeError(f"worker profile builder did not reject line fallback: {worker_line_fallback}")
 
             profile = worker_result(
                 service.definition_map()["freecad_worker_sketch_add_profile"].handler(

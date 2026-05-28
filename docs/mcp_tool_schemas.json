@@ -1061,7 +1061,7 @@
     {
       "name": "freecad_worker_sketch_profile_create",
       "title": "Worker Create Sketch Profile",
-      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.",
+      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1098,6 +1098,33 @@
           },
           "endpoint_tolerance": {
             "type": "number"
+          },
+          "required_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_curve_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minimum_curve_segments": {
+            "type": "integer"
+          },
+          "forbid_polyline_fallback": {
+            "type": "boolean"
+          },
+          "forbid_all_line_loops": {
+            "type": "boolean"
           },
           "require_valid": {
             "type": "boolean"
@@ -3145,7 +3172,7 @@
     {
       "name": "freecad_sketch_profile_create",
       "title": "Create Sketch Profile",
-      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.",
+      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3176,6 +3203,33 @@
           },
           "endpoint_tolerance": {
             "type": "number"
+          },
+          "required_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_curve_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minimum_curve_segments": {
+            "type": "integer"
+          },
+          "forbid_polyline_fallback": {
+            "type": "boolean"
+          },
+          "forbid_all_line_loops": {
+            "type": "boolean"
           },
           "require_valid": {
             "type": "boolean"

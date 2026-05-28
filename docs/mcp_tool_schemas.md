@@ -1118,7 +1118,7 @@ Add a helper profile such as a rectangle, circle, polygon, polyline, or slot.
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.
 
 ```json
 {
@@ -1157,6 +1157,33 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "endpoint_tolerance": {
       "type": "number"
+    },
+    "required_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_curve_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "minimum_curve_segments": {
+      "type": "integer"
+    },
+    "forbid_polyline_fallback": {
+      "type": "boolean"
+    },
+    "forbid_all_line_loops": {
+      "type": "boolean"
     },
     "require_valid": {
       "type": "boolean"
@@ -3284,7 +3311,7 @@ Add common closed/open Sketcher profiles such as rectangle, polyline, regular po
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity guards.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards.
 
 ```json
 {
@@ -3317,6 +3344,33 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "endpoint_tolerance": {
       "type": "number"
+    },
+    "required_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_curve_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_segment_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "minimum_curve_segments": {
+      "type": "integer"
+    },
+    "forbid_polyline_fallback": {
+      "type": "boolean"
+    },
+    "forbid_all_line_loops": {
+      "type": "boolean"
     },
     "require_valid": {
       "type": "boolean"
