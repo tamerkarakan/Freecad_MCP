@@ -43,10 +43,15 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |
 | `freecad_part_check_geometry` | Run geometry validation. | `Part_CheckGeometry` |
-| `freecad_sketch_create` | Create sketch on plane or selected face. | Sketcher commands |
-| `freecad_sketch_add_geometry` | Add line, circle, arc, polyline geometry. | Sketcher commands/API |
-| `freecad_sketch_add_constraint` | Add coincident, distance, angle, symmetry constraints. | Sketcher commands/API |
-| `freecad_sketch_validate` | Validate sketch constraints/geometry. | Sketcher validation command |
+| `freecad_sketch_create` | Create a Sketcher object. | Sketcher commands/API |
+| `freecad_sketch_add_geometry` | Add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry. | Sketcher App API |
+| `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
+| `freecad_sketch_add_profile` | Add helper profiles such as rectangle, polyline, regular polygon, circle, and slot. | Sketcher App API |
+| `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |
+| `freecad_sketch_edit_constraints` | Delete/rename/update constraints, set datum/driving/active/virtual/visibility state, and clean redundant/invalid constraints. | Sketcher App API |
+| `freecad_sketch_transform` | Apply fillet/trim/extend/split/join/copy/move/symmetry/array and B-spline transform operations. | Sketcher App API |
+| `freecad_sketch_auto_constrain` | Detect/apply missing coincident, horizontal/vertical, equality constraints and run autoconstraint. | Sketcher App API |
+| `freecad_sketch_validate` | Solve and summarize geometry, constraints, missing constraints, open vertices, dependency, and per-constraint errors. | Sketcher validation API |
 
 ## P2 Tools
 

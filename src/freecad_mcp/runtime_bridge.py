@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import Any
 FREECAD_JSON_PREFIX = "__FREECAD_MCP_JSON__"
 MAX_EXEC_ARG_CHARS = 2_000
 MAX_EXEC_STREAM_CHARS = 12_000
+MAX_INLINE_CODE_CHARS = 8_000
 
 
 @dataclass(frozen=True)
@@ -175,7 +177,17 @@ class FreeCadCmdBridge:
 
     def execute_python(self, code: str, *, timeout_sec: int = 30) -> FreeCadExecutionResult:
         started = time.perf_counter()
-        argv = [str(self.executable), "-c", code]
+        script_path: Path | None = None
+        if len(code) > MAX_INLINE_CODE_CHARS:
+            handle = tempfile.NamedTemporaryFile("w", suffix=".py", encoding="utf-8", delete=False)
+            try:
+                handle.write(code)
+                script_path = Path(handle.name)
+            finally:
+                handle.close()
+            argv = [str(self.executable), str(script_path)]
+        else:
+            argv = [str(self.executable), "-c", code]
         try:
             completed = subprocess.run(
                 argv,
@@ -226,6 +238,12 @@ class FreeCadCmdBridge:
                 timed_out=False,
                 launch_error=str(exc),
             )
+        finally:
+            if script_path is not None:
+                try:
+                    script_path.unlink()
+                except OSError:
+                    pass
 
     def probe(self, *, timeout_sec: int = 30) -> dict[str, Any]:
         code = (

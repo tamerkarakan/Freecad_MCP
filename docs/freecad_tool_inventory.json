@@ -321,6 +321,11 @@
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
+        "freecad_sketch_add_profile",
+        "freecad_sketch_edit_geometry",
+        "freecad_sketch_edit_constraints",
+        "freecad_sketch_transform",
+        "freecad_sketch_auto_constrain",
         "freecad_sketch_validate"
       ],
       "evidence": "Sketcher module exposes 101 scanned commands."

@@ -37,6 +37,7 @@ COMMON_RUNTIME_PROPS: JsonObject = {
 CAD_ACTION_SCRIPT = r"""
 import base64
 import json
+import math
 import os
 import traceback
 
@@ -54,6 +55,48 @@ def vector(value, default=None):
     if value is None:
         value = default if default is not None else [0, 0, 0]
     return App.Vector(float(value[0]), float(value[1]), float(value[2]))
+
+
+def angle_radians(value, default=0.0):
+    if value is None:
+        return float(default)
+    if isinstance(value, dict):
+        if "radians" in value:
+            return float(value["radians"])
+        if "degrees" in value:
+            return math.radians(float(value["degrees"]))
+        if "value" in value:
+            return angle_radians(value["value"], default)
+    return float(value)
+
+
+def sketch_arg(value):
+    if isinstance(value, dict):
+        if "quantity" in value:
+            return App.Units.Quantity(str(value["quantity"]))
+        if "degrees" in value:
+            return App.Units.Quantity(str(value["degrees"]) + " deg")
+        if "radians" in value:
+            return float(value["radians"])
+        if "value" in value:
+            return sketch_arg(value["value"])
+    return value
+
+
+def quantity_summary(value):
+    if value is None:
+        return None
+    return {
+        "value": float(getattr(value, "Value", value)),
+        "unit": str(getattr(value, "Unit", "")),
+        "user_string": value.UserString if hasattr(value, "UserString") else str(value),
+    }
+
+
+def point_list(value):
+    if hasattr(value, "x") and hasattr(value, "y") and hasattr(value, "z"):
+        return [value.x, value.y, value.z]
+    return list(value)
 
 
 def placement_summary(obj):
@@ -103,6 +146,59 @@ def mesh_summary(obj):
     }
 
 
+def constraint_summary(constraint, index=None):
+    summary = {
+        "index": index,
+        "type": str(getattr(constraint, "Type", "")),
+        "first": int(getattr(constraint, "First", -2000)),
+        "first_pos": int(getattr(constraint, "FirstPos", 0)),
+        "second": int(getattr(constraint, "Second", -2000)),
+        "second_pos": int(getattr(constraint, "SecondPos", 0)),
+        "third": int(getattr(constraint, "Third", -2000)),
+        "third_pos": int(getattr(constraint, "ThirdPos", 0)),
+        "value": float(getattr(constraint, "Value", 0.0)),
+        "name": str(getattr(constraint, "Name", "")),
+        "driving": bool(getattr(constraint, "Driving", False)),
+        "active": bool(getattr(constraint, "IsActive", True)),
+        "virtual_space": bool(getattr(constraint, "InVirtualSpace", False)),
+        "label_distance": float(getattr(constraint, "LabelDistance", 0.0)),
+        "label_position": float(getattr(constraint, "LabelPosition", 0.0)),
+    }
+    return summary
+
+
+def geometry_summary(sketch, geometry, index):
+    try:
+        construction = bool(sketch.getConstruction(index))
+    except Exception:
+        construction = None
+    return {
+        "index": index,
+        "type_id": geometry.getTypeId().getName() if hasattr(geometry, "getTypeId") else type(geometry).__name__,
+        "construction": construction,
+        "repr": repr(geometry),
+    }
+
+
+def sketch_summary(obj):
+    if getattr(obj, "TypeId", "") != "Sketcher::SketchObject":
+        return None
+    geometry = list(getattr(obj, "Geometry", []))
+    constraints = list(getattr(obj, "Constraints", []))
+    return {
+        "geometry_count": len(geometry),
+        "constraint_count": len(constraints),
+        "degrees_of_freedom": getattr(obj, "DoF", getattr(obj, "DegreesOfFreedom", None)),
+        "open_vertices": [point_list(v) for v in getattr(obj, "OpenVertices", [])],
+        "conflicting_constraints": list(getattr(obj, "ConflictingConstraints", [])),
+        "redundant_constraints": list(getattr(obj, "RedundantConstraints", [])),
+        "partially_redundant_constraints": list(getattr(obj, "PartiallyRedundantConstraints", [])),
+        "malformed_constraints": list(getattr(obj, "MalformedConstraints", [])),
+        "geometry": [geometry_summary(obj, geo, idx) for idx, geo in enumerate(geometry)],
+        "constraints": [constraint_summary(constraint, idx) for idx, constraint in enumerate(constraints)],
+    }
+
+
 def object_summary(obj):
     return {
         "name": obj.Name,
@@ -112,6 +208,7 @@ def object_summary(obj):
         "placement": placement_summary(obj),
         "shape": shape_summary(obj),
         "mesh": mesh_summary(obj),
+        "sketch": sketch_summary(obj),
     }
 
 
@@ -449,29 +546,215 @@ def action_sketch_create(args):
     return {"saved_path": saved, "sketch": object_summary(sketch), "document": document_summary(doc)}
 
 
-def action_sketch_add_geometry(args):
+def make_sketch_geometries(item):
     import Part
 
+    kind = item.get("type")
+    if kind in {"line", "line_segment"}:
+        return [Part.LineSegment(vector(item["start"]), vector(item["end"]))]
+    if kind == "point":
+        return [Part.Point(vector(item.get("point") or item.get("position")))]
+    if kind in {"circle", "circle_3_point"}:
+        if kind == "circle_3_point" or item.get("points"):
+            points = item.get("points") or [item["point1"], item["point2"], item["point3"]]
+            return [Part.Circle(vector(points[0]), vector(points[1]), vector(points[2]))]
+        return [Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))]
+    if kind in {"arc", "arc_of_circle"}:
+        circle = Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))
+        return [Part.ArcOfCircle(circle, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
+    if kind == "ellipse":
+        center = vector(item.get("center"), [0, 0, 0])
+        if item.get("major_point") and item.get("minor_point"):
+            return [Part.Ellipse(vector(item["major_point"]), vector(item["minor_point"]), center)]
+        return [Part.Ellipse(center, float(item.get("major_radius", item.get("radius_x", 2))), float(item.get("minor_radius", item.get("radius_y", 1))))]
+    if kind in {"arc_of_ellipse", "ellipse_arc"}:
+        center = vector(item.get("center"), [0, 0, 0])
+        if item.get("major_point") and item.get("minor_point"):
+            ellipse = Part.Ellipse(vector(item["major_point"]), vector(item["minor_point"]), center)
+        else:
+            ellipse = Part.Ellipse(center, float(item.get("major_radius", item.get("radius_x", 2))), float(item.get("minor_radius", item.get("radius_y", 1))))
+        return [Part.ArcOfEllipse(ellipse, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
+    if kind in {"arc_of_hyperbola", "hyperbola_arc"}:
+        center = vector(item.get("center"), [0, 0, 0])
+        if item.get("major_point") and item.get("minor_point"):
+            hyperbola = Part.Hyperbola(vector(item["major_point"]), vector(item["minor_point"]), center)
+        else:
+            hyperbola = Part.Hyperbola(center, float(item.get("major_radius", 2)), float(item.get("minor_radius", 1)))
+        return [Part.ArcOfHyperbola(hyperbola, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
+    if kind in {"arc_of_parabola", "parabola_arc"}:
+        if item.get("point1") and item.get("point2") and item.get("center"):
+            parabola = Part.Parabola(vector(item["point1"]), vector(item["point2"]), vector(item["center"]))
+        else:
+            parabola = Part.Parabola()
+        return [Part.ArcOfParabola(parabola, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
+    if kind in {"bspline", "b_spline"}:
+        poles = [vector(point) for point in (item.get("poles") or item.get("points") or [])]
+        if len(poles) < 2:
+            raise ValueError("bspline requires at least two poles/points")
+        curve = Part.BSplineCurve()
+        periodic = bool(item.get("periodic", False))
+        if item.get("interpolate", False):
+            if periodic:
+                curve.interpolate(poles, True)
+            else:
+                curve.interpolate(poles)
+        else:
+            if periodic:
+                curve.buildFromPoles(poles, True)
+            else:
+                curve.buildFromPoles(poles)
+        return [curve]
+    if kind == "polyline":
+        points = [vector(point) for point in item["points"]]
+        if len(points) < 2:
+            raise ValueError("polyline requires at least two points")
+        closed = bool(item.get("closed", False))
+        segments = [Part.LineSegment(points[idx], points[idx + 1]) for idx in range(len(points) - 1)]
+        if closed:
+            segments.append(Part.LineSegment(points[-1], points[0]))
+        return segments
+    raise ValueError("unsupported sketch geometry: " + str(kind))
+
+
+def make_constraint(spec):
+    import Sketcher
+
+    values = spec.get("values")
+    if values is None:
+        values = []
+        for key in ("first", "first_pos", "second", "second_pos", "third", "third_pos", "value"):
+            if key in spec:
+                values.append(spec[key])
+    return Sketcher.Constraint(spec["type"], *[sketch_arg(value) for value in values])
+
+
+def apply_constraint_metadata(sketch, index, spec):
+    if spec.get("name") is not None:
+        sketch.renameConstraint(index, str(spec.get("name") or ""))
+    if spec.get("datum") is not None:
+        sketch.setDatum(index, sketch_arg(spec["datum"]))
+    if spec.get("driving") is not None:
+        sketch.setDriving(index, bool(spec["driving"]))
+    if spec.get("active") is not None:
+        sketch.setActive(index, bool(spec["active"]))
+    if spec.get("virtual_space") is not None:
+        sketch.setVirtualSpace(index, bool(spec["virtual_space"]))
+    if spec.get("visible") is not None:
+        sketch.setVisibility(index, bool(spec["visible"]))
+    if spec.get("label_position") is not None:
+        sketch.setLabelPosition(index, float(spec["label_position"]))
+    if spec.get("label_distance") is not None:
+        sketch.setLabelDistance(index, float(spec["label_distance"]))
+
+
+def add_profile_geometry(sketch, profile):
+    import Part
+    import Sketcher
+
+    kind = profile.get("type")
+    construction = bool(profile.get("construction", False))
+    constrain = bool(profile.get("constrain", True))
+    added = []
+    constraints = []
+
+    def add_lines(points, closed=True):
+        local = []
+        for idx in range(len(points) - 1):
+            local.append(sketch.addGeometry(Part.LineSegment(points[idx], points[idx + 1]), construction))
+        if closed:
+            local.append(sketch.addGeometry(Part.LineSegment(points[-1], points[0]), construction))
+        if constrain:
+            for idx in range(len(local) - 1):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
+            if closed and local:
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
+        added.extend(local)
+        return local
+
+    if kind == "rectangle":
+        if profile.get("corner1") and profile.get("corner2"):
+            c1 = vector(profile["corner1"])
+            c2 = vector(profile["corner2"])
+        else:
+            c1 = vector(profile.get("origin"), [0, 0, 0])
+            c2 = App.Vector(c1.x + float(profile["width"]), c1.y + float(profile["height"]), c1.z)
+        points = [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
+        local = add_lines(points, True)
+        if constrain:
+            constraints.extend(
+                [
+                    sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])),
+                    sketch.addConstraint(Sketcher.Constraint("Vertical", local[1])),
+                    sketch.addConstraint(Sketcher.Constraint("Horizontal", local[2])),
+                    sketch.addConstraint(Sketcher.Constraint("Vertical", local[3])),
+                ]
+            )
+        if bool(profile.get("dimension_constraints", False)):
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("DistanceX", local[0], 1, local[0], 2, abs(c2.x - c1.x))))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("DistanceY", local[1], 1, local[1], 2, abs(c2.y - c1.y))))
+    elif kind == "polyline":
+        added.extend(add_lines([vector(point) for point in profile["points"]], bool(profile.get("closed", True))))
+    elif kind == "regular_polygon":
+        sides = int(profile["sides"])
+        if sides < 3:
+            raise ValueError("regular_polygon requires sides >= 3")
+        center = vector(profile.get("center"), [0, 0, 0])
+        radius = float(profile["radius"])
+        start = angle_radians(profile.get("start_angle"), 0.0)
+        points = [
+            App.Vector(center.x + radius * math.cos(start + (2 * math.pi * idx / sides)), center.y + radius * math.sin(start + (2 * math.pi * idx / sides)), center.z)
+            for idx in range(sides)
+        ]
+        local = add_lines(points, True)
+        if constrain and bool(profile.get("equal_edges", True)):
+            for idx in range(1, len(local)):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[0], local[idx])))
+    elif kind in {"circle", "circle_profile"}:
+        center = vector(profile.get("center"), [0, 0, 0])
+        geom = Part.Circle(center, vector(profile.get("normal"), [0, 0, 1]), float(profile["radius"]))
+        idx = sketch.addGeometry(geom, construction)
+        added.append(idx)
+        if bool(profile.get("radius_constraint", constrain)):
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Radius", idx, float(profile["radius"]))))
+    elif kind == "slot":
+        center = vector(profile.get("center"), [0, 0, 0])
+        radius = float(profile["radius"])
+        length = float(profile["length"])
+        left = App.Vector(center.x - length / 2, center.y, center.z)
+        right = App.Vector(center.x + length / 2, center.y, center.z)
+        top_left = App.Vector(left.x, left.y + radius, left.z)
+        top_right = App.Vector(right.x, right.y + radius, right.z)
+        bottom_right = App.Vector(right.x, right.y - radius, right.z)
+        bottom_left = App.Vector(left.x, left.y - radius, left.z)
+        local = [
+            sketch.addGeometry(Part.LineSegment(top_left, top_right), construction),
+            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(right, App.Vector(0, 0, 1), radius), math.pi / 2, -math.pi / 2), construction),
+            sketch.addGeometry(Part.LineSegment(bottom_right, bottom_left), construction),
+            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(left, App.Vector(0, 0, 1), radius), -math.pi / 2, math.pi / 2), construction),
+        ]
+        added.extend(local)
+        if constrain:
+            for idx in range(len(local) - 1):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[2])))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[1], local[3])))
+    else:
+        raise ValueError("unsupported sketch profile: " + str(kind))
+
+    return added, constraints
+
+
+def action_sketch_add_geometry(args):
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     items = args.get("geometry") or []
     added = []
     doc.openTransaction("MCP add sketch geometry")
     for item in items:
-        kind = item.get("type")
-        if kind == "line":
-            geom = Part.LineSegment(vector(item["start"]), vector(item["end"]))
-        elif kind == "circle":
-            geom = Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))
-        elif kind == "arc":
-            geom = Part.ArcOfCircle(
-                Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"])),
-                float(item["start_angle"]),
-                float(item["end_angle"]),
-            )
-        else:
-            raise ValueError("unsupported sketch geometry: " + str(kind))
-        added.append(sketch.addGeometry(geom, bool(item.get("construction", False))))
+        for geom in make_sketch_geometries(item):
+            added.append(sketch.addGeometry(geom, bool(item.get("construction", False))))
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)
@@ -479,32 +762,312 @@ def action_sketch_add_geometry(args):
 
 
 def action_sketch_add_constraint(args):
-    import Sketcher
-
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     constraints = args.get("constraints") or []
     added = []
     doc.openTransaction("MCP add sketch constraints")
     for item in constraints:
-        kind = item.get("type")
-        values = item.get("values") or []
-        added.append(sketch.addConstraint(Sketcher.Constraint(kind, *values)))
+        index = sketch.addConstraint(make_constraint(item))
+        apply_constraint_metadata(sketch, index, item)
+        added.append(index)
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)
     return {"saved_path": saved, "added_indices": added, "sketch": object_summary(sketch), "document": document_summary(doc)}
 
 
+def action_sketch_add_profile(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    doc.openTransaction("MCP add sketch profile")
+    added, constraints = add_profile_geometry(sketch, args["profile"])
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "profile_type": args["profile"].get("type"),
+        "added_indices": added,
+        "constraint_indices": constraints,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
+
+
+def action_sketch_edit_geometry(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    operations = args.get("operations") or []
+    reports = []
+    doc.openTransaction("MCP edit sketch geometry")
+    for op in operations:
+        kind = op.get("operation") or op.get("type")
+        report = {"operation": kind}
+        if kind == "delete":
+            sketch.delGeometry(int(op["geometry_index"]), bool(op.get("no_solve", False)))
+            report["geometry_index"] = int(op["geometry_index"])
+        elif kind == "delete_many":
+            ids = [int(value) for value in op.get("geometry_indices", [])]
+            if hasattr(sketch, "delGeometries"):
+                sketch.delGeometries(ids, bool(op.get("no_solve", False)))
+            else:
+                for geo_id in sorted(ids, reverse=True):
+                    sketch.delGeometry(geo_id, bool(op.get("no_solve", False)))
+            report["geometry_indices"] = ids
+        elif kind == "delete_all":
+            sketch.deleteAllGeometry(bool(op.get("no_solve", False)))
+        elif kind == "set_construction":
+            sketch.setConstruction(int(op["geometry_index"]), bool(op["construction"]))
+            report["construction"] = bool(op["construction"])
+        elif kind == "toggle_construction":
+            sketch.toggleConstruction(int(op["geometry_index"]))
+        elif kind == "add_external":
+            sketch.addExternal(str(op["object_name"]), str(op["sub_name"]), bool(op.get("defining", False)), bool(op.get("intersection", False)))
+            report["object_name"] = op["object_name"]
+            report["sub_name"] = op["sub_name"]
+        elif kind == "delete_external":
+            sketch.delExternal(int(op["external_index"]))
+            report["external_index"] = int(op["external_index"])
+        elif kind == "delete_externals":
+            ids = [int(value) for value in op.get("external_indices", [])]
+            sketch.delExternals(ids)
+            report["external_indices"] = ids
+        elif kind == "carbon_copy":
+            sketch.carbonCopy(str(op["object_name"]), bool(op.get("as_construction", True)))
+            report["object_name"] = op["object_name"]
+        elif kind == "move_geometry":
+            sketch.moveGeometry(int(op["geometry_index"]), int(op.get("point_pos", 0)), vector(op["vector"]), bool(op.get("relative", False)))
+        elif kind == "move_geometries":
+            pairs = [(int(pair[0]), int(pair[1])) for pair in op.get("geometry_points", [])]
+            sketch.moveGeometries(pairs, vector(op["vector"]), bool(op.get("relative", False)))
+            report["geometry_points"] = pairs
+        elif kind == "expose_internal_geometry":
+            sketch.exposeInternalGeometry(int(op["geometry_index"]))
+        elif kind == "delete_unused_internal_geometry":
+            sketch.deleteUnusedInternalGeometry(int(op["geometry_index"]))
+        elif kind == "detect_degenerated":
+            report["count"] = int(sketch.detectDegeneratedGeometries(float(op.get("tolerance", 1e-7))))
+        elif kind == "remove_degenerated":
+            report["count"] = int(sketch.removeDegeneratedGeometries(float(op.get("tolerance", 1e-7))))
+        else:
+            raise ValueError("unsupported sketch geometry edit operation: " + str(kind))
+        reports.append(report)
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
+
+
+def action_sketch_edit_constraints(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    operations = args.get("operations") or []
+    reports = []
+    doc.openTransaction("MCP edit sketch constraints")
+    for op in operations:
+        kind = op.get("operation") or op.get("type")
+        report = {"operation": kind}
+        if kind == "delete":
+            sketch.delConstraint(int(op["constraint_index"]), bool(op.get("no_solve", False)))
+            report["constraint_index"] = int(op["constraint_index"])
+        elif kind == "delete_many":
+            ids = [int(value) for value in op.get("constraint_indices", [])]
+            if hasattr(sketch, "delConstraints"):
+                sketch.delConstraints(ids, bool(op.get("update_geometry", True)), bool(op.get("no_solve", False)))
+            else:
+                for constraint_id in sorted(ids, reverse=True):
+                    sketch.delConstraint(constraint_id, bool(op.get("no_solve", False)))
+            report["constraint_indices"] = ids
+        elif kind == "delete_all":
+            sketch.deleteAllConstraints()
+        elif kind == "rename":
+            sketch.renameConstraint(int(op["constraint_index"]), str(op.get("name") or ""))
+        elif kind == "set_datum":
+            target = op.get("constraint_name") if op.get("constraint_name") is not None else int(op["constraint_index"])
+            sketch.setDatum(target, sketch_arg(op["value"]))
+            report["datum"] = quantity_summary(sketch.getDatum(target))
+        elif kind == "get_datum":
+            target = op.get("constraint_name") if op.get("constraint_name") is not None else int(op["constraint_index"])
+            report["datum"] = quantity_summary(sketch.getDatum(target))
+        elif kind == "set_driving":
+            sketch.setDriving(int(op["constraint_index"]), bool(op["driving"]))
+        elif kind == "toggle_driving":
+            sketch.toggleDriving(int(op["constraint_index"]))
+            report["driving"] = bool(sketch.getDriving(int(op["constraint_index"])))
+        elif kind == "set_datums_driving":
+            sketch.setDatumsDriving(bool(op["driving"]))
+        elif kind == "move_datums_to_end":
+            sketch.moveDatumsToEnd()
+        elif kind == "set_active":
+            sketch.setActive(int(op["constraint_index"]), bool(op["active"]))
+        elif kind == "toggle_active":
+            sketch.toggleActive(int(op["constraint_index"]))
+            report["active"] = bool(sketch.getActive(int(op["constraint_index"])))
+        elif kind == "set_virtual_space":
+            sketch.setVirtualSpace(int(op["constraint_index"]), bool(op["virtual_space"]))
+        elif kind == "toggle_virtual_space":
+            sketch.toggleVirtualSpace(int(op["constraint_index"]))
+            report["virtual_space"] = bool(sketch.getVirtualSpace(int(op["constraint_index"])))
+        elif kind == "set_visibility":
+            sketch.setVisibility(int(op["constraint_index"]), bool(op["visible"]))
+        elif kind == "set_label_position":
+            sketch.setLabelPosition(int(op["constraint_index"]), float(op["position"]))
+        elif kind == "set_label_distance":
+            sketch.setLabelDistance(int(op["constraint_index"]), float(op["distance"]))
+        elif kind == "delete_on_point":
+            if op.get("vertex_index") is not None:
+                sketch.delConstraintOnPoint(int(op["vertex_index"]))
+            else:
+                sketch.delConstraintOnPoint(int(op["geometry_index"]), int(op["point_pos"]))
+        elif kind == "delete_to_external":
+            sketch.delConstraintsToExternal()
+        elif kind == "auto_remove_redundants":
+            sketch.autoRemoveRedundants(bool(op.get("update_geometry", True)))
+        elif kind == "change_locking":
+            report["affected"] = int(sketch.changeConstraintsLocking(bool(op.get("lock", True))))
+        elif kind == "validate_constraints":
+            sketch.validateConstraints()
+        elif kind == "evaluate_constraints":
+            report["invalid_found"] = bool(sketch.evaluateConstraints())
+        else:
+            raise ValueError("unsupported sketch constraint edit operation: " + str(kind))
+        reports.append(report)
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
+
+
+def action_sketch_transform(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    operations = args.get("operations") or []
+    reports = []
+    doc.openTransaction("MCP transform sketch")
+    for op in operations:
+        kind = op.get("operation") or op.get("type")
+        report = {"operation": kind}
+        if kind == "fillet":
+            if op.get("point_mode", False):
+                sketch.fillet(int(op["geometry_index"]), int(op["point_pos"]), float(op["radius"]), int(op.get("trim", True)), bool(op.get("create_corner", False)), bool(op.get("chamfer", False)))
+            else:
+                sketch.fillet(int(op["geometry_index1"]), int(op["geometry_index2"]), vector(op["point1"]), vector(op["point2"]), float(op["radius"]), int(op.get("trim", True)), bool(op.get("create_corner", False)), bool(op.get("chamfer", False)))
+        elif kind == "trim":
+            sketch.trim(int(op["geometry_index"]), vector(op["point"]))
+        elif kind == "extend":
+            sketch.extend(int(op["geometry_index"]), float(op["increment"]), int(op["point_pos"]))
+        elif kind == "split":
+            sketch.split(int(op["geometry_index"]), vector(op["point"]))
+        elif kind == "join":
+            sketch.join(int(op["geometry_index1"]), int(op["point_pos1"]), int(op["geometry_index2"]), int(op["point_pos2"]), int(op.get("continuity", 0)))
+        elif kind == "copy":
+            report["added_indices"] = list(sketch.addCopy([int(value) for value in op["geometry_indices"]], vector(op["vector"]), bool(op.get("clone", False))))
+        elif kind == "move":
+            sketch.addMove([int(value) for value in op["geometry_indices"]], vector(op["vector"]))
+        elif kind == "symmetric":
+            report["added_indices"] = list(sketch.addSymmetric([int(value) for value in op["geometry_indices"]], int(op["reference_geometry"]), int(op.get("reference_point_pos", 0))))
+        elif kind == "rectangular_array":
+            sketch.addRectangularArray([int(value) for value in op["geometry_indices"]], vector(op["vector"]), bool(op.get("clone", False)), int(op["rows"]), int(op["cols"]), bool(op.get("constrain_displacement", False)), float(op.get("perpendicular_scale", 1.0)))
+        elif kind == "remove_axes_alignment":
+            sketch.removeAxesAlignment([int(value) for value in op["geometry_indices"]])
+        elif kind == "convert_to_nurbs":
+            sketch.convertToNURBS(int(op["geometry_index"]))
+        elif kind == "increase_bspline_degree":
+            sketch.increaseBSplineDegree(int(op["geometry_index"]), int(op.get("increment", 1)))
+        elif kind == "decrease_bspline_degree":
+            report["ok"] = bool(sketch.decreaseBSplineDegree(int(op["geometry_index"]), int(op.get("decrement", 1))))
+        elif kind == "modify_bspline_knot":
+            sketch.modifyBSplineKnotMultiplicity(int(op["geometry_index"]), int(op["knot_index"]), int(op.get("multiplicity", 1)))
+        elif kind == "insert_bspline_knot":
+            sketch.insertBSplineKnot(int(op["geometry_index"]), float(op["parameter"]), int(op.get("multiplicity", 1)))
+        else:
+            raise ValueError("unsupported sketch transform operation: " + str(kind))
+        reports.append(report)
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
+
+
+def action_sketch_auto_constrain(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    operations = args.get("operations") or [{"operation": "autoconstraint"}]
+    reports = []
+    doc.openTransaction("MCP auto constrain sketch")
+    for op in operations:
+        kind = op.get("operation") or op.get("type")
+        report = {"operation": kind}
+        if kind == "autoconstraint":
+            sketch.autoconstraint(float(op.get("precision", 1e-4)), angle_radians(op.get("angle_precision"), math.pi / 8), bool(op.get("include_construction", True)))
+        elif kind == "detect_point_on_point":
+            report["count"] = int(sketch.detectMissingPointOnPointConstraints(float(op.get("precision", 1e-4)), bool(op.get("include_construction", True))))
+            report["missing"] = list(getattr(sketch, "MissingPointOnPointConstraints", []))
+        elif kind == "analyse_point_on_point":
+            sketch.analyseMissingPointOnPointCoincident(angle_radians(op.get("angle_precision"), math.pi / 8))
+            report["missing"] = list(getattr(sketch, "MissingPointOnPointConstraints", []))
+        elif kind == "detect_vertical_horizontal":
+            report["count"] = int(sketch.detectMissingVerticalHorizontalConstraints(angle_radians(op.get("angle_precision"), math.pi / 8)))
+            report["missing"] = list(getattr(sketch, "MissingVerticalHorizontalConstraints", []))
+        elif kind == "detect_equality":
+            report["count"] = int(sketch.detectMissingEqualityConstraints(float(op.get("precision", 1e-4))))
+            report["missing_line_equality"] = list(getattr(sketch, "MissingLineEqualityConstraints", []))
+            report["missing_radius"] = list(getattr(sketch, "MissingRadiusConstraints", []))
+        elif kind == "make_point_on_point":
+            sketch.makeMissingPointOnPointCoincident(bool(op.get("one_by_one", False)))
+        elif kind == "make_vertical_horizontal":
+            sketch.makeMissingVerticalHorizontal(bool(op.get("one_by_one", False)))
+        elif kind == "make_equality":
+            sketch.makeMissingEquality(bool(op.get("one_by_one", True)))
+        elif kind == "validate_constraints":
+            sketch.validateConstraints()
+        elif kind == "auto_remove_redundants":
+            sketch.autoRemoveRedundants(bool(op.get("update_geometry", True)))
+        else:
+            raise ValueError("unsupported sketch auto constraint operation: " + str(kind))
+        reports.append(report)
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
+
+
 def action_sketch_validate(args):
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
+    solve_code = sketch.solve() if bool(args.get("solve", True)) else None
+    if bool(args.get("detect_missing", False)):
+        sketch.detectMissingPointOnPointConstraints(float(args.get("precision", 1e-4)), bool(args.get("include_construction", True)))
+        sketch.analyseMissingPointOnPointCoincident(angle_radians(args.get("angle_precision"), math.pi / 8))
+        sketch.detectMissingVerticalHorizontalConstraints(angle_radians(args.get("angle_precision"), math.pi / 8))
+        sketch.detectMissingEqualityConstraints(float(args.get("precision", 1e-4)))
     doc.recompute()
+    constraint_errors = []
+    if bool(args.get("include_constraint_errors", False)):
+        for index in range(len(sketch.Constraints)):
+            try:
+                constraint_errors.append({"index": index, "error": float(sketch.calculateConstraintError(index))})
+            except Exception as exc:
+                constraint_errors.append({"index": index, "error": None, "message": str(exc)})
     return {
         "sketch": object_summary(sketch),
         "geometry_count": len(sketch.Geometry),
         "constraint_count": len(sketch.Constraints),
-        "degrees_of_freedom": getattr(sketch, "DegreesOfFreedom", None),
+        "degrees_of_freedom": getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None)),
+        "solve_code": solve_code,
+        "evaluate_constraints_invalid_found": bool(sketch.evaluateConstraints()),
+        "open_vertices": [point_list(v) for v in getattr(sketch, "OpenVertices", [])],
+        "conflicting_constraints": list(getattr(sketch, "ConflictingConstraints", [])),
+        "redundant_constraints": list(getattr(sketch, "RedundantConstraints", [])),
+        "partially_redundant_constraints": list(getattr(sketch, "PartiallyRedundantConstraints", [])),
+        "malformed_constraints": list(getattr(sketch, "MalformedConstraints", [])),
+        "missing_point_on_point": list(getattr(sketch, "MissingPointOnPointConstraints", [])),
+        "missing_vertical_horizontal": list(getattr(sketch, "MissingVerticalHorizontalConstraints", [])),
+        "missing_line_equality": list(getattr(sketch, "MissingLineEqualityConstraints", [])),
+        "missing_radius": list(getattr(sketch, "MissingRadiusConstraints", [])),
+        "dependent_geometry": [list(pair) for pair in sketch.getGeometryWithDependentParameters()],
+        "constraint_errors": constraint_errors,
     }
 
 
@@ -736,6 +1299,11 @@ DISPATCH = {
     "sketch_create": action_sketch_create,
     "sketch_add_geometry": action_sketch_add_geometry,
     "sketch_add_constraint": action_sketch_add_constraint,
+    "sketch_add_profile": action_sketch_add_profile,
+    "sketch_edit_geometry": action_sketch_edit_geometry,
+    "sketch_edit_constraints": action_sketch_edit_constraints,
+    "sketch_transform": action_sketch_transform,
+    "sketch_auto_constrain": action_sketch_auto_constrain,
     "sketch_validate": action_sketch_validate,
     "import_file": action_import_file,
     "export_file": action_export_file,
@@ -789,9 +1357,70 @@ class CadToolService:
             self._tool("freecad_part_chamfer", "Part Chamfer", "Create a chamfered copy of a shape.", {"document_path": {"type": "string"}, "source_object": {"type": "string"}, "distance": {"type": "number"}, "edge_indices": {"type": "array", "items": {"type": "integer"}}, "result_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "source_object", "distance"], "part_chamfer"),
             self._tool("freecad_part_check_geometry", "Check Part Geometry", "Run shape validity checks.", {"document_path": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "run_bop_check": {"type": "boolean"}}, ["document_path"], "part_check_geometry"),
             self._tool("freecad_sketch_create", "Create Sketch", "Create a Sketcher object.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "sketch_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, [], "sketch_create"),
-            self._tool("freecad_sketch_add_geometry", "Add Sketch Geometry", "Add line/circle/arc geometry to a sketch.", {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "geometry": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name", "geometry"], "sketch_add_geometry"),
-            self._tool("freecad_sketch_add_constraint", "Add Sketch Constraint", "Add Sketcher constraints.", {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "constraints": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name", "constraints"], "sketch_add_constraint"),
-            self._tool("freecad_sketch_validate", "Validate Sketch", "Summarize sketch geometry and constraints.", {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}}, ["document_path", "sketch_name"], "sketch_validate"),
+            self._tool(
+                "freecad_sketch_add_geometry",
+                "Add Sketch Geometry",
+                "Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "geometry": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "geometry"],
+                "sketch_add_geometry",
+            ),
+            self._tool(
+                "freecad_sketch_add_constraint",
+                "Add Sketch Constraint",
+                "Add raw or named Sketcher constraints with optional metadata such as datum, driving, active, visibility, and label placement.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "constraints": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "constraints"],
+                "sketch_add_constraint",
+            ),
+            self._tool(
+                "freecad_sketch_add_profile",
+                "Add Sketch Profile",
+                "Add common closed/open Sketcher profiles such as rectangle, polyline, regular polygon, circle, and slot.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "profile": {"type": "object"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "profile"],
+                "sketch_add_profile",
+            ),
+            self._tool(
+                "freecad_sketch_edit_geometry",
+                "Edit Sketch Geometry",
+                "Delete, move, toggle construction state, add external geometry, carbon-copy, and maintain internal/degenerated Sketcher geometry.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "operations"],
+                "sketch_edit_geometry",
+            ),
+            self._tool(
+                "freecad_sketch_edit_constraints",
+                "Edit Sketch Constraints",
+                "Delete, rename, set datum/driving/active/visibility/virtual-space state, validate, and auto-remove redundant Sketcher constraints.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "operations"],
+                "sketch_edit_constraints",
+            ),
+            self._tool(
+                "freecad_sketch_transform",
+                "Transform Sketch Geometry",
+                "Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, rectangular array, and B-spline edits.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name", "operations"],
+                "sketch_transform",
+            ),
+            self._tool(
+                "freecad_sketch_auto_constrain",
+                "Auto Constrain Sketch",
+                "Detect/apply missing Sketcher coincident, vertical/horizontal, equality constraints, run autoconstraint, and validate/clean constraints.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                ["document_path", "sketch_name"],
+                "sketch_auto_constrain",
+            ),
+            self._tool(
+                "freecad_sketch_validate",
+                "Validate Sketch",
+                "Solve and summarize sketch geometry, constraints, solver diagnostics, missing constraints, open vertices, and per-constraint errors.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "solve": {"type": "boolean"}, "detect_missing": {"type": "boolean"}, "include_constraint_errors": {"type": "boolean"}, "precision": {"type": "number"}, "angle_precision": {"type": "number"}, "include_construction": {"type": "boolean"}},
+                ["document_path", "sketch_name"],
+                "sketch_validate",
+            ),
             self._tool("freecad_import_file", "Import File", "Import a CAD/mesh file into a document.", {"input_path": {"type": "string"}, "document_name": {"type": "string"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}}, ["input_path"], "import_file"),
             self._tool("freecad_export_file", "Export File", "Export selected/all objects from a document.", {"document_path": {"type": "string"}, "output_path": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "overwrite": {"type": "boolean"}}, ["document_path", "output_path"], "export_file"),
             self._tool("freecad_supported_formats", "Supported Formats", "Return common import/export formats.", {}, [], "supported_formats"),

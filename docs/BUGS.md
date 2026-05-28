@@ -4,6 +4,8 @@
 
 - Persistent worker mode currently covers session/document/object basics and primitive creation; most typed CAD operations still use process-per-call tools.
 - GUI selection, active view, and selected edge/face state are not exposed yet.
+- Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
+- Sketcher `Group` and `Text` constraint ergonomics are intentionally not wrapped yet because their FreeCAD 1.1.1 constructor combinations need stable fixtures.
 - Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.
 - Mesh boolean support depends on the actual FreeCAD build and may return tool errors on unsupported operations.
 - File reads/imports accept caller-provided paths; write paths are workspace-gated by default.
@@ -23,3 +25,4 @@
 - Large runtime envelopes could grow excessively because raw `argv`/`stdout`/`stderr` were returned verbatim; execution payloads now return truncated previews plus total-length metadata.
 - Some MCP clients call `resources/templates/list` even when no resource templates are exposed; the server now returns an empty `resourceTemplates` list instead of `-32601`.
 - Persistent worker processes could survive MCP server EOF if sessions were not explicitly closed; stdio shutdown now calls service cleanup.
+- Large process-per-call CAD scripts could exceed the Windows command-line length limit when passed through `FreeCADCmd -c`; long scripts now run from a temporary `.py` file and are cleaned up after execution.

@@ -9,6 +9,7 @@ from freecad_mcp.runtime_bridge import (
     FreeCadCmdBridge,
     FreeCadDiscovery,
     FreeCadExecutionResult,
+    MAX_INLINE_CODE_CHARS,
     parse_prefixed_json,
 )
 
@@ -53,6 +54,17 @@ class RuntimeBridgeTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertIn("spark-runtime", result.stdout)
         self.assertFalse(result.timed_out)
+
+    def test_execute_python_uses_temp_script_for_long_code(self) -> None:
+        code = "print('long-script-runtime')\n" + ("# filler\n" * (MAX_INLINE_CODE_CHARS // 4))
+
+        result = FreeCadCmdBridge(Path(sys.executable)).execute_python(code, timeout_sec=10)
+
+        self.assertTrue(result.ok)
+        self.assertIn("long-script-runtime", result.stdout)
+        self.assertEqual(len(result.argv), 2)
+        self.assertTrue(result.argv[1].endswith(".py"))
+        self.assertFalse(Path(result.argv[1]).exists())
 
     def test_execute_python_timeout_is_structured(self) -> None:
         result = FreeCadCmdBridge(Path(sys.executable)).execute_python(

@@ -166,6 +166,13 @@ class McpServer:
                     "mimeType": "text/markdown",
                 },
                 {
+                    "uri": "freecad://docs/sketcher-capabilities",
+                    "name": "sketcher_capabilities",
+                    "title": "Sketcher Capabilities",
+                    "description": "Headless Sketcher typed-tool coverage and GUI-only boundaries.",
+                    "mimeType": "text/markdown",
+                },
+                {
                     "uri": "freecad://schemas/tools",
                     "name": "tool_schemas",
                     "title": "MCP Tool Schemas",
@@ -289,6 +296,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/architecture": repo_root / "docs" / "ARCHITECTURE.md",
         "freecad://docs/session-state": repo_root / "docs" / "SESSION_STATE.md",
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
+        "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",
     }
     if uri in mapping:

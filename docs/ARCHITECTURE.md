@@ -11,7 +11,7 @@ The server is hybrid in two ways:
 | --- | --- |
 | `freecad_mcp.source_inventory` | Static scanner for FreeCAD workbenches, commands, and source references. |
 | `freecad_mcp.static_tools` | Source-backed Phase 1 tool implementations. |
-| `freecad_mcp.runtime_bridge` | FreeCADCmd discovery and process-per-call execution bridge. |
+| `freecad_mcp.runtime_bridge` | FreeCADCmd discovery and process-per-call execution bridge, with temp-script fallback for long Python payloads on Windows. |
 | `freecad_mcp.runtime_tools` | Phase 2 runtime MCP tools. |
 | `freecad_mcp.persistent_bridge` | Long-lived FreeCADCmd worker process lifecycle and JSON request bridge. |
 | `freecad_mcp.persistent_tools` | Persistent worker MCP session/document/object tools. |
@@ -59,7 +59,7 @@ Implemented groups:
 - Document lifecycle: new, open, save, recompute, export.
 - Object inspection and mutation: list, get, set simple properties, delete.
 - Part operations: create primitives, boolean, extrude, revolve, fillet, chamfer, check geometry.
-- Sketcher basics: create sketches, add line/circle/arc geometry, add constraints, validate.
+- Sketcher typed coverage: create sketches; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; create/update constraints; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.
 

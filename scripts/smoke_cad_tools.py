@@ -33,6 +33,23 @@ def assert_tool_failed(result: dict, label: str) -> dict:
     return result
 
 
+def require_nonempty_list(payload: dict, key: str, label: str) -> list:
+    values = payload.get(key)
+    if not isinstance(values, list) or not values:
+        raise RuntimeError(f"{label} missing non-empty {key}: {payload}")
+    return values
+
+
+def require_report(payload: dict, index: int, label: str) -> dict:
+    reports = payload.get("reports")
+    if not isinstance(reports, list) or len(reports) <= index:
+        raise RuntimeError(f"{label} missing report {index}: {payload}")
+    report = reports[index]
+    if not isinstance(report, dict):
+        raise RuntimeError(f"{label} report {index} is not an object: {payload}")
+    return report
+
+
 def main() -> int:
     if not os.environ.get("FREECAD_MCP_FREECAD_HOME") and not os.environ.get("FREECAD_MCP_FREECAD_CMD"):
         message = "typed CAD smoke SKIPPED: FreeCAD runtime env not configured"
@@ -52,6 +69,8 @@ def main() -> int:
         imported = temp / "mesh.FCStd"
         boolean_doc = temp / "boolean.FCStd"
         open_sketch_doc = temp / "open_sketch.FCStd"
+        advanced_sketch_doc = temp / "advanced_sketch.FCStd"
+        transform_sketch_doc = temp / "transform_sketch.FCStd"
 
         create = assert_ok(
             service.definition_map()["freecad_part_create_primitive"].handler(
@@ -322,6 +341,230 @@ def main() -> int:
             raise RuntimeError(f"open sketch extrude falsely used closed-wire mode: {open_extrude}")
         if open_extrude["object"]["shape"]["solids"] != 0:
             raise RuntimeError(f"open sketch extrude unexpectedly created a solid: {open_extrude}")
+
+        advanced_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "AdvancedSketchSmoke",
+                    "sketch_name": "AdvancedSketch",
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch create",
+        )
+        if advanced_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+            raise RuntimeError(f"advanced sketch type mismatch: {advanced_sketch}")
+
+        advanced_geometry_items = [
+            {"type": "point", "point": [0, 0, 0]},
+            {"type": "ellipse", "center": [4, 0, 0], "major_radius": 2, "minor_radius": 1},
+            {
+                "type": "arc_of_ellipse",
+                "center": [9, 0, 0],
+                "major_radius": 2,
+                "minor_radius": 1,
+                "start_angle": {"degrees": 0},
+                "end_angle": {"degrees": 90},
+            },
+            {"type": "arc_of_hyperbola", "center": [14, 0, 0], "major_radius": 2, "minor_radius": 1, "start_angle": -1, "end_angle": 1},
+            {"type": "arc_of_parabola", "start_angle": -1, "end_angle": 1},
+            {"type": "bspline", "poles": [[0, 5, 0], [1, 6, 0], [2, 5, 0]]},
+            {"type": "polyline", "points": [[0, 8, 0], [1, 8, 0], [1, 9, 0]], "closed": False},
+        ]
+        expected_advanced_geometry = len(advanced_geometry_items) + 1
+        advanced_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "geometry": advanced_geometry_items,
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch add geometry",
+        )
+        added_advanced_geometry = require_nonempty_list(advanced_geometry, "added_indices", "advanced sketch add geometry")
+        if len(added_advanced_geometry) != expected_advanced_geometry:
+            raise RuntimeError(f"advanced geometry added count mismatch: {advanced_geometry}")
+        if advanced_geometry["sketch"]["sketch"]["geometry_count"] != len(added_advanced_geometry):
+            raise RuntimeError(f"unexpected advanced geometry count: {advanced_geometry}")
+
+        profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "profile": {"type": "rectangle", "origin": [20, 0, 0], "width": 5, "height": 3},
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "sketch add profile",
+        )
+        profile_added = require_nonempty_list(profile, "added_indices", "sketch add profile")
+        expected_profile_geometry = len(added_advanced_geometry) + len(profile_added)
+        expected_profile_constraints = len(profile.get("constraint_indices", []))
+        if profile["profile_type"] != "rectangle" or len(profile_added) != 4:
+            raise RuntimeError(f"unexpected profile result: {profile}")
+
+        for profile_spec, expected_added in [
+            ({"type": "regular_polygon", "center": [32, 0, 0], "radius": 3, "sides": 6}, 6),
+            ({"type": "slot", "center": [45, 0, 0], "length": 8, "radius": 1.5}, 4),
+            ({"type": "circle", "center": [58, 0, 0], "radius": 2}, 1),
+        ]:
+            helper_profile = assert_ok(
+                service.definition_map()["freecad_sketch_add_profile"].handler(
+                    {
+                        "document_path": str(advanced_sketch_doc),
+                        "sketch_name": "AdvancedSketch",
+                        "profile": profile_spec,
+                        "output_path": str(advanced_sketch_doc),
+                        "overwrite": True,
+                    }
+                ),
+                f"sketch add profile {profile_spec['type']}",
+            )
+            helper_added = require_nonempty_list(helper_profile, "added_indices", f"sketch add profile {profile_spec['type']}")
+            expected_profile_geometry += len(helper_added)
+            expected_profile_constraints += len(helper_profile.get("constraint_indices", []))
+            if helper_profile["profile_type"] != profile_spec["type"] or len(helper_added) != expected_added:
+                raise RuntimeError(f"unexpected helper profile result: {helper_profile}")
+
+        radius_constraint = assert_ok(
+            service.definition_map()["freecad_sketch_add_constraint"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "constraints": [{"type": "Radius", "values": [1, 2.0], "name": "EllipseRadius", "driving": False}],
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch add constraint",
+        )
+        radius_constraint_indices = require_nonempty_list(radius_constraint, "added_indices", "advanced sketch add constraint")
+        radius_constraint_index = radius_constraint_indices[0]
+
+        edited_constraints = assert_ok(
+            service.definition_map()["freecad_sketch_edit_constraints"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "operations": [
+                        {"operation": "get_datum", "constraint_index": radius_constraint_index},
+                        {"operation": "set_driving", "constraint_index": radius_constraint_index, "driving": True},
+                        {"operation": "toggle_active", "constraint_index": radius_constraint_index},
+                        {"operation": "toggle_active", "constraint_index": radius_constraint_index},
+                        {"operation": "validate_constraints"},
+                    ],
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch edit constraints",
+        )
+        datum_report = require_report(edited_constraints, 0, "advanced sketch edit constraints")
+        if datum_report.get("datum", {}).get("value") != 2.0:
+            raise RuntimeError(f"unexpected datum report: {edited_constraints}")
+
+        edited_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_edit_geometry"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "operations": [{"operation": "set_construction", "geometry_index": 0, "construction": True}],
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch edit geometry",
+        )
+        edited_geometry_items = edited_geometry["sketch"]["sketch"].get("geometry", [])
+        if not edited_geometry_items or not edited_geometry_items[0].get("construction"):
+            raise RuntimeError(f"construction state did not change: {edited_geometry}")
+
+        auto_constraints = assert_ok(
+            service.definition_map()["freecad_sketch_auto_constrain"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "operations": [{"operation": "detect_point_on_point"}],
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "advanced sketch auto constrain",
+        )
+        auto_report = require_report(auto_constraints, 0, "advanced sketch auto constrain")
+        if "count" not in auto_report:
+            raise RuntimeError(f"missing auto constraint report: {auto_constraints}")
+
+        validation = assert_ok(
+            service.definition_map()["freecad_sketch_validate"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "detect_missing": True,
+                    "include_constraint_errors": True,
+                }
+            ),
+            "advanced sketch validate",
+        )
+        expected_min_constraints = expected_profile_constraints + len(radius_constraint_indices)
+        if validation["geometry_count"] < expected_profile_geometry or validation["constraint_count"] < expected_min_constraints:
+            raise RuntimeError(f"advanced sketch validation mismatch: {validation}")
+
+        assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "TransformSketchSmoke",
+                    "sketch_name": "TransformSketch",
+                    "output_path": str(transform_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "transform sketch create",
+        )
+        transform_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(transform_sketch_doc),
+                    "sketch_name": "TransformSketch",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0, 0], "end": [5, 0, 0]},
+                        {"type": "bspline", "poles": [[0, 5, 0], [1, 6, 0], [2, 5, 0], [3, 6, 0]]},
+                    ],
+                    "output_path": str(transform_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "transform sketch add geometry",
+        )
+        transform_added = require_nonempty_list(transform_geometry, "added_indices", "transform sketch add geometry")
+        transformed = assert_ok(
+            service.definition_map()["freecad_sketch_transform"].handler(
+                {
+                    "document_path": str(transform_sketch_doc),
+                    "sketch_name": "TransformSketch",
+                    "operations": [
+                        {"operation": "copy", "geometry_indices": [0], "vector": [0, 2, 0]},
+                        {"operation": "move", "geometry_indices": [0], "vector": [1, 0, 0]},
+                        {"operation": "increase_bspline_degree", "geometry_index": 1, "increment": 1},
+                        {"operation": "insert_bspline_knot", "geometry_index": 1, "parameter": 0.5, "multiplicity": 1},
+                    ],
+                    "output_path": str(transform_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "sketch transform",
+        )
+        copy_report = require_report(transformed, 0, "sketch transform")
+        copied_indices = require_nonempty_list(copy_report, "added_indices", "sketch transform copy")
+        expected_transform_geometry = len(transform_added) + len(copied_indices)
+        if transformed["sketch"]["sketch"]["geometry_count"] != expected_transform_geometry:
+            raise RuntimeError(f"unexpected transform geometry count: {transformed}")
 
         assembly_doc = temp / "assembly.FCStd"
         assembly = assert_ok(
