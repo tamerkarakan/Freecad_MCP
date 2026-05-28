@@ -173,6 +173,13 @@ class McpServer:
                     "mimeType": "text/markdown",
                 },
                 {
+                    "uri": "freecad://docs/gui-attach-plan",
+                    "name": "gui_attach_plan",
+                    "title": "GUI Attach Plan",
+                    "description": "Planned GUI bridge contract for active document, active view, selection, and subelement reads.",
+                    "mimeType": "text/markdown",
+                },
+                {
                     "uri": "freecad://schemas/tools",
                     "name": "tool_schemas",
                     "title": "MCP Tool Schemas",
@@ -297,6 +304,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/session-state": repo_root / "docs" / "SESSION_STATE.md",
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
+        "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
         "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",
     }
     if uri in mapping:

@@ -2,7 +2,7 @@
 
 ## Open
 
-- GUI selection, active view, and selected edge/face state are not exposed yet.
+- GUI selection, active view, and selected edge/face state are not exposed yet; `docs/GUI_ATTACH_PLAN.md` defines the planned bridge contract.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint ergonomics are intentionally not wrapped yet because their FreeCAD 1.1.1 constructor combinations need stable fixtures.
 - Assembly joint creation now creates native JointObject proxies, but robust connector-reference workflows still need stable fixture coverage and GUI/workbench bridge validation.

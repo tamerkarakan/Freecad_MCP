@@ -1,0 +1,83 @@
+# GUI Attach Plan
+
+FreeCAD GUI attach is the bridge mode for live selection, active view, and selected subelement workflows. Headless `FreeCADCmd` remains the default for deterministic file-scoped automation; GUI attach should be opt-in because it must run on FreeCAD's GUI Python main thread.
+
+## Source Evidence
+
+FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
+
+| Capability | FreeCAD source evidence |
+| --- | --- |
+| Active GUI document | `src/Gui/ApplicationPy.cpp:344`, `src/Gui/ApplicationPy.cpp:592` expose `FreeCADGui.activeDocument()` and require the Python main thread. |
+| Active GUI view | `src/Gui/ApplicationPy.cpp:358`, `src/Gui/ApplicationPy.cpp:609` expose `FreeCADGui.activeView(typeName)` and require the Python main thread. |
+| Selection list with subelements | `src/Gui/Selection/Selection.cpp:2588` exposes `Gui.Selection.getSelectionEx(...)` returning `SelectionObject` records with subelement names. |
+| Selection object fields | `src/Gui/Selection/SelectionObjectPyImp.cpp:75` through `:165` expose object name, document name, subelement names, resolved subobjects, and picked points. |
+| Assembly connector selection shape | `src/Mod/Assembly/CommandCreateJoint.py:454` and `src/Mod/Assembly/JointObject.py:1751` use `Gui.Selection.getSelectionEx("*", 0)` and iterate `SubElementNames`. |
+
+## Proposed Lifecycle
+
+1. User starts FreeCAD GUI normally or through a future Workbench.
+2. A small bridge script/workbench opens a localhost loopback transport with a per-session token.
+3. MCP `freecad_gui_attach` connects to that bridge and returns a `session_id`.
+4. Read-only GUI tools can query active document/view/selection without mutating model state.
+5. Mutating GUI tools must still use typed backend operations and transactions where possible.
+6. Closing the MCP session detaches from the bridge but does not close FreeCAD GUI.
+
+## Planned Tools
+
+| Tool | Purpose | Mutates |
+| --- | --- | --- |
+| `freecad_gui_attach` | Connect to an already-running GUI bridge and return GUI session metadata. | No |
+| `freecad_gui_status` | Report GUI process, active document, active view type, workbench, and bridge health. | No |
+| `freecad_gui_active_document_get` | Return active GUI document summary plus matching App document id/name. | No |
+| `freecad_gui_active_view_get` | Return active view type/name/camera snapshot when available. | No |
+| `freecad_gui_selection_get` | Return normalized selection records with document, object, subelement names, resolved object labels/types, and picked points. | No |
+| `freecad_gui_preselection_get` | Return current hover/preselection object and subelement when available. | No |
+| `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
+| `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
+
+## Normalized Selection Record
+
+```json
+{
+  "document_name": "Unnamed",
+  "object_name": "Box",
+  "object_label": "Box",
+  "type_id": "Part::Box",
+  "subelement_names": ["Face1"],
+  "full_name": "Unnamed#Box.Face1",
+  "picked_points": [[1.0, 2.0, 3.0]],
+  "resolved": [
+    {
+      "subelement_name": "Face1",
+      "kind": "face",
+      "shape_summary": {
+        "faces": 1,
+        "edges": 4,
+        "vertices": 4
+      }
+    }
+  ]
+}
+```
+
+## Policy
+
+- GUI attach tools must be read-only by default.
+- Selection and view reads must not call broad Python execution.
+- Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
+- Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
+- Connector-aware Assembly flows should consume `freecad_gui_selection_get` records before writing native `JointObject` references.
+
+## Test Plan
+
+- Unit tests for selection record normalization from fake `SelectionObject`-like objects.
+- Static MCP smoke that confirms GUI attach schemas are listed once implemented.
+- Manual GUI smoke: open FreeCAD, create/select a box face, call `freecad_gui_selection_get`, and verify `FaceN` and picked point fields.
+- Assembly connector smoke: select two connector faces in GUI, create a Fixed joint through typed Assembly tool, and assert `Reference1`/`Reference2` are populated.
+
+## Non-goals
+
+- The first GUI attach slice will not host a full Workbench UI.
+- It will not make headless `FreeCADCmd` depend on Qt.
+- It will not expose arbitrary GUI command execution as the preferred path; typed tools remain primary.

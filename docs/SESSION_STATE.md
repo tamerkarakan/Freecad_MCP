@@ -42,7 +42,8 @@
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
 - Current MCP tool count is 86.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`.
-- GUI attach and Workbench-hosted bridge modes remain planned in `docs/PERSISTENT_BRIDGE_PLAN.md`.
+- GUI attach design for active document, active view, selection, preselection, and subelement records is documented in `docs/GUI_ATTACH_PLAN.md` and exposed as an MCP resource.
+- GUI attach implementation and Workbench-hosted bridge modes remain planned in `docs/PERSISTENT_BRIDGE_PLAN.md`.
 
 ## Next Session Checklist
 
@@ -52,4 +53,5 @@
 4. Re-run a Sketcher profile smoke if extrude behavior changes again.
 5. Run unit tests for `runtime_bridge` and `mcp_stdio` when touching transport/serialization code.
 6. Run persistent worker smoke when touching session lifecycle or worker tools.
-7. Push only after verification passes.
+7. Use `docs/GUI_ATTACH_PLAN.md` before implementing GUI selection/view tools.
+8. Push only after verification passes.

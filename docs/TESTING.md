@@ -20,6 +20,7 @@ Current checks:
 - Unit guard for stdio EOF shutdown cleanup (`test_mcp_stdio.py`).
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
 - Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).
+- Static MCP resource coverage includes architecture, session state, testing, Sketcher capabilities, GUI attach planning, schemas, and inventory summary.
 - Unit guard for structured launch errors, runtime output truncation, compact execution metadata, and long-code temp-script execution (`test_runtime_bridge.py`).
 - Unit guard for persistent worker request/response framing, structured worker errors, long worker temp-script lifecycle, cross-field input validation, session cleanup, and unknown-session errors (`test_persistent_bridge.py`).
 
