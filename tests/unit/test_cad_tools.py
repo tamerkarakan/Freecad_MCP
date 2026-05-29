@@ -52,6 +52,27 @@ class LoadRuntimeScriptTests(unittest.TestCase):
 
 
 class CadToolServiceDefinitionTests(unittest.TestCase):
+    def test_aggregate_keeps_domain_services_split(self) -> None:
+        service = CadToolService()
+
+        self.assertEqual(
+            service.domain_names(),
+            [
+                "document",
+                "object",
+                "part",
+                "partdesign",
+                "sketcher",
+                "io",
+                "mesh",
+                "assembly",
+                "techdraw",
+                "cam",
+                "fem",
+            ],
+        )
+        self.assertEqual(len(service.definitions()), 56)
+
     def test_definitions_have_unique_names_and_merge_common_runtime_props(self) -> None:
         definitions = CadToolService().definitions()
         names = [definition.name for definition in definitions]
