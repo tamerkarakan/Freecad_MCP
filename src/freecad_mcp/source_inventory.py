@@ -374,6 +374,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_gui_preselection_get",
                 "freecad_gui_selection_set",
                 "freecad_gui_view_fit",
+                "freecad_gui_primitive_create",
             ],
             "evidence": "GUI attach mode is required for active view, preselection, picked points, and selected edge/face state.",
         },
@@ -431,6 +432,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
             "tools": [
                 "freecad_partdesign_body_create",
                 "freecad_partdesign_pad",
+                "freecad_partdesign_pocket",
             ],
             "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body/plane attachment for Pad workflows.",
         },

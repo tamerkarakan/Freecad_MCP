@@ -309,7 +309,8 @@
         "freecad_gui_selection_get",
         "freecad_gui_preselection_get",
         "freecad_gui_selection_set",
-        "freecad_gui_view_fit"
+        "freecad_gui_view_fit",
+        "freecad_gui_primitive_create"
       ],
       "evidence": "GUI attach mode is required for active view, preselection, picked points, and selected edge/face state."
     },
@@ -366,7 +367,8 @@
       "priority": "P1",
       "tools": [
         "freecad_partdesign_body_create",
-        "freecad_partdesign_pad"
+        "freecad_partdesign_pad",
+        "freecad_partdesign_pocket"
       ],
       "evidence": "PartDesign module exposes 41 scanned commands and requires Body/plane attachment for Pad workflows."
     },
