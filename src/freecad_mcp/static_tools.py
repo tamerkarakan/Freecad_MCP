@@ -10,6 +10,7 @@ import fnmatch
 import json
 import os
 import re
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Callable
@@ -168,6 +169,8 @@ class StaticToolService:
                         "regex": {"type": "boolean", "description": "Treat query as a regular expression."},
                         "case_sensitive": {"type": "boolean"},
                         "max_results": {"type": "integer", "minimum": 1, "maximum": 200},
+                        "max_files": {"type": "integer", "minimum": 1, "maximum": 100000, "description": "Maximum files to scan before truncating."},
+                        "time_budget_sec": {"type": "integer", "minimum": 1, "maximum": 120, "description": "Wall-clock scan budget before truncating."},
                     },
                     "required": ["query"],
                 },
@@ -267,6 +270,8 @@ class StaticToolService:
         use_regex = bool(args.get("regex", False))
         case_sensitive = bool(args.get("case_sensitive", False))
         max_results = bounded_int(args, "max_results", default=50, minimum=1, maximum=200)
+        max_files = bounded_int(args, "max_files", default=5000, minimum=1, maximum=100000)
+        time_budget_sec = bounded_int(args, "time_budget_sec", default=20, minimum=1, maximum=120)
 
         freecad_root = self.store.freecad_root
         search_root = self._source_search_root(freecad_root, module)
@@ -276,42 +281,63 @@ class StaticToolService:
         matcher = build_matcher(query, use_regex=use_regex, case_sensitive=case_sensitive)
         results: list[JsonObject] = []
         files_scanned = 0
+        deadline = time.monotonic() + time_budget_sec
+        truncated = False
+        stop_reason: str | None = None
 
-        for path in sorted(p for p in search_root.rglob("*") if p.is_file()):
-            if path.suffix.lower() not in self.TEXT_SUFFIXES:
-                continue
-            if not fnmatch.fnmatch(path.name, glob_pattern):
-                continue
-            files_scanned += 1
-            try:
-                lines = path.read_text(encoding="utf-8").splitlines()
-            except UnicodeDecodeError:
-                lines = path.read_text(encoding="latin-1").splitlines()
-            for index, line in enumerate(lines, start=1):
-                if matcher(line):
-                    results.append(
-                        {
-                            "path": relative_source_path(path, freecad_root),
-                            "line": index,
-                            "text": line.strip(),
-                        }
-                    )
-                    if len(results) >= max_results:
-                        return {
-                            "query": query,
-                            "source_root": str(freecad_root),
-                            "files_scanned": files_scanned,
-                            "truncated": True,
-                            "matches": results,
-                        }
+        # Walk lazily (os.walk does not materialize and sort the whole tree the way
+        # sorted(rglob("*")) did) and stop on the first limit hit: max_results
+        # matches, max_files scanned, or the wall-clock budget. Names are sorted per
+        # directory for deterministic order without an upfront full traversal.
+        for current_dir, dir_names, file_names in os.walk(search_root):
+            dir_names.sort()
+            for file_name in sorted(file_names):
+                if time.monotonic() > deadline:
+                    truncated = True
+                    stop_reason = "time_budget"
+                    break
+                path = Path(current_dir) / file_name
+                if path.suffix.lower() not in self.TEXT_SUFFIXES:
+                    continue
+                if not fnmatch.fnmatch(file_name, glob_pattern):
+                    continue
+                if files_scanned >= max_files:
+                    truncated = True
+                    stop_reason = "max_files"
+                    break
+                files_scanned += 1
+                try:
+                    lines = path.read_text(encoding="utf-8").splitlines()
+                except UnicodeDecodeError:
+                    lines = path.read_text(encoding="latin-1").splitlines()
+                for index, line in enumerate(lines, start=1):
+                    if matcher(line):
+                        results.append(
+                            {
+                                "path": relative_source_path(path, freecad_root),
+                                "line": index,
+                                "text": line.strip(),
+                            }
+                        )
+                        if len(results) >= max_results:
+                            truncated = True
+                            stop_reason = "max_results"
+                            break
+                if stop_reason is not None:
+                    break
+            if truncated:
+                break
 
-        return {
+        payload: JsonObject = {
             "query": query,
             "source_root": str(freecad_root),
             "files_scanned": files_scanned,
-            "truncated": False,
+            "truncated": truncated,
             "matches": results,
         }
+        if stop_reason is not None:
+            payload["stop_reason"] = stop_reason
+        return payload
 
     def source_open(self, args: JsonObject) -> JsonObject:
         source_path = required_string(args, "path")

@@ -107,6 +107,18 @@ Search the local FreeCAD checkout for text matches.
       "type": "integer",
       "minimum": 1,
       "maximum": 200
+    },
+    "max_files": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000,
+      "description": "Maximum files to scan before truncating."
+    },
+    "time_budget_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120,
+      "description": "Wall-clock scan budget before truncating."
     }
   },
   "required": [

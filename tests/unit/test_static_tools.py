@@ -80,6 +80,33 @@ class SafeSourcePathTests(unittest.TestCase):
                 safe_source_path(root, "src/escape/secret.txt")
 
 
+class SourceSearchBoundTests(unittest.TestCase):
+    def test_max_files_truncates_scan(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+            src_dir = repo / "upstream" / "FreeCAD" / "src"
+            for index in range(5):
+                (src_dir / f"extra_{index}.cpp").write_text('Command("Part_Box")\n', encoding="utf-8")
+
+            result = service.source_search(
+                {"query": "Command", "glob": "*.cpp", "max_files": 1, "max_results": 100}
+            )
+
+            self.assertTrue(result["truncated"])
+            self.assertEqual(result["files_scanned"], 1)
+            self.assertEqual(result["stop_reason"], "max_files")
+
+    def test_unbounded_scan_reports_not_truncated(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.source_search({"query": "Command", "glob": "*.cpp"})
+
+            self.assertFalse(result["truncated"])
+            self.assertNotIn("stop_reason", result)
+            self.assertGreaterEqual(len(result["matches"]), 1)
+
+
 class fake_repo:
     def __enter__(self) -> Path:
         self.temp_dir = tempfile.TemporaryDirectory()
