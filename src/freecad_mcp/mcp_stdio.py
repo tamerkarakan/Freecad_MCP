@@ -8,6 +8,7 @@ synchronous, unit-testable helpers, and wires thin async SDK handlers on top.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ from freecad_mcp.cad_tools import CadToolService
 from freecad_mcp.gui_tools import GuiToolService
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
+from freecad_mcp.logging_config import configure_logging, log_event, log_tool_call
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
 from freecad_mcp.tooling import ToolInputError
 
@@ -279,8 +281,11 @@ def create_mcp_server(repo_root: Path | None = None) -> tuple[Server, CompositeT
         if tool is None:
             raise ToolInputError(f"Unknown tool: {name}")
         # A returned dict becomes structuredContent + JSON-text content; a raised
-        # exception becomes an isError result. Both match MCP semantics.
-        return tool.handler(arguments or {})
+        # exception becomes an isError result. Both match MCP semantics. The
+        # log_tool_call context times the call and records the outcome without
+        # logging any argument values.
+        with log_tool_call(name, arguments):
+            return tool.handler(arguments or {})
 
     @server.list_resources()
     async def _list_resources() -> list[types.Resource]:
@@ -343,12 +348,15 @@ def create_mcp_server(repo_root: Path | None = None) -> tuple[Server, CompositeT
 
 
 async def serve(repo_root: Path | None = None) -> None:
+    configure_logging()
     server, tool_service = create_mcp_server(repo_root)
     init_options = server.create_initialization_options()
+    log_event(logging.INFO, "server_start", tools=len(tool_service.definition_map()))
     try:
         async with stdio_server() as (read_stream, write_stream):
             await server.run(read_stream, write_stream, init_options)
     finally:
+        log_event(logging.INFO, "server_stop")
         tool_service.shutdown()
 
 
