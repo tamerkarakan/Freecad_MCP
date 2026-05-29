@@ -19,7 +19,12 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-2
 
 ## Blocked Or Waiting
 
-- MCP SDK adapter: bundled Python currently has no importable `mcp` package, so the minimal local JSON-RPC dispatcher remains active.
+- CI workflow push: `.github/workflows/ci.yml` exists but pushing it needs a remote credential with the `workflow` OAuth scope.
+
+## Recently Completed (was blocked/expansion)
+
+- MCP SDK adapter: `mcp` is now installable, so the stdio server runs on `mcp.server.lowlevel.Server` and the hand-rolled JSON-RPC dispatcher was removed (`mcp>=1.0` dependency).
+- Structured JSON server logging; FreeCAD worker console reading (`freecad_session_console`); `source_search` traversal bounds; image-to-sketch decision guidance in `freecad_curve_fit_analyze`; the `freecad_partdesign_pocket` typed tool.
 - Sketcher `Group` and `Text` wrappers: direct constructor attempts can terminate FreeCADCmd in the current FreeCAD 1.1.1 runtime, so typed tools block them until a stable API path exists.
 
 There are no unblocked roadmap items left in the current scope.
