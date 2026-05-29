@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -42,6 +43,13 @@ for raw in sys.stdin:
         sys.stderr.write("planned crash\n")
         sys.stderr.flush()
         raise SystemExit(7)
+    if method == "console":
+        sys.stdout.write("FreeCAD console hello\n")
+        sys.stdout.flush()
+        sys.stderr.write("a warning line\n")
+        sys.stderr.flush()
+        emit({"id": request.get("id"), "ok": True, "result": {"printed": True}})
+        continue
     emit({"id": request.get("id"), "ok": True, "result": {"method": method, "params": request.get("params") or {}}})
 '''
 
@@ -162,6 +170,24 @@ class PersistentBridgeTests(unittest.TestCase):
             # A freed slot lets a new session start again.
             reopened = manager.start_session(executable=sys.executable, timeout_sec=10)
             manager.close(reopened["session"]["session_id"], timeout_sec=10)
+
+    def test_console_captures_non_protocol_stdout_and_stderr(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = PersistentBridgeManager(workspace_root=Path(temp_dir), worker_script=FAKE_WORKER_SCRIPT)
+            started = manager.start_session(executable=sys.executable, timeout_sec=10)
+            session_id = started["session"]["session_id"]
+            try:
+                response = manager.request(session_id, "console", {}, timeout_sec=10)
+                self.assertTrue(response["ok"])
+                console = manager.console(session_id, max_lines=50)["console"]
+            finally:
+                manager.close(session_id, timeout_sec=10)
+
+        # Non-protocol stdout (FreeCAD console) is captured, not dropped, and the
+        # protocol reply is NOT misfiled as console output.
+        self.assertIn("FreeCAD console hello", console["stdout_console"])
+        self.assertFalse(any(WORKER_PREFIX in line for line in console["stdout_console"]))
+        self.assertIn("a warning line", console["stderr"])
 
     def test_unknown_session_raises_tool_error(self) -> None:
         manager = PersistentBridgeManager(worker_script=FAKE_WORKER_SCRIPT)

@@ -72,6 +72,7 @@ class FreeCadWorkerSession:
     process: subprocess.Popen[str] | None = None
     _stdout_queue: queue.Queue[str] = field(default_factory=queue.Queue, init=False)
     _stderr_lines: deque[str] = field(default_factory=lambda: deque(maxlen=200), init=False)
+    _console_lines: deque[str] = field(default_factory=lambda: deque(maxlen=500), init=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
     _next_request_id: int = 0
     _script_path: Path | None = field(default=None, init=False)
@@ -169,6 +170,24 @@ class FreeCadWorkerSession:
         self._cleanup_script_file()
         return {"session": self.to_dict(), "shutdown": response}
 
+    def console_snapshot(self, *, max_lines: int = 200) -> JsonObject:
+        """Return captured FreeCAD console output without a worker round-trip.
+
+        stderr carries FreeCAD warnings/errors and Python tracebacks; the stdout
+        console buffer carries non-protocol stdout (e.g. App.Console.PrintMessage).
+        Both are tailed to the most recent ``max_lines`` entries.
+        """
+        max_lines = max(1, min(int(max_lines), 500))
+        return {
+            "session_id": self.session_id,
+            "running": self.is_running,
+            "stderr": list(self._stderr_lines)[-max_lines:],
+            "stderr_line_count": len(self._stderr_lines),
+            "stdout_console": list(self._console_lines)[-max_lines:],
+            "stdout_console_line_count": len(self._console_lines),
+            "max_lines": max_lines,
+        }
+
     def to_dict(self) -> JsonObject:
         stderr, stderr_truncated = truncate_text("\n".join(self._stderr_lines), MAX_WORKER_STREAM_CHARS)
         return {
@@ -187,7 +206,16 @@ class FreeCadWorkerSession:
     def _drain_stdout(self) -> None:
         assert self.process is not None and self.process.stdout is not None
         for line in self.process.stdout:
-            self._stdout_queue.put(line)
+            # Protocol replies are prefixed; everything else on stdout is FreeCAD
+            # console output (e.g. App.Console.PrintMessage). Capture the latter
+            # for freecad_session_console instead of dropping it, while still
+            # forwarding protocol lines to the request queue.
+            if line.startswith(WORKER_PREFIX):
+                self._stdout_queue.put(line)
+            else:
+                stripped = line.rstrip("\n")
+                if stripped:
+                    self._console_lines.append(stripped)
 
     def _drain_stderr(self) -> None:
         assert self.process is not None and self.process.stderr is not None
@@ -355,6 +383,15 @@ class PersistentBridgeManager:
             self.sessions.pop(session_id, None)
             raise ToolInputError(f"worker session is not running: {session_id}")
         return session
+
+    def console(self, session_id: str, *, max_lines: int = 200) -> JsonObject:
+        # Read buffered console output directly from the session object. Unlike
+        # get(), this does not require the worker to be running: console output is
+        # most useful for diagnosing a session that just crashed.
+        session = self.sessions.get(session_id)
+        if session is None:
+            raise ToolInputError(f"unknown worker session: {session_id}")
+        return {"session": session.to_dict(), "console": session.console_snapshot(max_lines=max_lines)}
 
     def shutdown_all(self) -> None:
         for session_id in list(self.sessions):
