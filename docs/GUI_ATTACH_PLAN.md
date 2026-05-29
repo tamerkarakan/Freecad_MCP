@@ -2,6 +2,8 @@
 
 FreeCAD GUI attach is the bridge mode for live selection, active view, and selected subelement workflows. Headless `FreeCADCmd` remains the default for deterministic file-scoped automation; GUI attach should be opt-in because it must run on FreeCAD's GUI Python main thread.
 
+For GUI expansion priorities, every coding session should read `docs/GUI_1_1_1_RESEARCH.md` first. That file records the FreeCAD 1.1/1.1.1 official documentation and blog research, the local command-count inventory, and the product-oriented order: Sketcher + PartDesign, TechDraw, Assembly, visual assist, then guarded CAM/FEM.
+
 ## Source Evidence
 
 FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
@@ -88,3 +90,4 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - The current Workbench slice is a small bridge host, not a full AI workbench UI.
 - It will not make headless `FreeCADCmd` depend on Qt.
 - It will not expose arbitrary GUI command execution as the preferred path; typed tools remain primary.
+- Future GUI command execution must be allowlisted and documented against `docs/GUI_1_1_1_RESEARCH.md`.

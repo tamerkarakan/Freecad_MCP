@@ -83,6 +83,13 @@ RESOURCE_DESCRIPTORS: list[JsonObject] = [
         "mimeType": "text/markdown",
     },
     {
+        "uri": "freecad://docs/gui-1-1-1-research",
+        "name": "gui_1_1_1_research",
+        "title": "FreeCAD 1.1.1 GUI Research",
+        "description": "Official-source GUI priorities, command inventory, and workflow guidance for future agents.",
+        "mimeType": "text/markdown",
+    },
+    {
         "uri": "freecad://docs/vision-debug-pipeline",
         "name": "vision_debug_pipeline",
         "title": "Vision Debug Pipeline",
@@ -296,6 +303,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
+        "freecad://docs/gui-1-1-1-research": repo_root / "docs" / "GUI_1_1_1_RESEARCH.md",
         "freecad://docs/vision-debug-pipeline": repo_root / "docs" / "VISION_DEBUG_PIPELINE.md",
         "freecad://docs/workbench-bridge": repo_root / "docs" / "WORKBENCH_BRIDGE.md",
         "freecad://docs/techdraw-cam-fem-plan": repo_root / "docs" / "TECHDRAW_CAM_FEM_PLAN.md",

@@ -11,7 +11,9 @@
 - Extend FreeCAD console reading beyond the current persistent-worker console tool. Capture or proxy console output from process-per-call `FreeCADCmd`, GUI bridge, and Workbench bridge sessions so agents can inspect warnings/errors without using broad Python execution.
 - Expand GUI live bridge into full live FreeCAD access. Go beyond active document/view/selection/preselection/view-fit into live drawing observation, command execution boundaries, transaction status, console forwarding, document dirty state, and safe GUI-side mutation policies.
 - Deepen image-to-sketch guidance beyond the current `freecad_curve_fit_analyze` decision report. Add richer prompt/resource workflows for ambiguous native geometry such as B-spline vs circular arc vs polyline. Preserve curve intent; line/polyline fallback must be explicit.
+- Extend GUI coverage according to `docs/GUI_1_1_1_RESEARCH.md`: first Sketcher + PartDesign state/flow, then TechDraw GUI exporters/dimensions/projections, then Assembly joint-from-selection/BOM/solve flows, then visual assist helpers such as Measure, clipping, screenshot, and reference-image calibration state. Keep CAM/FEM as guarded advanced expansions.
 - Research and extend Sketcher and PartDesign coverage from both FreeCAD documentation and the local FreeCAD source checkout. Include GUI commands where safe through GUI/workbench bridge paths, and add typed wrappers only with source evidence, fixture-backed behavior, and smoke tests.
+- Add a guarded GUI command catalog and runner: command list/describe by workbench, active state, tooltip/menu text, source evidence, and allowlisted `freecad_gui_command_run` only after preconditions, transaction/recompute policy, and smoke coverage are clear.
 - Bound `StaticToolService.source_search` rglob traversal with a file-count/time limit and early termination so a large FreeCAD source tree cannot hang or time out the tool.
 - Push/enable the existing POSIX CI workflow once credentials include the `workflow` OAuth scope, so the `safe_source_path` symlink-escape unit test runs instead of skipping.
 - After the generated distribution profiles settle, decide whether any profiles should become separate installable Python packages or Codex plugin bundles; the FreeCAD Workbench path now has a local module zip, but not signed Addon Manager packaging.
@@ -24,6 +26,7 @@
 
 - Extend CAM/FEM beyond first slice only with fixture-backed job/solver contracts.
 - Add TechDraw SVG/PDF export only behind GUI attach or Workbench validation because those APIs live behind `TechDrawGui`.
+- Add official-tutorial-driven GUI workflows for scaled reference images, Measure, clipping view, PartDesign-to-TechDraw, and Assembly examples.
 
 ## Later
 

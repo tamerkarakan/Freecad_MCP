@@ -122,6 +122,7 @@ class ResourceTests(unittest.TestCase):
 
         self.assertIn("freecad://docs/roadmap-status", uris)
         self.assertIn("freecad://docs/workbench-bridge", uris)
+        self.assertIn("freecad://docs/gui-1-1-1-research", uris)
         self.assertIn("freecad://docs/product-modules", uris)
         self.assertIn("freecad://docs/product-bundles", uris)
         self.assertIn("freecad://product/bundles", uris)
@@ -158,6 +159,13 @@ class ResourceTests(unittest.TestCase):
         self.assertIsNotNone(contents)
         self.assertEqual(contents["mimeType"], "application/json")
         self.assertIn('"artifact_key": "freecad-workbench-module"', contents["text"])
+
+    def test_read_gui_research_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://docs/gui-1-1-1-research")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "text/markdown")
+        self.assertIn("GUI Priority Order", contents["text"])
 
     def test_read_unknown_resource_returns_none(self) -> None:
         self.assertIsNone(read_resource(ROOT, "freecad://docs/does-not-exist"))
