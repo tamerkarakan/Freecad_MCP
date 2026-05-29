@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "freecad-hybrid-mcp"
 version = "0.1.0"
@@ -7,7 +11,15 @@ dependencies = [
     "mcp>=1.0",
 ]
 
+[project.scripts]
+freecad-hybrid-mcp = "freecad_mcp.mcp_stdio:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+freecad_mcp = ["runtime_scripts/*.py"]
+
 [tool.unittest]
 start-directory = "tests"
 pattern = "test_*.py"
-

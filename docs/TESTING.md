@@ -22,15 +22,23 @@ Current checks:
 - Unit guard for stdio serialization fallback (`test_mcp_stdio.py`).
 - Unit guard for stdio EOF shutdown cleanup (`test_mcp_stdio.py`).
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
+- Unit guard for `FREECAD_MCP_MODULES` product aliases, full-surface local developer aliases, GUI-only filtering, worker-module gating, and source-intelligence add-on behavior (`test_mcp_stdio.py`).
+- Unit guard for generated sellable bundle descriptors, unsafe add-on separation, and upgrade-ladder tool counts (`test_product_bundles.py`).
+- Unit guard for distribution profile descriptors, generated MCP config skeleton shape, and `pyproject.toml` packaging declarations (`test_distribution_profiles.py`).
 - Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).
 - Static MCP smoke guard for GUI attach tool schemas (`freecad_gui_attach`, `freecad_gui_selection_get`).
-- Static MCP resource coverage includes architecture, session state, roadmap status, testing, Sketcher capabilities, GUI attach planning, vision debug pipeline, Workbench bridge setup, TechDraw/CAM/FEM planning, schemas, and inventory summary.
+- Distribution profile smoke checks `docs/distribution_profiles.json` and `packaging/profiles/*.mcp.json` after generation.
+- Workbench artifact generation writes `docs/WORKBENCH_ARTIFACT.md`, `docs/workbench_artifact.json`, and `packaging/workbench/README.md`.
+- Workbench artifact smoke builds `freecad-mcp-workbench.zip`, imports the extracted `FreeCADMCP/InitGui.py` with fake FreeCAD modules, verifies the embedded sibling `freecad_gui_bridge_server.py` path is preferred, and compiles the embedded bridge script.
+- Python package smoke builds the wheel with `pip wheel --no-deps --no-build-isolation`, builds/inspects an sdist through the setuptools backend, verifies runtime scripts plus the `freecad-hybrid-mcp` console entrypoint are present, installs the wheel into a temporary venv, starts the installed entrypoint, and checks MCP `initialize`, `tools/list`, and `freecad_command_describe` under the `free` profile.
+- Static MCP resource coverage includes architecture, session state, roadmap status, testing, Sketcher capabilities, GUI attach planning, vision debug pipeline, Workbench bridge setup, Workbench artifact shape, TechDraw/CAM/FEM planning, product modules, product bundles, distribution profiles, schemas, and inventory summary.
 - Unit guard for structured launch errors, runtime output truncation, compact execution metadata, and long-code temp-script execution (`test_runtime_bridge.py`).
 - Unit guard for persistent worker request/response framing, structured worker errors, fake crash injection cleanup, long worker temp-script lifecycle, cross-field input validation, session cleanup, and unknown-session errors (`test_persistent_bridge.py`).
-- Unit guard for GUI bridge attach/call/detach/error handling against a fake local HTTP bridge (`test_gui_bridge.py`).
-- Unit guard for Workbench bridge registration and autostart environment handling with fake `FreeCAD`/`FreeCADGui` modules (`test_workbench_bridge.py`).
+- Unit guard for GUI bridge attach/call/detach/error handling and GUI primitive-create delegation against a fake local HTTP bridge (`test_gui_bridge.py`).
+- Unit guard for Workbench bridge registration, parent-module `InitGui.py` shim delegation, `__file__`-less FreeCAD exec behavior, bundled sibling bridge lookup, and autostart environment handling with fake `FreeCAD`/`FreeCADGui` modules (`test_workbench_bridge.py`).
+- Unit guard for the Workbench artifact manifest file list, hashes, consuming profiles, and zip naming (`test_workbench_artifact.py`).
 - Opt-in live FreeCAD GUI attach smoke (`FREECAD_MCP_GUI_SMOKE=1 scripts\verify.ps1` or `scripts/smoke_gui_attach.py`) launches FreeCAD GUI, starts the bridge, selects two Part faces, reads them via MCP GUI tools, fits the view, closes the GUI process, and verifies a Fixed Assembly joint populated from those selection records.
-- Unit guard for `CadToolService` host-side dispatch/validation (required-field, `compact_execution`, `timeout` bounds, `object_delete` selector, missing-FreeCADCmd), plus `CAD_ACTION_SCRIPT` and `FREECAD_WORKER_SCRIPT` integrity (compilable, retain `__ARGS_B64__`/worker protocol markers) and runtime-script loading/missing-script error (`test_cad_tools.py`, `test_persistent_bridge.py`).
+- Unit guard for `CadToolService` host-side dispatch/validation (required-field, `compact_execution`, `timeout` bounds, `object_delete` selector, missing-FreeCADCmd), the CAD domain-service split, plus `CAD_ACTION_SCRIPT` and `FREECAD_WORKER_SCRIPT` integrity (compilable, retain `__ARGS_B64__`/worker protocol markers) and runtime-script loading/missing-script error (`test_cad_tools.py`, `test_persistent_bridge.py`).
 - Unit guard for `safe_source_path` in-root acceptance, absolute/parent-traversal rejection, and (POSIX-only) symlink-escape rejection (`test_static_tools.py`).
 - Unit guard for the persistent worker session cap (`max_sessions`) and de-tautologized worker selector guards using a real worker session with message-matched assertions (`test_persistent_bridge.py`).
 
@@ -39,4 +47,4 @@ Expected future checks:
 - MCP tool schema tests.
 - Run the unit suite on at least one POSIX CI leg so the `safe_source_path` symlink-escape test executes (it self-skips where symlink creation is not permitted, e.g. Windows without Developer Mode).
 - Real imported third-party fixture files once small license-clean samples are chosen.
-- Installed/addon-style Workbench bridge integration tests after packaging is chosen.
+- Signed FreeCAD Addon Manager packaging and installed-addon integration tests after that packaging path is chosen.

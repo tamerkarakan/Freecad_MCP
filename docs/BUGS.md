@@ -2,7 +2,7 @@
 
 ## Open
 
-- GUI attach tools now expose active document/view and selection/preselection through a local bridge, opt-in live GUI smoke passes, and a module-path Workbench host exists; installed/addon packaging is still pending.
+- GUI attach tools now expose active document/view and selection/preselection through a local bridge, opt-in live GUI smoke passes, a module-path Workbench host exists, and a generated local `freecad-mcp-workbench.zip` module artifact exists; signed/installed FreeCAD Addon Manager packaging is still pending.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
 - Reference-image tracing can produce visually plausible but topologically open Sketcher geometry if raw lines/arcs/B-splines are added without `Coincident` constraints. Use the connected sequence guard on `freecad_sketch_add_geometry` for ordered closed contours; the user-provided local sample `runs/reference_profile_sketch.FCStd` is an example of the bad pattern, with 24 geometry items, 0 constraints, and open vertices.
@@ -16,9 +16,8 @@
 - Generated inventory is static; dynamically named commands can be missed.
 - Python `GetResources` parsing is conservative and can miss non-literal metadata.
 - C++ parsing is regex-based and should be replaced or reinforced if source patterns become more complex.
-- Server uses a minimal local JSON-RPC implementation because the Python MCP SDK is not installed in the bundled runtime.
 - `freecad_python_exec` is a low-level escape hatch and requires explicit unsafe opt-in.
-- `scripts/freecad_gui_bridge_server.py` is an opt-in local script, not a signed FreeCAD Workbench yet; run it only from the local repo path and prefer a bearer token for attached GUI sessions.
+- The GUI bridge script is still local loopback only. The Workbench zip embeds it beside `InitGui.py`, but it is not a signed FreeCAD Addon Manager package yet; prefer a bearer token for attached GUI sessions.
 - Even with response truncation, some Windows MCP clients may still report `Transport closed` under extreme runtime output/IO conditions; continue validating in long smoke sessions.
 - `freecad_part_extrude` currently supports wire/face-like profiles; directly extruding an existing solid shape can return the FreeCAD OCC error `Solids are not Processed`.
 - Embedded FreeCAD runtime scripts now live in `src/freecad_mcp/runtime_scripts/*.py` and are read at import; they are package data and must ship with the package, otherwise the stdio server fails to start (the loader raises a clear, named error rather than a bare traceback).
@@ -34,5 +33,7 @@
 - Large runtime envelopes could grow excessively because raw `argv`/`stdout`/`stderr` were returned verbatim; execution payloads now return truncated previews plus total-length metadata.
 - Extremely large runtime outputs can opt into compact execution metadata to omit stdout/stderr/argv text entirely while keeping totals and hashes.
 - Some MCP clients call `resources/templates/list` even when no resource templates are exposed; the server now returns an empty `resourceTemplates` list instead of `-32601`.
+- The server previously used a minimal local JSON-RPC implementation because the Python MCP SDK was not available in the selected runtime; it now depends on `mcp>=1.0` and uses `mcp.server.lowlevel.Server` for stdio.
 - Persistent worker processes could survive MCP server EOF if sessions were not explicitly closed; stdio shutdown now calls service cleanup.
 - Large process-per-call CAD scripts could exceed the Windows command-line length limit when passed through `FreeCADCmd -c`; long scripts now run from a temporary `.py` file and are cleaned up after execution.
+- Launching FreeCAD with `-M freecad_workbench` previously did not show the Workbench because FreeCAD 1.1.1 treats additional module paths as flat module directories. A parent-level `freecad_workbench/InitGui.py` shim now delegates to `freecad_workbench/FreeCADMCP/InitGui.py`; both InitGui files avoid relying on `__file__` because FreeCAD executes them without defining it.

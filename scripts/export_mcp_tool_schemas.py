@@ -17,7 +17,7 @@ from freecad_mcp.mcp_stdio import build_server
 
 
 def main() -> int:
-    service = build_server(ROOT)
+    service = build_server(ROOT, enabled_modules="all")
     tools = [definition.to_mcp() for definition in service.definitions()]
 
     docs = ROOT / "docs"

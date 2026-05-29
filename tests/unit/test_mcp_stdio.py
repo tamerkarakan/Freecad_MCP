@@ -11,7 +11,9 @@ from freecad_mcp.mcp_stdio import (
     create_mcp_server,
     read_resource,
     render_prompt,
+    resolve_repo_root,
 )
+from freecad_mcp.module_registry import parse_module_selection, tool_modules
 from freecad_mcp.tooling import ToolDefinition, ToolInputError
 
 
@@ -47,6 +49,72 @@ class BuildServerTests(unittest.TestCase):
         ):
             self.assertIn(name, tools)
 
+    def test_module_filter_can_expose_gui_only_surface(self) -> None:
+        tools = build_server(ROOT, enabled_modules="gui").definition_map()
+
+        self.assertIn("freecad_gui_attach", tools)
+        self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertNotIn("freecad_part_create_primitive", tools)
+        self.assertNotIn("freecad_command_describe", tools)
+
+    def test_product_profile_aliases_expand_to_expected_modules(self) -> None:
+        selection = parse_module_selection("pro")
+        tools = build_server(ROOT, enabled_modules="pro").definition_map()
+
+        self.assertIn("gui", selection.expanded)
+        self.assertIn("partdesign", selection.expanded)
+        self.assertIn("freecad_gui_attach", tools)
+        self.assertIn("freecad_partdesign_pad", tools)
+        self.assertIn("freecad_sketch_profile_create", tools)
+        self.assertNotIn("freecad_cam_path_create", tools)
+        self.assertNotIn("freecad_fem_analysis_create", tools)
+        self.assertNotIn("freecad_source_search", tools)
+        self.assertNotIn("freecad_worker_document_new", tools)
+        self.assertNotIn("freecad_worker_session_start", tools)
+
+    def test_worker_tools_require_worker_module_even_when_domain_tag_matches(self) -> None:
+        free_tools = build_server(ROOT, enabled_modules="free").definition_map()
+        sketcher_tools = build_server(ROOT, enabled_modules="sketcher").definition_map()
+        worker_tools = build_server(ROOT, enabled_modules="worker").definition_map()
+
+        self.assertNotIn("freecad_worker_document_new", free_tools)
+        self.assertNotIn("freecad_worker_sketch_profile_create", sketcher_tools)
+        self.assertIn("freecad_worker_document_new", worker_tools)
+        self.assertIn("freecad_worker_sketch_profile_create", worker_tools)
+
+    def test_source_intelligence_requires_developer_module(self) -> None:
+        studio_tools = build_server(ROOT, enabled_modules="studio").definition_map()
+        team_tools = build_server(ROOT, enabled_modules="team").definition_map()
+        source_tools = build_server(ROOT, enabled_modules="source").definition_map()
+
+        self.assertNotIn("freecad_source_search", studio_tools)
+        self.assertIn("freecad_source_search", team_tools)
+        self.assertIn("freecad_source_search", source_tools)
+        self.assertNotIn("freecad_document_new", source_tools)
+
+    def test_developer_aliases_preserve_full_local_surface(self) -> None:
+        all_tools = set(build_server(ROOT, enabled_modules="all").definition_map())
+
+        for alias in ("default", "dev", "developer", "local-dev"):
+            with self.subTest(alias=alias):
+                alias_tools = set(build_server(ROOT, enabled_modules=alias).definition_map())
+                self.assertEqual(alias_tools, all_tools)
+                self.assertIn("freecad_python_exec", alias_tools)
+                self.assertIn("freecad_worker_document_new", alias_tools)
+                self.assertIn("freecad_source_search", alias_tools)
+
+    def test_unsafe_escape_hatch_requires_explicit_module(self) -> None:
+        team_tools = build_server(ROOT, enabled_modules="team").definition_map()
+        unsafe_tools = build_server(ROOT, enabled_modules="unsafe").definition_map()
+
+        self.assertNotIn("freecad_python_exec", team_tools)
+        self.assertIn("freecad_python_exec", unsafe_tools)
+
+    def test_tool_module_tags_cover_worker_domain_tools(self) -> None:
+        self.assertIn("sketcher", tool_modules("freecad_worker_sketch_profile_create"))
+        self.assertIn("headless", tool_modules("freecad_worker_part_create_primitive"))
+        self.assertIn("gui", tool_modules("freecad_gui_status"))
+
 
 class ResourceTests(unittest.TestCase):
     def test_descriptors_include_known_uris(self) -> None:
@@ -54,6 +122,13 @@ class ResourceTests(unittest.TestCase):
 
         self.assertIn("freecad://docs/roadmap-status", uris)
         self.assertIn("freecad://docs/workbench-bridge", uris)
+        self.assertIn("freecad://docs/product-modules", uris)
+        self.assertIn("freecad://docs/product-bundles", uris)
+        self.assertIn("freecad://product/bundles", uris)
+        self.assertIn("freecad://docs/distribution-profiles", uris)
+        self.assertIn("freecad://distribution/profiles", uris)
+        self.assertIn("freecad://docs/workbench-artifact", uris)
+        self.assertIn("freecad://workbench/artifact", uris)
         self.assertIn("freecad://schemas/tools", uris)
 
     def test_read_known_resource_returns_content(self) -> None:
@@ -63,8 +138,32 @@ class ResourceTests(unittest.TestCase):
         self.assertEqual(contents["mimeType"], "text/markdown")
         self.assertIn("Architecture", contents["text"])
 
+    def test_read_product_bundle_manifest_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://product/bundles")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "application/json")
+        self.assertIn('"key": "pro"', contents["text"])
+
+    def test_read_distribution_profile_manifest_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://distribution/profiles")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "application/json")
+        self.assertIn('"key": "studio"', contents["text"])
+
+    def test_read_workbench_artifact_manifest_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://workbench/artifact")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "application/json")
+        self.assertIn('"artifact_key": "freecad-workbench-module"', contents["text"])
+
     def test_read_unknown_resource_returns_none(self) -> None:
         self.assertIsNone(read_resource(ROOT, "freecad://docs/does-not-exist"))
+
+    def test_resolve_repo_root_uses_explicit_path(self) -> None:
+        self.assertEqual(resolve_repo_root(ROOT), ROOT)
 
 
 class PromptTests(unittest.TestCase):

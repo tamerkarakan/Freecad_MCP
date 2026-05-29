@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "freecad-team": {
+      "command": "freecad-hybrid-mcp",
+      "args": [],
+      "env": {
+        "FREECAD_MCP_MODULES": "team",
+        "FREECAD_MCP_REPO_ROOT": "<repo-root-if-running-outside-checkout>",
+        "FREECAD_MCP_WORKSPACE_ROOT": "<workspace-root>",
+        "FREECAD_MCP_FREECAD_HOME": "<portable-freecad-root>"
+      }
+    }
+  }
+}

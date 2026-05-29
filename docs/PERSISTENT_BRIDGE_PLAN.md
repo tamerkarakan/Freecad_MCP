@@ -33,4 +33,4 @@ Current runtime modes are `freecadcmd-process-per-call` and `freecadcmd-worker`.
 
 ## Remaining Persistent Work
 
-- Add installed/addon packaging polish for the Workbench-hosted bridge after the local module-path workflow is exercised more.
+- Add signed Addon Manager packaging polish for the Workbench-hosted bridge after the local module zip workflow is exercised more.

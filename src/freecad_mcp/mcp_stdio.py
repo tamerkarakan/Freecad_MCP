@@ -9,6 +9,7 @@ synchronous, unit-testable helpers, and wires thin async SDK handlers on top.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ from mcp.server.stdio import stdio_server
 from freecad_mcp import __version__
 from freecad_mcp.cad_tools import CadToolService
 from freecad_mcp.gui_tools import GuiToolService
+from freecad_mcp.module_registry import ModuleSelection, parse_module_selection
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.logging_config import configure_logging, log_event, log_tool_call
@@ -30,6 +32,7 @@ from freecad_mcp.tooling import ToolInputError
 JsonObject = dict[str, Any]
 
 SERVER_NAME = "freecad-hybrid-mcp"
+REPO_ROOT_ENV = "FREECAD_MCP_REPO_ROOT"
 INSTRUCTIONS = (
     "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
     "typed process-per-call CAD operations, persistent FreeCADCmd worker sessions, "
@@ -101,6 +104,55 @@ RESOURCE_DESCRIPTORS: list[JsonObject] = [
         "mimeType": "text/markdown",
     },
     {
+        "uri": "freecad://docs/product-modules",
+        "name": "product_modules",
+        "title": "Product Modules",
+        "description": "Product-style module aliases and FREECAD_MCP_MODULES filtering.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/product-bundles",
+        "name": "product_bundles",
+        "title": "Product Bundles",
+        "description": "Sellable bundle manifest and tool counts for product packaging.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://product/bundles",
+        "name": "product_bundle_manifest",
+        "title": "Product Bundle Manifest",
+        "description": "JSON manifest for sellable product bundles.",
+        "mimeType": "application/json",
+    },
+    {
+        "uri": "freecad://docs/distribution-profiles",
+        "name": "distribution_profiles",
+        "title": "Distribution Profiles",
+        "description": "Generated packaging skeleton for bundle distribution profiles.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://distribution/profiles",
+        "name": "distribution_profile_manifest",
+        "title": "Distribution Profile Manifest",
+        "description": "JSON manifest for distribution profile artifacts and MCP config skeletons.",
+        "mimeType": "application/json",
+    },
+    {
+        "uri": "freecad://docs/workbench-artifact",
+        "name": "workbench_artifact",
+        "title": "Workbench Artifact",
+        "description": "Generated local FreeCAD Workbench module artifact shape.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://workbench/artifact",
+        "name": "workbench_artifact_manifest",
+        "title": "Workbench Artifact Manifest",
+        "description": "JSON manifest for the local FreeCAD Workbench module zip.",
+        "mimeType": "application/json",
+    },
+    {
         "uri": "freecad://schemas/tools",
         "name": "tool_schemas",
         "title": "MCP Tool Schemas",
@@ -139,13 +191,18 @@ PROMPT_DESCRIPTORS: list[JsonObject] = [
 class CompositeToolService:
     """Combine multiple services that expose ToolDefinition objects."""
 
-    def __init__(self, *services: object):
+    def __init__(self, *services: object, module_selection: ModuleSelection | None = None):
         self.services = services
+        self.module_selection = module_selection or parse_module_selection("all")
 
     def definitions(self) -> list:
         definitions: list = []
         for service in self.services:
-            definitions.extend(service.definitions())
+            definitions.extend(
+                definition
+                for definition in service.definitions()
+                if self.module_selection.allows(definition.name)
+            )
         return definitions
 
     def definition_map(self) -> dict:
@@ -158,15 +215,33 @@ class CompositeToolService:
                 shutdown()
 
 
-def build_server(repo_root: Path | None = None) -> CompositeToolService:
+def resolve_repo_root(repo_root: Path | None = None) -> Path:
+    """Resolve the repo/resource root for checkout and installed-entrypoint runs."""
+    if repo_root is not None:
+        return repo_root.resolve()
+    env_root = os.environ.get(REPO_ROOT_ENV)
+    if env_root:
+        return Path(env_root).resolve()
+    source_checkout = Path(__file__).resolve().parents[2]
+    if (source_checkout / "docs").is_dir() and (source_checkout / "src").is_dir():
+        return source_checkout
+    return Path.cwd().resolve()
+
+
+def build_server(repo_root: Path | None = None, *, enabled_modules: str | set[str] | None = None) -> CompositeToolService:
     """Build the composite FreeCAD tool surface."""
-    root = (repo_root or Path.cwd()).resolve()
+    root = resolve_repo_root(repo_root)
+    if isinstance(enabled_modules, set):
+        module_selection = parse_module_selection(",".join(sorted(enabled_modules)))
+    else:
+        module_selection = parse_module_selection(enabled_modules)
     return CompositeToolService(
         StaticToolService(InventoryStore(root)),
         RuntimeToolService(),
         PersistentToolService(workspace_root=root),
         CadToolService(),
         GuiToolService(),
+        module_selection=module_selection,
     )
 
 
@@ -224,6 +299,13 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/vision-debug-pipeline": repo_root / "docs" / "VISION_DEBUG_PIPELINE.md",
         "freecad://docs/workbench-bridge": repo_root / "docs" / "WORKBENCH_BRIDGE.md",
         "freecad://docs/techdraw-cam-fem-plan": repo_root / "docs" / "TECHDRAW_CAM_FEM_PLAN.md",
+        "freecad://docs/product-modules": repo_root / "docs" / "PRODUCT_MODULES.md",
+        "freecad://docs/product-bundles": repo_root / "docs" / "PRODUCT_BUNDLES.md",
+        "freecad://product/bundles": repo_root / "docs" / "product_bundles.json",
+        "freecad://docs/distribution-profiles": repo_root / "docs" / "DISTRIBUTION_PROFILES.md",
+        "freecad://distribution/profiles": repo_root / "docs" / "distribution_profiles.json",
+        "freecad://docs/workbench-artifact": repo_root / "docs" / "WORKBENCH_ARTIFACT.md",
+        "freecad://workbench/artifact": repo_root / "docs" / "workbench_artifact.json",
         "freecad://schemas/tools": repo_root / "docs" / "mcp_tool_schemas.json",
     }
     if uri in mapping:
@@ -254,10 +336,10 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
     return None
 
 
-def create_mcp_server(repo_root: Path | None = None) -> tuple[Server, CompositeToolService]:
+def create_mcp_server(repo_root: Path | None = None, *, enabled_modules: str | set[str] | None = None) -> tuple[Server, CompositeToolService]:
     """Build the SDK Server with handlers delegating to the FreeCAD tool surface."""
-    root = (repo_root or Path.cwd()).resolve()
-    tool_service = build_server(root)
+    root = resolve_repo_root(repo_root)
+    tool_service = build_server(root, enabled_modules=enabled_modules)
     tools = tool_service.definition_map()
     server: Server = Server(name=SERVER_NAME, version=__version__, instructions=INSTRUCTIONS)
 
@@ -351,7 +433,12 @@ async def serve(repo_root: Path | None = None) -> None:
     configure_logging()
     server, tool_service = create_mcp_server(repo_root)
     init_options = server.create_initialization_options()
-    log_event(logging.INFO, "server_start", tools=len(tool_service.definition_map()))
+    log_event(
+        logging.INFO,
+        "server_start",
+        tools=len(tool_service.definition_map()),
+        modules=tool_service.module_selection.to_dict(),
+    )
     try:
         async with stdio_server() as (read_stream, write_stream):
             await server.run(read_stream, write_stream, init_options)

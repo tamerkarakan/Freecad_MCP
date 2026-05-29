@@ -3077,234 +3077,6 @@ Extrude a source shape.
 }
 ```
 
-## `freecad_partdesign_body_create`
-
-Create or reuse a PartDesign Body with origin planes.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "document_path": {
-      "type": "string"
-    },
-    "document_name": {
-      "type": "string"
-    },
-    "body_name": {
-      "type": "string"
-    },
-    "create_body_if_missing": {
-      "type": "boolean"
-    },
-    "output_path": {
-      "type": "string"
-    },
-    "overwrite": {
-      "type": "boolean"
-    },
-    "save": {
-      "type": "boolean"
-    },
-    "executable": {
-      "type": "string",
-      "description": "Optional explicit FreeCADCmd path."
-    },
-    "freecad_home": {
-      "type": "string",
-      "description": "Optional portable FreeCAD directory."
-    },
-    "timeout_sec": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 180
-    },
-    "compact_execution": {
-      "type": "boolean",
-      "description": "Return compact execution metadata without stdout/stderr/argv text."
-    },
-    "allow_external_paths": {
-      "type": "boolean",
-      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
-    }
-  }
-}
-```
-
-## `freecad_partdesign_pad`
-
-Create a PartDesign Pad from a Sketcher profile inside a Body, attaching the sketch to an origin plane when needed.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "document_path": {
-      "type": "string"
-    },
-    "body_name": {
-      "type": "string"
-    },
-    "sketch_name": {
-      "type": "string"
-    },
-    "attachment_plane": {
-      "type": "string",
-      "enum": [
-        "XY",
-        "XZ",
-        "YZ"
-      ]
-    },
-    "create_body_if_missing": {
-      "type": "boolean"
-    },
-    "pad_name": {
-      "type": "string"
-    },
-    "result_name": {
-      "type": "string"
-    },
-    "length": {
-      "type": "number"
-    },
-    "length2": {
-      "type": "number"
-    },
-    "midplane": {
-      "type": "boolean"
-    },
-    "reversed": {
-      "type": "boolean"
-    },
-    "require_solid": {
-      "type": "boolean"
-    },
-    "output_path": {
-      "type": "string"
-    },
-    "overwrite": {
-      "type": "boolean"
-    },
-    "save": {
-      "type": "boolean"
-    },
-    "executable": {
-      "type": "string",
-      "description": "Optional explicit FreeCADCmd path."
-    },
-    "freecad_home": {
-      "type": "string",
-      "description": "Optional portable FreeCAD directory."
-    },
-    "timeout_sec": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 180
-    },
-    "compact_execution": {
-      "type": "boolean",
-      "description": "Return compact execution metadata without stdout/stderr/argv text."
-    },
-    "allow_external_paths": {
-      "type": "boolean",
-      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
-    }
-  },
-  "required": [
-    "document_path",
-    "sketch_name"
-  ]
-}
-```
-
-## `freecad_partdesign_pocket`
-
-Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. The Body must already contain a solid feature such as a Pad.
-
-```json
-{
-  "type": "object",
-  "properties": {
-    "document_path": {
-      "type": "string"
-    },
-    "body_name": {
-      "type": "string"
-    },
-    "sketch_name": {
-      "type": "string"
-    },
-    "attachment_plane": {
-      "type": "string",
-      "enum": [
-        "XY",
-        "XZ",
-        "YZ"
-      ]
-    },
-    "create_body_if_missing": {
-      "type": "boolean"
-    },
-    "pocket_name": {
-      "type": "string"
-    },
-    "result_name": {
-      "type": "string"
-    },
-    "length": {
-      "type": "number"
-    },
-    "length2": {
-      "type": "number"
-    },
-    "midplane": {
-      "type": "boolean"
-    },
-    "reversed": {
-      "type": "boolean"
-    },
-    "require_solid": {
-      "type": "boolean"
-    },
-    "output_path": {
-      "type": "string"
-    },
-    "overwrite": {
-      "type": "boolean"
-    },
-    "save": {
-      "type": "boolean"
-    },
-    "executable": {
-      "type": "string",
-      "description": "Optional explicit FreeCADCmd path."
-    },
-    "freecad_home": {
-      "type": "string",
-      "description": "Optional portable FreeCAD directory."
-    },
-    "timeout_sec": {
-      "type": "integer",
-      "minimum": 1,
-      "maximum": 180
-    },
-    "compact_execution": {
-      "type": "boolean",
-      "description": "Return compact execution metadata without stdout/stderr/argv text."
-    },
-    "allow_external_paths": {
-      "type": "boolean",
-      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
-    }
-  },
-  "required": [
-    "document_path",
-    "sketch_name"
-  ]
-}
-```
-
 ## `freecad_part_revolve`
 
 Revolve a source shape.
@@ -3549,6 +3321,234 @@ Run shape validity checks.
   },
   "required": [
     "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_body_create`
+
+Create or reuse a PartDesign Body with origin planes.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  }
+}
+```
+
+## `freecad_partdesign_pad`
+
+Create a PartDesign Pad from a Sketcher profile inside a Body, attaching the sketch to an origin plane when needed.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "pad_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "length": {
+      "type": "number"
+    },
+    "length2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
+  ]
+}
+```
+
+## `freecad_partdesign_pocket`
+
+Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. The Body must already contain a solid feature such as a Pad.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "pocket_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "length": {
+      "type": "number"
+    },
+    "length2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
   ]
 }
 ```
@@ -5964,6 +5964,61 @@ Fit all or selected objects in the active GUI view.
       "maximum": 60
     },
     "selection_only": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_primitive_create`
+
+Create a typed primitive in the active FreeCAD GUI document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "primitive": {
+      "type": "string",
+      "enum": [
+        "cylinder"
+      ],
+      "default": "cylinder"
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "radius": {
+      "type": "number"
+    },
+    "height": {
+      "type": "number"
+    },
+    "placement": {
+      "type": "object"
+    },
+    "select": {
+      "type": "boolean"
+    },
+    "fit_view": {
       "type": "boolean"
     }
   },

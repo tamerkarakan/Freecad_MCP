@@ -136,6 +136,13 @@ def main() -> int:
     assert any(resource["uri"] == "freecad://docs/workbench-bridge" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/vision-debug-pipeline" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/techdraw-cam-fem-plan" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/product-modules" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/product-bundles" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://product/bundles" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/distribution-profiles" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://distribution/profiles" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/workbench-artifact" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://workbench/artifact" for resource in resources["result"]["resources"])
     assert resource_templates["result"]["resourceTemplates"] == []
     assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:

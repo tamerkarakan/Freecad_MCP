@@ -17,8 +17,14 @@ The server is hybrid in two ways:
 | `freecad_mcp.persistent_tools` | Persistent worker MCP session/document/object/Part/Sketcher/mesh/assembly tools. |
 | `freecad_mcp.gui_bridge` | Client-side session manager for an opt-in FreeCAD GUI loopback bridge. |
 | `freecad_mcp.gui_tools` | MCP tools for attaching to FreeCAD GUI and reading active document, active view, selection, and preselection state. |
-| `freecad_mcp.cad_tools` | Typed document/object/Part/Sketcher/import-export/mesh/assembly tools. |
-| `freecad_mcp.mcp_stdio` | Minimal newline-delimited JSON-RPC stdio MCP dispatcher. |
+| `freecad_mcp.module_registry` | Product-style module aliases and `FREECAD_MCP_MODULES` tool-surface filtering. |
+| `freecad_mcp.product_bundles` | Sellable bundle descriptors for Free, Pro, Studio, Team, Source, and Unsafe profiles. |
+| `freecad_mcp.distribution_profiles` | Distribution profile descriptors for wheel/sdist, MCP config skeletons, and optional Workbench module artifacts. |
+| `freecad_mcp.workbench_artifact` | Local Workbench module zip descriptor for embedding the GUI bridge beside `InitGui.py`. |
+| `freecad_mcp.cad_tool_base` | Shared process-per-call FreeCADCmd runner and typed CAD tool schema builder. |
+| `freecad_mcp.cad_domains.*` | Domain services for document, object, Part, PartDesign, Sketcher, import-export, mesh, assembly, TechDraw, CAM, and FEM tools. |
+| `freecad_mcp.cad_tools` | Backward-compatible aggregate over the CAD domain services. |
+| `freecad_mcp.mcp_stdio` | Official Python `mcp` SDK stdio adapter, tool/resource/prompt registration, and logging/error shaping. |
 | `server.py` | MCP stdio entrypoint. |
 | `scripts/freecad_gui_bridge_server.py` | Local JSON bridge script to execute inside FreeCAD GUI. It marshals RPC handlers onto the Qt GUI thread when PySide is available. |
 | `freecad_workbench/FreeCADMCP/InitGui.py` | FreeCAD Workbench/module entrypoint that can host the GUI bridge manually or via `FREECAD_MCP_AUTOSTART=1`. |
@@ -62,7 +68,7 @@ The server also exposes a long-lived `freecadcmd-worker` mode. It starts a `Free
 
 ## GUI Attach Tools
 
-The server exposes `freecad-gui-attach` mode for live GUI state. The MCP client does not start FreeCAD GUI; a user or future Workbench starts `scripts/freecad_gui_bridge_server.py` inside FreeCAD GUI, then MCP tools connect to the local loopback bridge.
+The server exposes `freecad-gui-attach` mode for live GUI state. The MCP client does not start FreeCAD GUI; a user starts `scripts/freecad_gui_bridge_server.py` inside FreeCAD GUI manually or through the FreeCAD MCP Workbench, then MCP tools connect to the local loopback bridge.
 
 | Tool group | Status |
 | --- | --- |
@@ -94,7 +100,13 @@ Write paths are guarded by default: `output_path` must be absolute and remain un
 
 ## MCP Resources And Prompts
 
-The server exposes read-only resources for architecture, session state, roadmap status, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, TechDraw/CAM/FEM typed-wrapper planning, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
+The server exposes read-only resources for architecture, session state, roadmap status, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, Workbench artifact shape, TechDraw/CAM/FEM typed-wrapper planning, product-module filtering, product bundles, distribution profiles, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
+
+## Product Module Filtering
+
+`FREECAD_MCP_MODULES` can limit the advertised tool surface. Default is `all`. Product aliases such as `free`, `pro`, `studio`, `team`, and `source` expand to domain modules; `dev`, `developer`, and `local-dev` intentionally expand to `all` for local maintainer work. Explicit comma-separated module lists are also supported. Worker tools require the `worker` module even when they also belong to domains such as Sketcher or mesh, and source-code intelligence requires the internal `developer` module or the user-facing `source` add-on alias. Generated sellable bundle manifests live in `docs/PRODUCT_BUNDLES.md` and `docs/product_bundles.json`; distribution profile manifests and per-profile MCP config skeletons live in `docs/DISTRIBUTION_PROFILES.md`, `docs/distribution_profiles.json`, and `packaging/profiles/*.mcp.json`. The local Workbench module zip is described by `docs/WORKBENCH_ARTIFACT.md` and `docs/workbench_artifact.json`.
+
+The headless typed CAD surface is now split into domain services under `freecad_mcp.cad_domains`; signed marketplace/addon packaging remains a later distribution step.
 
 ## Runtime Policy Target
 

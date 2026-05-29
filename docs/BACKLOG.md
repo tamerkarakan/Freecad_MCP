@@ -7,13 +7,14 @@
 ## Next Expansion Candidates
 
 - Add a remote MCP transport endpoint in addition to stdio. Cover HTTP/SSE and current Streamable HTTP MCP patterns, keep stdio as the stable local default, and add smoke tests for initialize/tools/list/tools/call over the new transport.
-- Add structured server logging for crash diagnosis, request/response timing, payload sizes, FreeCAD subprocess lifecycle, worker session restarts, and tool-level performance. Logs must avoid credentials and large CAD payload dumps by default.
-- Add FreeCAD console reading. Capture or proxy FreeCAD console output from `FreeCADCmd`, persistent workers, and GUI/workbench bridge sessions so agents can inspect warnings/errors without using broad Python execution.
+- Deepen structured server logging beyond the current opt-in JSON logger: add crash bundles, response-size summaries, worker restart correlation, and performance rollups while continuing to avoid credentials and large CAD payload dumps by default.
+- Extend FreeCAD console reading beyond the current persistent-worker console tool. Capture or proxy console output from process-per-call `FreeCADCmd`, GUI bridge, and Workbench bridge sessions so agents can inspect warnings/errors without using broad Python execution.
 - Expand GUI live bridge into full live FreeCAD access. Go beyond active document/view/selection/preselection/view-fit into live drawing observation, command execution boundaries, transaction status, console forwarding, document dirty state, and safe GUI-side mutation policies.
-- Improve image-to-sketch guidance. When visual tracing cannot confidently distinguish native geometry such as B-spline vs circular arc vs polyline, the MCP/tool prompt flow should ask the user for a choice or expose a small decision report instead of silently degrading curves. Preserve curve intent; line/polyline fallback must be explicit.
+- Deepen image-to-sketch guidance beyond the current `freecad_curve_fit_analyze` decision report. Add richer prompt/resource workflows for ambiguous native geometry such as B-spline vs circular arc vs polyline. Preserve curve intent; line/polyline fallback must be explicit.
 - Research and extend Sketcher and PartDesign coverage from both FreeCAD documentation and the local FreeCAD source checkout. Include GUI commands where safe through GUI/workbench bridge paths, and add typed wrappers only with source evidence, fixture-backed behavior, and smoke tests.
 - Bound `StaticToolService.source_search` rglob traversal with a file-count/time limit and early termination so a large FreeCAD source tree cannot hang or time out the tool.
-- Add a POSIX CI leg (or document enabling Windows Developer Mode) so the `safe_source_path` symlink-escape unit test runs instead of skipping.
+- Push/enable the existing POSIX CI workflow once credentials include the `workflow` OAuth scope, so the `safe_source_path` symlink-escape unit test runs instead of skipping.
+- After the generated distribution profiles settle, decide whether any profiles should become separate installable Python packages or Codex plugin bundles; the FreeCAD Workbench path now has a local module zip, but not signed Addon Manager packaging.
 
 ## Blocked Or Waiting
 
@@ -26,4 +27,4 @@
 
 ## Later
 
-- Installed/addon packaging polish for the Workbench-hosted bridge.
+- Signed/installed FreeCAD Addon Manager packaging polish for the Workbench-hosted bridge.
