@@ -179,7 +179,12 @@ class PersistentBridgeTests(unittest.TestCase):
             try:
                 response = manager.request(session_id, "console", {}, timeout_sec=10)
                 self.assertTrue(response["ok"])
-                console = manager.console(session_id, max_lines=50)["console"]
+                deadline = time.monotonic() + 1.0
+                while True:
+                    console = manager.console(session_id, max_lines=50)["console"]
+                    if "a warning line" in console["stderr"] or time.monotonic() >= deadline:
+                        break
+                    time.sleep(0.01)
             finally:
                 manager.close(session_id, timeout_sec=10)
 
