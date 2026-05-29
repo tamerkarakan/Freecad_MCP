@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shutil
 import sys
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -11,6 +13,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 INIT_GUI = ROOT / "freecad_workbench" / "FreeCADMCP" / "InitGui.py"
+SHIM_INIT_GUI = ROOT / "freecad_workbench" / "InitGui.py"
 
 
 class FakeConsole:
@@ -52,6 +55,15 @@ class WorkbenchBridgeTests(unittest.TestCase):
     def setUp(self) -> None:
         FakeConsole.messages = []
 
+    def exec_like_freecad(self, path: Path) -> None:
+        source = path.read_text(encoding="utf-8")
+        code = compile(source, str(path), "exec")
+
+        def run_from_loader_function() -> None:
+            exec(code)
+
+        run_from_loader_function()
+
     def import_init_gui(self, *, autostart: bool = False) -> tuple[types.ModuleType, FakeGui]:
         fake_app = types.ModuleType("FreeCAD")
         fake_app.Console = FakeConsole
@@ -78,10 +90,47 @@ class WorkbenchBridgeTests(unittest.TestCase):
         self.assertIn(module.STATUS_COMMAND, fake_gui.commands)
         self.assertEqual(workbench.GetClassName(), "Gui::PythonWorkbench")
 
+    def test_parent_module_shim_registers_workbench(self) -> None:
+        fake_app = types.ModuleType("FreeCAD")
+        fake_app.Console = FakeConsole
+        fake_gui = FakeGui()
+
+        with patch.dict(sys.modules, {"FreeCAD": fake_app, "FreeCADGui": fake_gui}):
+            self.exec_like_freecad(SHIM_INIT_GUI)
+
+        self.assertEqual(len(fake_gui.workbenches), 1)
+
+    def test_leaf_module_path_works_without_dunder_file(self) -> None:
+        fake_app = types.ModuleType("FreeCAD")
+        fake_app.Console = FakeConsole
+        fake_gui = FakeGui()
+
+        with patch.dict(sys.modules, {"FreeCAD": fake_app, "FreeCADGui": fake_gui}):
+            self.exec_like_freecad(INIT_GUI)
+
+        self.assertEqual(len(fake_gui.workbenches), 1)
+
     def test_bridge_script_path_defaults_to_repo_script(self) -> None:
         module, _ = self.import_init_gui()
 
         self.assertEqual(module.bridge_script_path(), ROOT / "scripts" / "freecad_gui_bridge_server.py")
+
+    def test_bridge_script_path_prefers_bundled_sibling_script(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            module_dir = Path(temp_dir) / "FreeCADMCP"
+            module_dir.mkdir()
+            shutil.copy2(INIT_GUI, module_dir / "InitGui.py")
+            sibling_bridge = module_dir / "freecad_gui_bridge_server.py"
+            sibling_bridge.write_text("# bundled bridge\n", encoding="utf-8")
+
+            old_init = globals()["INIT_GUI"]
+            try:
+                globals()["INIT_GUI"] = module_dir / "InitGui.py"
+                module, _ = self.import_init_gui()
+            finally:
+                globals()["INIT_GUI"] = old_init
+
+            self.assertEqual(module.bridge_script_path(), sibling_bridge)
 
     def test_autostart_env_flag_is_detected(self) -> None:
         fake_bridge = ROOT / "runs" / "fake-bridge.py"

@@ -100,4 +100,4 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 - `freecad_command_run` is an escape hatch, not the primary interface.
 - Every mutating runtime tool should return a structured document/object diff.
 - Source tools can work without FreeCAD installed; runtime tools require a configured FreeCAD executable.
-- GUI attach is opt-in and requires `scripts/freecad_gui_bridge_server.py` or a future Workbench-hosted bridge inside FreeCAD GUI.
+- GUI attach is opt-in and requires `scripts/freecad_gui_bridge_server.py` or the FreeCAD MCP Workbench-hosted bridge inside FreeCAD GUI.

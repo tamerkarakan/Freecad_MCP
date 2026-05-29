@@ -17,7 +17,7 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 
 ## Implemented Lifecycle
 
-1. User starts FreeCAD GUI normally or through a future Workbench.
+1. User starts FreeCAD GUI normally and starts the bridge manually or through the FreeCAD MCP Workbench.
 2. `scripts/freecad_gui_bridge_server.py` opens a localhost JSON bridge with an optional bearer token.
 3. MCP `freecad_gui_attach` connects to that bridge and returns a `session_id`.
 4. Read-only GUI tools can query active document/view/selection without mutating model state.
@@ -40,6 +40,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_preselection_get` | Return current hover/preselection object and subelement when available. | No |
 | `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
+| `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
 
 ## Normalized Selection Record
 

@@ -92,6 +92,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_gui_preselection_get",
             "freecad_gui_selection_set",
             "freecad_gui_view_fit",
+            "freecad_gui_primitive_create",
         ]:
             self.assertIn(name, tools)
 

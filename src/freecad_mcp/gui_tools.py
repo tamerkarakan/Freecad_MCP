@@ -95,6 +95,24 @@ class GuiToolService:
                 [],
                 "view_fit",
             ),
+            self._gui_tool(
+                "freecad_gui_primitive_create",
+                "Create GUI Primitive",
+                "Create a typed primitive in the active FreeCAD GUI document.",
+                {
+                    "primitive": {"type": "string", "enum": ["cylinder"], "default": "cylinder"},
+                    "document_name": {"type": "string"},
+                    "object_name": {"type": "string"},
+                    "label": {"type": "string"},
+                    "radius": {"type": "number"},
+                    "height": {"type": "number"},
+                    "placement": {"type": "object"},
+                    "select": {"type": "boolean"},
+                    "fit_view": {"type": "boolean"},
+                },
+                [],
+                "primitive_create",
+            ),
         ]
 
     def definition_map(self) -> dict[str, ToolDefinition]:

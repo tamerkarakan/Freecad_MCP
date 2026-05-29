@@ -109,6 +109,28 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(status["gui"]["bridge"], "ok")
         self.assertIn("freecad_gui_selection_get", tools)
+        self.assertIn("freecad_gui_primitive_create", tools)
+
+    def test_gui_primitive_create_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        created = tools["freecad_gui_primitive_create"].handler(
+            {
+                "session_id": session_id,
+                "primitive": "cylinder",
+                "object_name": "GuiCylinder",
+                "radius": 4,
+                "height": 12,
+                "select": True,
+                "fit_view": True,
+            }
+        )
+
+        self.assertEqual(created["gui"]["method"], "primitive_create")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "GuiCylinder")
 
 
 if __name__ == "__main__":

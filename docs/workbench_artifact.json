@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "artifact_key": "freecad-workbench-module",
+  "module_name": "FreeCADMCP",
+  "zip_name": "freecad-mcp-workbench.zip",
+  "zip_root": "FreeCADMCP",
+  "description": "Local FreeCAD Workbench module that hosts the loopback MCP GUI bridge.",
+  "official_addon_manager_package": false,
+  "consuming_profiles": [
+    "pro",
+    "studio",
+    "team"
+  ],
+  "files": [
+    {
+      "source": "freecad_workbench/FreeCADMCP/InitGui.py",
+      "target": "FreeCADMCP/InitGui.py",
+      "role": "workbench-entrypoint",
+      "size": 5177,
+      "sha256": "eca58586425c2fee37bcba5dc139e7b3ef327585cbd6f8dd9592ed9e89ec4f8f"
+    },
+    {
+      "source": "scripts/freecad_gui_bridge_server.py",
+      "target": "FreeCADMCP/freecad_gui_bridge_server.py",
+      "role": "embedded-gui-bridge",
+      "size": 13668,
+      "sha256": "4554d803d65a41aeba37c3516c914640a4f3831f164aa021d7898fcb8fda8421"
+    }
+  ],
+  "install": {
+    "extract_zip_parent": "<FreeCAD user Mod directory or any path passed with FreeCAD -M>",
+    "module_path": "<extract_zip_parent>/FreeCADMCP",
+    "freecad_launch_example": "FreeCAD.exe -M \"<extract_zip_parent>\"",
+    "workbench_name": "FreeCAD MCP"
+  },
+  "env": {
+    "FREECAD_MCP_AUTOSTART": "optional 1/true/yes/on",
+    "FREECAD_MCP_GUI_TOKEN": "optional bearer token for local bridge attach",
+    "FREECAD_MCP_GUI_HOST": "optional, default 127.0.0.1",
+    "FREECAD_MCP_GUI_PORT": "optional, default 48777",
+    "FREECAD_MCP_BRIDGE_SCRIPT": "optional override; bundled sibling bridge is used by default"
+  }
+}

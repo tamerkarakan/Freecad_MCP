@@ -179,6 +179,25 @@ def selection_record(sel: Any) -> dict[str, Any]:
     }
 
 
+def object_summary(obj: Any) -> dict[str, Any]:
+    shape = getattr(obj, "Shape", None)
+    shape_summary = None
+    if shape is not None:
+        shape_summary = {
+            "solids": len(getattr(shape, "Solids", []) or []),
+            "faces": len(getattr(shape, "Faces", []) or []),
+            "edges": len(getattr(shape, "Edges", []) or []),
+            "vertices": len(getattr(shape, "Vertexes", []) or []),
+            "volume": float(getattr(shape, "Volume", 0.0) or 0.0),
+        }
+    return {
+        "name": getattr(obj, "Name", None),
+        "label": getattr(obj, "Label", None),
+        "type_id": getattr(obj, "TypeId", None),
+        "shape": shape_summary,
+    }
+
+
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
@@ -262,6 +281,57 @@ def rpc_view_fit(params: dict[str, Any]) -> dict[str, Any]:
     return {"fit": mode}
 
 
+def rpc_primitive_create(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCAD as App
+    import FreeCADGui as Gui
+
+    primitive = str(params.get("primitive") or "cylinder").lower()
+    if primitive != "cylinder":
+        raise ValueError("unsupported GUI primitive: " + primitive)
+
+    doc = App.activeDocument()
+    if doc is None:
+        doc_name = str(params.get("document_name") or "MCPGuiDocument")
+        doc = App.newDocument(doc_name)
+        Gui.ActiveDocument = Gui.getDocument(doc.Name)
+
+    object_name = str(params.get("object_name") or "McpCylinder")
+    obj = doc.addObject("Part::Cylinder", object_name)
+    obj.Radius = float(params.get("radius", 5.0))
+    obj.Height = float(params.get("height", 10.0))
+    label = params.get("label")
+    if label:
+        obj.Label = str(label)
+
+    placement = params.get("placement") or {}
+    base = placement.get("base") if isinstance(placement, dict) else None
+    if isinstance(base, (list, tuple)) and len(base) == 3:
+        obj.Placement.Base = App.Vector(float(base[0]), float(base[1]), float(base[2]))
+
+    doc.recompute()
+    try:
+        gui_doc = Gui.getDocument(doc.Name)
+        if gui_doc is not None:
+            Gui.ActiveDocument = gui_doc
+    except Exception:
+        gui_doc = Gui.activeDocument()
+
+    if bool(params.get("select", True)):
+        Gui.Selection.clearSelection()
+        Gui.Selection.addSelection(doc.Name, obj.Name, "")
+    if bool(params.get("fit_view", True)):
+        gui_doc = Gui.activeDocument()
+        view = gui_doc.activeView() if gui_doc is not None else None
+        if view is not None:
+            view.fitAll()
+
+    return {
+        "primitive": primitive,
+        "document": active_document_summary(),
+        "object": object_summary(obj),
+    }
+
+
 RPC_METHODS = {
     "status": rpc_status,
     "active_document_get": rpc_active_document_get,
@@ -270,6 +340,7 @@ RPC_METHODS = {
     "preselection_get": rpc_preselection_get,
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
+    "primitive_create": rpc_primitive_create,
 }
 
 
