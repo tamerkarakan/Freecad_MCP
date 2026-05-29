@@ -342,6 +342,52 @@
       }
     },
     {
+      "name": "freecad_session_console",
+      "title": "Read FreeCAD Worker Console",
+      "description": "Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "max_lines": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Maximum recent console lines to return per stream."
+          }
+        },
+        "required": [
+          "session_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_console_read",
+      "title": "Read FreeCAD Worker Console",
+      "description": "Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "max_lines": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500,
+            "description": "Maximum recent console lines to return per stream."
+          }
+        },
+        "required": [
+          "session_id"
+        ]
+      }
+    },
+    {
       "name": "freecad_worker_document_new",
       "title": "Worker Create Document",
       "description": "Create a document inside a persistent worker session.",

@@ -369,6 +369,56 @@ Close a persistent FreeCADCmd worker session and clean up the process.
 }
 ```
 
+## `freecad_session_console`
+
+Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "max_lines": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500,
+      "description": "Maximum recent console lines to return per stream."
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_worker_console_read`
+
+Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "max_lines": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500,
+      "description": "Maximum recent console lines to return per stream."
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
 ## `freecad_worker_document_new`
 
 Create a document inside a persistent worker session.

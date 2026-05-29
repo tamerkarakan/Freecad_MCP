@@ -97,6 +97,20 @@ class PersistentToolService:
                 input_schema={"type": "object", "properties": dict(SESSION_PROPS), "required": ["session_id"]},
                 handler=self.session_close,
             ),
+            ToolDefinition(
+                name="freecad_session_console",
+                title="Read FreeCAD Worker Console",
+                description="Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.",
+                input_schema={"type": "object", "properties": {"session_id": SESSION_PROPS["session_id"], "max_lines": {"type": "integer", "minimum": 1, "maximum": 500, "description": "Maximum recent console lines to return per stream."}}, "required": ["session_id"]},
+                handler=self.session_console,
+            ),
+            ToolDefinition(
+                name="freecad_worker_console_read",
+                title="Read FreeCAD Worker Console",
+                description="Read captured FreeCAD console output (stdout messages and stderr warnings/errors) for a worker session without running Python.",
+                input_schema={"type": "object", "properties": {"session_id": SESSION_PROPS["session_id"], "max_lines": {"type": "integer", "minimum": 1, "maximum": 500, "description": "Maximum recent console lines to return per stream."}}, "required": ["session_id"]},
+                handler=self.session_console,
+            ),
             self._worker_tool(
                 "freecad_worker_document_new",
                 "Worker Create Document",
@@ -655,6 +669,11 @@ class PersistentToolService:
         session_id = required_string(args, "session_id")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=180)
         return self.manager.status(session_id, timeout_sec=timeout_sec)
+
+    def session_console(self, args: JsonObject) -> JsonObject:
+        session_id = required_string(args, "session_id")
+        max_lines = bounded_int(args, "max_lines", default=200, minimum=1, maximum=500)
+        return self.manager.console(session_id, max_lines=max_lines)
 
     def session_close(self, args: JsonObject) -> JsonObject:
         session_id = required_string(args, "session_id")
