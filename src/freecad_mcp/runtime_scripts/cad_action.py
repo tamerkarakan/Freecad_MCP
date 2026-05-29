@@ -1692,6 +1692,60 @@ def analyze_curve_fit(args):
     else:
         recommendation = "bspline"
         reason = "line/arc fits exceed tolerance; use a freeform curve instead of pretending it is circular"
+
+    # Image-to-sketch guidance: rather than silently committing to one curve type,
+    # flag when the trace is genuinely ambiguous so the caller can ask the user or
+    # request a tighter reference instead of degrading curve intent.
+    line_error = line.get("max_error")
+    arc_error = arc.get("max_error") if arc.get("ok") else None
+    candidates = []
+    if line_error is not None and line_error <= tolerance:
+        candidates.append("line")
+    if arc_error is not None and arc_error <= tolerance:
+        candidates.append("arc")
+    fit_errors = [error for error in (line_error, arc_error) if error is not None]
+    best_error = min(fit_errors) if fit_errors else None
+
+    ambiguous = False
+    ambiguity_reasons = []
+    if (
+        recommendation == "line"
+        and line_error is not None
+        and arc_error is not None
+        and arc_error < line_error * 0.5
+        and line_error > tolerance * 0.5
+    ):
+        ambiguous = True
+        ambiguity_reasons.append("line only just fits but a circular arc fits markedly better; the trace may be a gentle arc")
+    if recommendation == "bspline" and arc_error is not None and arc_error <= tolerance * 2.0:
+        ambiguous = True
+        ambiguity_reasons.append("no fit is within tolerance but a circular arc is close; could be an arc or a freeform B-spline")
+    if best_error is not None and tolerance * 0.5 < best_error <= tolerance:
+        ambiguous = True
+        ambiguity_reasons.append("best fit error is near the tolerance; the curve type is borderline")
+
+    if ambiguous:
+        confidence = "low"
+    elif best_error is not None and best_error <= tolerance * 0.5:
+        confidence = "high"
+    else:
+        confidence = "medium"
+
+    decision = {
+        "action": "ask_user" if ambiguous else "use_recommendation",
+        "recommended": recommendation,
+    }
+    if ambiguous:
+        options = list(dict.fromkeys(candidates + [recommendation, "arc", "bspline"]))
+        decision["options"] = options
+        decision["reasons"] = ambiguity_reasons
+        decision["question"] = (
+            "The traced curve is ambiguous between "
+            + "/".join(options)
+            + ". Which native geometry should be used? Choose to preserve curve "
+            "intent instead of falling back silently."
+        )
+
     return {
         "point_count": len(points),
         "tolerance": tolerance,
@@ -1699,6 +1753,11 @@ def analyze_curve_fit(args):
         "reason": reason,
         "line_fit": line,
         "arc_fit": arc,
+        "candidates": candidates,
+        "best_error": best_error,
+        "ambiguous": ambiguous,
+        "confidence": confidence,
+        "decision": decision,
         "bspline_interpolation": {
             "ok": len(points) >= 2,
             "interpolation_residual": 0.0,
