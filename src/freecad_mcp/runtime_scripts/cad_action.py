@@ -952,6 +952,58 @@ def action_partdesign_pad(args):
     }
 
 
+def action_partdesign_pocket(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, args.get("body_name")) if args.get("body_name") else find_body_for_object(sketch)
+    attachment = None
+    doc.openTransaction("MCP create PartDesign pocket")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, args)
+        # Pocket removes material, so the Body must already contain a solid
+        # feature (e.g. a Pad) for it to cut into.
+        tip = getattr(body, "Tip", None)
+        tip_shape = getattr(tip, "Shape", None) if tip is not None else None
+        tip_solids = len(tip_shape.Solids) if tip_shape is not None and not tip_shape.isNull() else 0
+        if tip_solids < 1:
+            raise ValueError("PartDesign Pocket requires an existing solid feature in the Body (create a Pad first)")
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, args, body=body)
+        pocket = doc.addObject("PartDesign::Pocket", args.get("pocket_name") or args.get("result_name") or "Pocket")
+        body.addObject(pocket)
+        pocket.Profile = sketch
+        if hasattr(pocket, "Length"):
+            pocket.Length = float(args.get("length", args.get("length_fwd", 10.0)))
+        if args.get("length2") is not None and hasattr(pocket, "Length2"):
+            pocket.Length2 = float(args["length2"])
+        if args.get("midplane") is not None and hasattr(pocket, "Midplane"):
+            pocket.Midplane = bool(args["midplane"])
+        if args.get("reversed") is not None and hasattr(pocket, "Reversed"):
+            pocket.Reversed = bool(args["reversed"])
+        body.Tip = pocket
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_solid", True)):
+        shape = getattr(pocket, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Pocket did not produce a solid")
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "pocket": object_summary(pocket),
+        "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
 def action_part_revolve(args):
     doc = App.openDocument(args["document_path"])
     source = get_object(doc, args["source_object"])
@@ -3078,6 +3130,7 @@ DISPATCH = {
     "part_extrude": action_part_extrude,
     "partdesign_body_create": action_partdesign_body_create,
     "partdesign_pad": action_partdesign_pad,
+    "partdesign_pocket": action_partdesign_pocket,
     "part_revolve": action_part_revolve,
     "part_fillet": action_part_fillet,
     "part_chamfer": action_part_chamfer,
