@@ -357,9 +357,41 @@ def partdesign_summary(obj):
                 }
             except Exception:
                 summary["referenceAxis"] = str(axis)
+    elif type_id.startswith("PartDesign::AdditiveLoft") or type_id.startswith("PartDesign::SubtractiveLoft"):
+        profile = getattr(obj, "Profile", None)
+        summary["profile"] = link_item_summary(profile)
+        summary["sections"] = link_list_summary(getattr(obj, "Sections", []))
+        if hasattr(obj, "Ruled"):
+            summary["ruled"] = bool(obj.Ruled)
+        if hasattr(obj, "Closed"):
+            summary["closed"] = bool(obj.Closed)
     elif type_id in {"PartDesign::Plane", "PartDesign::Line", "PartDesign::Point", "PartDesign::CoordinateSystem"}:
         summary["attachment"] = attachment_summary(obj)
     return summary
+
+
+def link_item_summary(item):
+    if isinstance(item, (list, tuple)):
+        target = item[0] if item else None
+        subnames = item[1] if len(item) > 1 else []
+    else:
+        target = item
+        subnames = []
+    if isinstance(subnames, str):
+        subnames = [subnames] if subnames else []
+    return {
+        "object": getattr(target, "Name", None),
+        "label": getattr(target, "Label", None),
+        "type_id": getattr(target, "TypeId", None),
+        "subnames": list(subnames or []),
+    }
+
+
+def link_list_summary(values):
+    try:
+        return [link_item_summary(item) for item in list(values or [])]
+    except Exception:
+        return [{"raw": str(values)}]
 
 
 def attachment_summary(obj):
@@ -704,6 +736,60 @@ def apply_revolved_parameters(doc, sketch, feature, params, *, is_groove):
         feature.UpToFace = (face_obj, [str(subname)] if subname else [""])
     if params.get("fuse_order") is not None and hasattr(feature, "FuseOrder"):
         feature.FuseOrder = enum_index(params.get("fuse_order"), {"base_first": 0, "feature_first": 1}, "base_first", "fuse_order")
+
+
+def partdesign_link_sub_value(doc, spec):
+    if isinstance(spec, str):
+        obj = get_object(doc, spec)
+        return obj
+    if not isinstance(spec, dict):
+        raise ValueError("link target must be an object name or object spec")
+    name = spec.get("object_name") or spec.get("name") or spec.get("sketch_name") or spec.get("profile_name")
+    if not name:
+        raise ValueError("link target spec requires object_name/name/sketch_name")
+    obj = get_object(doc, str(name))
+    subnames = spec.get("subnames")
+    if subnames is None:
+        subname = spec.get("subname") or spec.get("sub_element")
+        subnames = [subname] if subname else []
+    if isinstance(subnames, str):
+        subnames = [subnames] if subnames else []
+    return (obj, [str(sub) for sub in subnames if sub]) if subnames else obj
+
+
+def link_target_object(value):
+    return value[0] if isinstance(value, (list, tuple)) else value
+
+
+def resolve_partdesign_profile_link(doc, params):
+    profile_name = params.get("profile_name") or params.get("profile_sketch") or params.get("sketch_name")
+    if profile_name:
+        subnames = params.get("profile_subnames")
+        if subnames is None:
+            subname = params.get("profile_subname")
+            subnames = [subname] if subname else []
+        if isinstance(subnames, str):
+            subnames = [subnames] if subnames else []
+        obj = get_object(doc, str(profile_name))
+        return (obj, [str(sub) for sub in subnames if sub]) if subnames else obj
+    return partdesign_link_sub_value(doc, params.get("profile"))
+
+
+def resolve_partdesign_section_links(doc, params):
+    sections = params.get("sections")
+    if sections is None:
+        sections = params.get("section_names")
+    if not sections:
+        raise ValueError("sections or section_names is required")
+    return [partdesign_link_sub_value(doc, item) for item in sections]
+
+
+def ensure_partdesign_body_member(body, obj):
+    previous_tip = getattr(body, "Tip", None)
+    if obj not in getattr(body, "Group", []):
+        body.addObject(obj)
+    if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(obj, "Name", None):
+        body.Tip = previous_tip
 
 
 def find_partdesign_body(doc, name):
@@ -1438,6 +1524,49 @@ def action_partdesign_groove(params):
         "sketch": object_summary(sketch),
         "groove": object_summary(groove),
         "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_additive_loft(params):
+    doc = get_doc(params)
+    profile_link = resolve_partdesign_profile_link(doc, params)
+    section_links = resolve_partdesign_section_links(doc, params)
+    profile_obj = link_target_object(profile_link)
+    body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(profile_obj)
+    doc.openTransaction("MCP worker create PartDesign additive loft")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, params)
+        ensure_partdesign_body_member(body, profile_obj)
+        for section_link in section_links:
+            ensure_partdesign_body_member(body, link_target_object(section_link))
+        loft = doc.addObject("PartDesign::AdditiveLoft", params.get("loft_name") or params.get("result_name") or "AdditiveLoft")
+        body.addObject(loft)
+        loft.Profile = profile_link
+        loft.Sections = section_links
+        if params.get("ruled") is not None and hasattr(loft, "Ruled"):
+            loft.Ruled = bool(params["ruled"])
+        if params.get("closed") is not None and hasattr(loft, "Closed"):
+            loft.Closed = bool(params["closed"])
+        body.Tip = loft
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(params.get("require_solid", True)):
+        shape = getattr(loft, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Additive Loft did not produce a solid")
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "profile": object_summary(profile_obj),
+        "sections": [object_summary(link_target_object(item)) for item in section_links],
+        "loft": object_summary(loft),
         "document": document_summary(doc),
     }
 
@@ -2959,6 +3088,7 @@ ACTIONS = {
     "partdesign_hole": action_partdesign_hole,
     "partdesign_revolution": action_partdesign_revolution,
     "partdesign_groove": action_partdesign_groove,
+    "partdesign_additive_loft": action_partdesign_additive_loft,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,

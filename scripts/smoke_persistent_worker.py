@@ -517,6 +517,7 @@ def main() -> int:
                         ],
                         "lock_mode": "block",
                         "require_fully_constrained": True,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_partdesign_groove_body_profile_create",
@@ -533,6 +534,7 @@ def main() -> int:
                         "attachment_plane": "XY",
                         "pad_name": "WorkerGroovePad",
                         "length": 6,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_partdesign_groove_pad",
@@ -559,6 +561,7 @@ def main() -> int:
                         ],
                         "lock_mode": "block",
                         "require_fully_constrained": True,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_partdesign_groove_profile_create",
@@ -593,10 +596,120 @@ def main() -> int:
                 raise RuntimeError(f"worker revolved document close failed: {closed_revolved_doc}")
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
             session_id = None
+            restarted_loft = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_loft["session"]["session_id"]
+            if not restarted_loft["session"]["running"]:
+                raise RuntimeError(f"third worker did not start: {restarted_loft}")
+            loft_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerLoftSmoke",
+                    }
+                ),
+                "worker_loft_document_new",
+            )
+            loft_document_id = loft_document["document"]["document_id"]
+            worker_loft_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "sketch_name": "WorkerLoftProfileSketch",
+                        "body_name": "WorkerLoftBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0, 0, 0], "end": [4, 0, 0]},
+                                    {"type": "line", "start": [4, 0, 0], "end": [4, 2, 0]},
+                                    {"type": "line", "start": [4, 2, 0], "end": [0, 2, 0]},
+                                    {"type": "line", "start": [0, 2, 0], "end": [0, 0, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_loft_profile_create",
+            )
+            if not worker_loft_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker loft profile did not attach to PartDesign body: {worker_loft_profile}")
+            worker_loft_plane = worker_result(
+                service.definition_map()["freecad_worker_partdesign_datum_plane_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "body_name": "WorkerLoftBody",
+                        "datum_plane_name": "WorkerLoftSectionPlane",
+                        "attachment_plane": "XY",
+                        "attachment_offset": 6,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_loft_datum_plane",
+            )
+            if worker_loft_plane["datum_plane"]["type_id"] != "PartDesign::Plane":
+                raise RuntimeError(f"worker loft datum plane was not created: {worker_loft_plane}")
+            worker_loft_section = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "sketch_name": "WorkerLoftSectionSketch",
+                        "body_name": "WorkerLoftBody",
+                        "attachment_object": "WorkerLoftSectionPlane",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0.5, 0.25, 0], "end": [3.5, 0.25, 0]},
+                                    {"type": "line", "start": [3.5, 0.25, 0], "end": [3.5, 1.75, 0]},
+                                    {"type": "line", "start": [3.5, 1.75, 0], "end": [0.5, 1.75, 0]},
+                                    {"type": "line", "start": [0.5, 1.75, 0], "end": [0.5, 0.25, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_loft_section_create",
+            )
+            if worker_loft_section["attachment"].get("support_object") != "WorkerLoftSectionPlane":
+                raise RuntimeError(f"worker loft section did not attach to datum plane: {worker_loft_section}")
+            worker_additive_loft = worker_result(
+                service.definition_map()["freecad_worker_partdesign_additive_loft"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "body_name": "WorkerLoftBody",
+                        "profile_name": "WorkerLoftProfileSketch",
+                        "sections": ["WorkerLoftSectionSketch"],
+                        "loft_name": "WorkerAdditiveLoft",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_loft",
+            )
+            if worker_additive_loft["loft"]["shape"]["solids"] != 1 or worker_additive_loft["body"]["partdesign"]["tip"] != "WorkerAdditiveLoft":
+                raise RuntimeError(f"worker PartDesign Additive Loft did not produce a body solid: {worker_additive_loft}")
+            closed_loft_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": loft_document_id}
+                ),
+                "worker_loft_document_close",
+            )
+            if closed_loft_doc["document_count"] != 0:
+                raise RuntimeError(f"worker loft document close failed: {closed_loft_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_sketch["session"]["session_id"]
             if not restarted_sketch["session"]["running"]:
-                raise RuntimeError(f"third worker did not start: {restarted_sketch}")
+                raise RuntimeError(f"fourth worker did not start: {restarted_sketch}")
             edit_document = worker_result(
                 service.definition_map()["freecad_worker_document_new"].handler(
                     {

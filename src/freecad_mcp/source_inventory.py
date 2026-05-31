@@ -334,6 +334,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_worker_partdesign_hole",
                 "freecad_worker_partdesign_revolution",
                 "freecad_worker_partdesign_groove",
+                "freecad_worker_partdesign_additive_loft",
                 "freecad_worker_part_revolve",
                 "freecad_worker_part_check_geometry",
                 "freecad_worker_sketch_create",
@@ -451,8 +452,9 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_partdesign_hole",
                 "freecad_partdesign_revolution",
                 "freecad_partdesign_groove",
+                "freecad_partdesign_additive_loft",
             ],
-            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove workflows.",
+            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft workflows.",
         },
         {
             "family": "freecad.sketcher",

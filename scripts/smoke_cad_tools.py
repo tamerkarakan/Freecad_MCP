@@ -1003,6 +1003,92 @@ def main() -> int:
         )
         if partdesign_revolution["revolution"]["shape"]["solids"] != 1 or partdesign_revolution["body"]["partdesign"]["tip"] != "Revolution":
             raise RuntimeError(f"partdesign revolution did not produce a body solid: {partdesign_revolution}")
+        loft_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "LoftProfileSketch",
+                    "body_name": "LoftBody",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [4, 0, 0]},
+                                {"type": "line", "start": [4, 0, 0], "end": [4, 2, 0]},
+                                {"type": "line", "start": [4, 2, 0], "end": [0, 2, 0]},
+                                {"type": "line", "start": [0, 2, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign loft profile sketch",
+        )
+        if not loft_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign loft profile was not attached: {loft_profile}")
+        loft_plane = assert_ok(
+            service.definition_map()["freecad_partdesign_datum_plane_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "LoftBody",
+                    "datum_plane_name": "LoftSectionPlane",
+                    "attachment_plane": "XY",
+                    "attachment_offset": 6,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign loft datum plane",
+        )
+        if loft_plane["datum_plane"]["type_id"] != "PartDesign::Plane":
+            raise RuntimeError(f"partdesign loft datum plane was not created: {loft_plane}")
+        loft_section = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "LoftSectionSketch",
+                    "body_name": "LoftBody",
+                    "attachment_object": "LoftSectionPlane",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0.5, 0.25, 0], "end": [3.5, 0.25, 0]},
+                                {"type": "line", "start": [3.5, 0.25, 0], "end": [3.5, 1.75, 0]},
+                                {"type": "line", "start": [3.5, 1.75, 0], "end": [0.5, 1.75, 0]},
+                                {"type": "line", "start": [0.5, 1.75, 0], "end": [0.5, 0.25, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign loft section sketch",
+        )
+        if loft_section["attachment"].get("support_object") != "LoftSectionPlane":
+            raise RuntimeError(f"partdesign loft section was not attached to datum plane: {loft_section}")
+        additive_loft = assert_ok(
+            service.definition_map()["freecad_partdesign_additive_loft"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "LoftBody",
+                    "profile_name": "LoftProfileSketch",
+                    "sections": ["LoftSectionSketch"],
+                    "loft_name": "AdditiveLoft",
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive loft",
+        )
+        if additive_loft["loft"]["shape"]["solids"] != 1 or additive_loft["body"]["partdesign"]["tip"] != "AdditiveLoft":
+            raise RuntimeError(f"partdesign additive loft did not produce a body solid: {additive_loft}")
         groove_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

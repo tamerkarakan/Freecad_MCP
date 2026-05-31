@@ -59,6 +59,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_hole",
             "freecad_worker_partdesign_revolution",
             "freecad_worker_partdesign_groove",
+            "freecad_worker_partdesign_additive_loft",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -145,8 +146,12 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_hole",
             "freecad_partdesign_revolution",
             "freecad_partdesign_groove",
+            "freecad_partdesign_additive_loft",
         ]:
             self.assertIn(name, tools)
+        loft_props = tools["freecad_partdesign_additive_loft"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("sections", loft_props)
+        self.assertIn("profile_name", loft_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
