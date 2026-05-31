@@ -400,6 +400,160 @@ def main() -> int:
             session_id = restarted_sketch["session"]["session_id"]
             if not restarted_sketch["session"]["running"]:
                 raise RuntimeError(f"second worker did not start: {restarted_sketch}")
+            revolved_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerRevolvedSmoke",
+                    }
+                ),
+                "worker_revolved_document_new",
+            )
+            revolved_document_id = revolved_document["document"]["document_id"]
+            worker_revolution_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "sketch_name": "WorkerRevolutionSketch",
+                        "body_name": "WorkerRevolveBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [9, 0, 0], "end": [10, 0, 0]},
+                                    {"type": "line", "start": [10, 0, 0], "end": [10, 5, 0]},
+                                    {"type": "line", "start": [10, 5, 0], "end": [9, 5, 0]},
+                                    {"type": "line", "start": [9, 5, 0], "end": [9, 0, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_revolution_profile_create",
+            )
+            if not worker_revolution_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker revolution profile did not attach to PartDesign body: {worker_revolution_profile}")
+            worker_revolution = worker_result(
+                service.definition_map()["freecad_worker_partdesign_revolution"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "body_name": "WorkerRevolveBody",
+                        "sketch_name": "WorkerRevolutionSketch",
+                        "attachment_plane": "XY",
+                        "revolution_name": "WorkerRevolution",
+                        "reference_axis": "sketch_v_axis",
+                        "angle": 180,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_revolution",
+            )
+            if worker_revolution["revolution"]["shape"]["solids"] != 1 or worker_revolution["body"]["partdesign"]["tip"] != "WorkerRevolution":
+                raise RuntimeError(f"worker PartDesign Revolution did not produce a body solid: {worker_revolution}")
+            worker_groove_body_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "sketch_name": "WorkerGrooveBodySketch",
+                        "body_name": "WorkerGrooveBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0, 0, 0], "end": [8, 0, 0]},
+                                    {"type": "line", "start": [8, 0, 0], "end": [8, 4, 0]},
+                                    {"type": "line", "start": [8, 4, 0], "end": [0, 4, 0]},
+                                    {"type": "line", "start": [0, 4, 0], "end": [0, 0, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_groove_body_profile_create",
+            )
+            if not worker_groove_body_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker groove body profile did not attach to PartDesign body: {worker_groove_body_profile}")
+            worker_groove_pad = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pad"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "body_name": "WorkerGrooveBody",
+                        "sketch_name": "WorkerGrooveBodySketch",
+                        "attachment_plane": "XY",
+                        "pad_name": "WorkerGroovePad",
+                        "length": 6,
+                    }
+                ),
+                "worker_partdesign_groove_pad",
+            )
+            if worker_groove_pad["pad"]["shape"]["solids"] != 1 or worker_groove_pad["body"]["partdesign"]["tip"] != "WorkerGroovePad":
+                raise RuntimeError(f"worker PartDesign Groove pad did not produce a body solid: {worker_groove_pad}")
+            worker_groove_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "sketch_name": "WorkerGrooveSketch",
+                        "body_name": "WorkerGrooveBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [6.5, 1, 0], "end": [7.5, 1, 0]},
+                                    {"type": "line", "start": [7.5, 1, 0], "end": [7.5, 3, 0]},
+                                    {"type": "line", "start": [7.5, 3, 0], "end": [6.5, 3, 0]},
+                                    {"type": "line", "start": [6.5, 3, 0], "end": [6.5, 1, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_groove_profile_create",
+            )
+            if not worker_groove_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker groove profile did not attach to PartDesign body: {worker_groove_profile}")
+            worker_groove = worker_result(
+                service.definition_map()["freecad_worker_partdesign_groove"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": revolved_document_id,
+                        "body_name": "WorkerGrooveBody",
+                        "sketch_name": "WorkerGrooveSketch",
+                        "attachment_plane": "XY",
+                        "groove_name": "WorkerGroove",
+                        "reference_axis": "sketch_v_axis",
+                        "angle": 180,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_groove",
+            )
+            if worker_groove["groove"]["shape"]["solids"] != 1 or worker_groove["body"]["partdesign"]["tip"] != "WorkerGroove":
+                raise RuntimeError(f"worker PartDesign Groove did not preserve a body solid: {worker_groove}")
+            closed_revolved_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": revolved_document_id}
+                ),
+                "worker_revolved_document_close",
+            )
+            if closed_revolved_doc["document_count"] != 0:
+                raise RuntimeError(f"worker revolved document close failed: {closed_revolved_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_sketch["session"]["session_id"]
+            if not restarted_sketch["session"]["running"]:
+                raise RuntimeError(f"third worker did not start: {restarted_sketch}")
             edit_document = worker_result(
                 service.definition_map()["freecad_worker_document_new"].handler(
                     {

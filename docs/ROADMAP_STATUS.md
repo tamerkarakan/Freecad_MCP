@@ -1,6 +1,6 @@
 # Roadmap Status
 
-Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-28.
+Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-31.
 
 ## Completed
 
@@ -8,7 +8,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-2
 - Phase 2 process-per-call `FreeCADCmd` runtime bridge with typed document/object/Part/Sketcher/import-export/mesh/Assembly tools.
 - Expanded Sketcher typed coverage for geometry, geometry method cataloging, arc actual-geometry reporting, profiles, constraints, transforms, diagnostics, and auto-constraints.
 - Loop-based Sketcher profile builder/validator for pad-ready traced profiles, endpoint drift rejection, curve-preservation contracts, native geometry type/intent reporting, curve fit analysis, Part face validation, and no-cheat topology checks.
-- PartDesign Body/plane attachment and Pad creation for Sketcher profiles that need the same Body + origin plane workflow FreeCAD GUI prompts for.
+- PartDesign Body/plane attachment plus Pad, Pocket, Hole, Revolution, and Groove creation for Sketcher profiles that need the same Body + origin plane workflow FreeCAD GUI prompts for.
 - Persistent `freecadcmd-worker` sessions with document/object/Part/Sketcher/mesh/Assembly operations and crash cleanup.
 - GUI attach bridge tools for active document, active view, selection/preselection, selection set, and view fit.
 - Opt-in live GUI smoke that validates GUI selection records and Assembly connector references.
@@ -25,7 +25,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-2
 ## Recently Completed (was blocked/expansion)
 
 - MCP SDK adapter: `mcp` is now installable, so the stdio server runs on `mcp.server.lowlevel.Server` and the hand-rolled JSON-RPC dispatcher was removed (`mcp>=1.0` dependency).
-- Structured JSON server logging; FreeCAD worker console reading (`freecad_session_console`); `source_search` traversal bounds; image-to-sketch decision guidance in `freecad_curve_fit_analyze`; the `freecad_partdesign_pocket` typed tool.
+- Structured JSON server logging; FreeCAD worker console reading (`freecad_session_console`); `source_search` traversal bounds; image-to-sketch decision guidance in `freecad_curve_fit_analyze`; and the first PartDesign subtractive/revolved typed tools.
 - Product-style tool filtering through `FREECAD_MCP_MODULES`, with `free`, `pro`, `studio`, `team`, and explicit module-list support.
 - Product bundle manifests generated at `docs/PRODUCT_BUNDLES.md` and `docs/product_bundles.json`; worker tools now require the `worker` module, source-code intelligence is the `source` add-on, `developer/dev/local-dev` remain full local maintainer aliases, and unsafe Python exec remains an explicit add-on.
 - Distribution profile skeletons generated at `docs/DISTRIBUTION_PROFILES.md`, `docs/distribution_profiles.json`, and `packaging/profiles/*.mcp.json`; `pyproject.toml` now declares setuptools build metadata, package discovery, runtime script package data, and the `freecad-hybrid-mcp` console entrypoint.

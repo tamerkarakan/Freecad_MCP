@@ -508,6 +508,26 @@ def partdesign_summary(obj):
             if hasattr(obj, prop):
                 value = getattr(obj, prop)
                 summary[prop[0].lower() + prop[1:]] = value if isinstance(value, (str, int, float, bool)) else str(value)
+    elif type_id.startswith("PartDesign::Revolution") or type_id.startswith("PartDesign::Groove"):
+        profile = getattr(obj, "Profile", None)
+        summary["profile"] = getattr(profile, "Name", None)
+        for prop in ("Angle", "Angle2"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = quantity_summary(getattr(obj, prop))
+        for prop in ("Type", "Midplane", "Reversed", "FuseOrder"):
+            if hasattr(obj, prop):
+                value = getattr(obj, prop)
+                summary[prop[0].lower() + prop[1:]] = value if isinstance(value, (str, int, float, bool)) else str(value)
+        axis = getattr(obj, "ReferenceAxis", None)
+        if axis:
+            try:
+                axis_obj, axis_subs = axis
+                summary["referenceAxis"] = {
+                    "object": getattr(axis_obj, "Name", None),
+                    "subnames": list(axis_subs or []),
+                }
+            except Exception:
+                summary["referenceAxis"] = str(axis)
     return summary
 
 
@@ -579,6 +599,79 @@ def apply_hole_parameters(hole, args):
     for key, prop in optional_lengths.items():
         if args.get(key) is not None and hasattr(hole, prop):
             setattr(hole, prop, float(args[key]))
+
+
+def resolve_partdesign_reference_axis(doc, sketch, args):
+    object_name = args.get("reference_axis_object") or args.get("axis_object_name")
+    if object_name:
+        axis_obj = get_object(doc, object_name)
+        subname = args.get("reference_axis_subname") or args.get("axis_subname") or ""
+        return (axis_obj, [str(subname)] if subname else [""])
+    raw = str(args.get("reference_axis") or args.get("axis") or "sketch_v_axis").strip().lower().replace("-", "_").replace(" ", "_")
+    if raw in {"sketch_v_axis", "v_axis", "vertical", "sketch_vertical"}:
+        return (sketch, ["V_Axis"])
+    if raw in {"sketch_h_axis", "h_axis", "horizontal", "sketch_horizontal"}:
+        return (sketch, ["H_Axis"])
+    doc_axes = {
+        "x_axis": "X_Axis",
+        "x": "X_Axis",
+        "global_x": "X_Axis",
+        "y_axis": "Y_Axis",
+        "y": "Y_Axis",
+        "global_y": "Y_Axis",
+        "z_axis": "Z_Axis",
+        "z": "Z_Axis",
+        "global_z": "Z_Axis",
+    }
+    if raw in doc_axes and hasattr(doc, doc_axes[raw]):
+        return (getattr(doc, doc_axes[raw]), [""])
+    raise ValueError("reference_axis must be one of: sketch_v_axis, sketch_h_axis, x_axis, y_axis, z_axis")
+
+
+def revolved_mode_index(value, *, is_groove):
+    mapping = {
+        "angle": 0,
+        "dimension": 0,
+        "up_to_last": 1,
+        "through_all": 1,
+        "to_last": 1,
+        "up_to_first": 2,
+        "to_first": 2,
+        "up_to_face": 3,
+        "to_face": 3,
+        "two_angles": 4,
+    }
+    if value is None:
+        return mapping["angle"]
+    if isinstance(value, (int, float)):
+        return int(value)
+    raw = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if raw == "through_all" and not is_groove:
+        raw = "up_to_last"
+    if raw in mapping:
+        return mapping[raw]
+    raise ValueError("mode must be one of: angle, through_all/up_to_last, up_to_first, up_to_face, two_angles")
+
+
+def apply_revolved_parameters(doc, sketch, feature, args, *, is_groove):
+    if hasattr(feature, "ReferenceAxis"):
+        feature.ReferenceAxis = resolve_partdesign_reference_axis(doc, sketch, args)
+    if hasattr(feature, "Type"):
+        feature.Type = revolved_mode_index(args.get("mode") or args.get("revolution_type") or args.get("groove_type"), is_groove=is_groove)
+    if hasattr(feature, "Angle"):
+        feature.Angle = float(args.get("angle", 360.0))
+    if args.get("angle2") is not None and hasattr(feature, "Angle2"):
+        feature.Angle2 = float(args["angle2"])
+    if args.get("midplane") is not None and hasattr(feature, "Midplane"):
+        feature.Midplane = bool(args["midplane"])
+    if args.get("reversed") is not None and hasattr(feature, "Reversed"):
+        feature.Reversed = bool(args["reversed"])
+    if args.get("up_to_face_object") is not None and hasattr(feature, "UpToFace"):
+        face_obj = get_object(doc, args["up_to_face_object"])
+        subname = args.get("up_to_face_subname") or ""
+        feature.UpToFace = (face_obj, [str(subname)] if subname else [""])
+    if args.get("fuse_order") is not None and hasattr(feature, "FuseOrder"):
+        feature.FuseOrder = enum_index(args.get("fuse_order"), {"base_first": 0, "feature_first": 1}, "base_first", "fuse_order")
 
 
 def find_partdesign_body(doc, name):
@@ -1160,6 +1253,86 @@ def action_partdesign_hole(args):
         "body": object_summary(body),
         "sketch": object_summary(sketch),
         "hole": object_summary(hole),
+        "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_revolution(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, args.get("body_name")) if args.get("body_name") else find_body_for_object(sketch)
+    attachment = None
+    doc.openTransaction("MCP create PartDesign revolution")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, args)
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, args, body=body)
+        revolution = doc.addObject("PartDesign::Revolution", args.get("revolution_name") or args.get("result_name") or "Revolution")
+        body.addObject(revolution)
+        revolution.Profile = sketch
+        apply_revolved_parameters(doc, sketch, revolution, args, is_groove=False)
+        body.Tip = revolution
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_solid", True)):
+        shape = getattr(revolution, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Revolution did not produce a solid")
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "revolution": object_summary(revolution),
+        "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_groove(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, args.get("body_name")) if args.get("body_name") else find_body_for_object(sketch)
+    attachment = None
+    doc.openTransaction("MCP create PartDesign groove")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, args)
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError("PartDesign Groove requires an existing solid feature in the Body (create a Pad first)")
+        body.Tip = solid_tip
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, args, body=body)
+        groove = doc.addObject("PartDesign::Groove", args.get("groove_name") or args.get("result_name") or "Groove")
+        body.addObject(groove)
+        groove.Profile = sketch
+        apply_revolved_parameters(doc, sketch, groove, args, is_groove=True)
+        body.Tip = groove
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_solid", True)):
+        shape = getattr(groove, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Groove did not produce a solid")
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "groove": object_summary(groove),
         "attachment": attachment,
         "document": document_summary(doc),
     }
@@ -3294,6 +3467,8 @@ DISPATCH = {
     "partdesign_pad": action_partdesign_pad,
     "partdesign_pocket": action_partdesign_pocket,
     "partdesign_hole": action_partdesign_hole,
+    "partdesign_revolution": action_partdesign_revolution,
+    "partdesign_groove": action_partdesign_groove,
     "part_revolve": action_part_revolve,
     "part_fillet": action_part_fillet,
     "part_chamfer": action_part_chamfer,

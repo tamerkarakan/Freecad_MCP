@@ -17,7 +17,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
 | `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
-| `freecad_worker_partdesign_body_create/pad/pocket/hole` | Create Body-based additive/subtractive PartDesign features in persistent worker documents. | PartDesign App API |
+| `freecad_worker_partdesign_body_create/pad/pocket/hole/revolution/groove` | Create Body-based additive/subtractive PartDesign features in persistent worker documents. | PartDesign App API |
 | `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
@@ -51,6 +51,8 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_pad` | Create a PartDesign Pad from a Sketcher profile inside a Body, attaching to `XY`/`XZ`/`YZ` when needed. | PartDesign App API |
 | `freecad_partdesign_pocket` | Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. | PartDesign App API |
 | `freecad_partdesign_hole` | Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid. | PartDesign App API |
+| `freecad_partdesign_revolution` | Create an additive PartDesign Revolution from a Sketcher profile around a sketch or document axis. | PartDesign App API |
+| `freecad_partdesign_groove` | Create a subtractive PartDesign Groove from a Sketcher profile around a sketch or document axis. | PartDesign App API |
 | `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |

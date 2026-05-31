@@ -1191,6 +1191,238 @@ Create a plain PartDesign Hole from a worker Sketcher circle profile inside an e
 }
 ```
 
+## `freecad_worker_partdesign_revolution`
+
+Create an additive PartDesign Revolution from a worker Sketcher profile around a sketch or document axis.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "revolution_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "reference_axis": {
+      "type": "string",
+      "enum": [
+        "sketch_v_axis",
+        "sketch_h_axis",
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "reference_axis_object": {
+      "type": "string"
+    },
+    "reference_axis_subname": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "angle",
+        "through_all",
+        "up_to_last",
+        "up_to_first",
+        "up_to_face",
+        "two_angles"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "angle2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "up_to_face_object": {
+      "type": "string"
+    },
+    "up_to_face_subname": {
+      "type": "string"
+    },
+    "fuse_order": {
+      "type": "string",
+      "enum": [
+        "base_first",
+        "feature_first"
+      ]
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_groove`
+
+Create a subtractive PartDesign Groove from a worker Sketcher profile around a sketch or document axis.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "groove_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "reference_axis": {
+      "type": "string",
+      "enum": [
+        "sketch_v_axis",
+        "sketch_h_axis",
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "reference_axis_object": {
+      "type": "string"
+    },
+    "reference_axis_subname": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "angle",
+        "through_all",
+        "up_to_first",
+        "up_to_face",
+        "two_angles"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "angle2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "up_to_face_object": {
+      "type": "string"
+    },
+    "up_to_face_subname": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.
@@ -3977,6 +4209,252 @@ Create a plain PartDesign Hole from a Sketcher circle profile inside an existing
     "document_path",
     "sketch_name",
     "diameter"
+  ]
+}
+```
+
+## `freecad_partdesign_revolution`
+
+Create an additive PartDesign Revolution from a Sketcher profile around a sketch or document axis.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "revolution_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "reference_axis": {
+      "type": "string",
+      "enum": [
+        "sketch_v_axis",
+        "sketch_h_axis",
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "reference_axis_object": {
+      "type": "string"
+    },
+    "reference_axis_subname": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "angle",
+        "through_all",
+        "up_to_last",
+        "up_to_first",
+        "up_to_face",
+        "two_angles"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "angle2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "up_to_face_object": {
+      "type": "string"
+    },
+    "up_to_face_subname": {
+      "type": "string"
+    },
+    "fuse_order": {
+      "type": "string",
+      "enum": [
+        "base_first",
+        "feature_first"
+      ]
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
+  ]
+}
+```
+
+## `freecad_partdesign_groove`
+
+Create a subtractive PartDesign Groove from a Sketcher profile around a sketch or document axis. The Body must already contain a solid feature such as a Pad.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "groove_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "reference_axis": {
+      "type": "string",
+      "enum": [
+        "sketch_v_axis",
+        "sketch_h_axis",
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "reference_axis_object": {
+      "type": "string"
+    },
+    "reference_axis_subname": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "angle",
+        "through_all",
+        "up_to_first",
+        "up_to_face",
+        "two_angles"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "angle2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "up_to_face_object": {
+      "type": "string"
+    },
+    "up_to_face_subname": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
   ]
 }
 ```

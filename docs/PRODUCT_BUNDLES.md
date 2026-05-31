@@ -5,9 +5,9 @@ Generated sellable bundle manifest for the current MCP tool surface.
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
 | FreeCAD MCP Free | `free` | base | 23 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part operations. |
-| FreeCAD MCP Pro | `pro` | paid | 68 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 129 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 132 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Pro | `pro` | paid | 70 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 133 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 136 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -54,7 +54,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `68`
+- Tool count: `70`
 - Upgrade path: `studio`
 
 Tools:
@@ -83,6 +83,8 @@ Tools:
 - `freecad_partdesign_pad`
 - `freecad_partdesign_pocket`
 - `freecad_partdesign_hole`
+- `freecad_partdesign_revolution`
+- `freecad_partdesign_groove`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`
@@ -134,7 +136,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `129`
+- Tool count: `133`
 - Upgrade path: `team`
 
 Tools:
@@ -164,6 +166,8 @@ Tools:
 - `freecad_worker_partdesign_pad`
 - `freecad_worker_partdesign_pocket`
 - `freecad_worker_partdesign_hole`
+- `freecad_worker_partdesign_revolution`
+- `freecad_worker_partdesign_groove`
 - `freecad_worker_part_revolve`
 - `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
@@ -213,6 +217,8 @@ Tools:
 - `freecad_partdesign_pad`
 - `freecad_partdesign_pocket`
 - `freecad_partdesign_hole`
+- `freecad_partdesign_revolution`
+- `freecad_partdesign_groove`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`
@@ -275,7 +281,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `132`
+- Tool count: `136`
 
 Tools:
 
@@ -307,6 +313,8 @@ Tools:
 - `freecad_worker_partdesign_pad`
 - `freecad_worker_partdesign_pocket`
 - `freecad_worker_partdesign_hole`
+- `freecad_worker_partdesign_revolution`
+- `freecad_worker_partdesign_groove`
 - `freecad_worker_part_revolve`
 - `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
@@ -356,6 +364,8 @@ Tools:
 - `freecad_partdesign_pad`
 - `freecad_partdesign_pocket`
 - `freecad_partdesign_hole`
+- `freecad_partdesign_revolution`
+- `freecad_partdesign_groove`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`

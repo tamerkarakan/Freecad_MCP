@@ -913,6 +913,96 @@ def main() -> int:
         )
         if partdesign_hole["hole"]["shape"]["solids"] != 1 or partdesign_hole["body"]["partdesign"]["tip"] != "Hole":
             raise RuntimeError(f"partdesign hole did not preserve a body solid: {partdesign_hole}")
+        revolution_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "RevolutionSketch",
+                    "body_name": "RevolveBody",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [9, 0, 0], "end": [10, 0, 0]},
+                                {"type": "line", "start": [10, 0, 0], "end": [10, 5, 0]},
+                                {"type": "line", "start": [10, 5, 0], "end": [9, 5, 0]},
+                                {"type": "line", "start": [9, 5, 0], "end": [9, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign revolution sketch profile",
+        )
+        if not revolution_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign revolution profile was not attached: {revolution_profile}")
+        partdesign_revolution = assert_ok(
+            service.definition_map()["freecad_partdesign_revolution"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "RevolveBody",
+                    "sketch_name": "RevolutionSketch",
+                    "attachment_plane": "XY",
+                    "revolution_name": "Revolution",
+                    "reference_axis": "sketch_v_axis",
+                    "angle": 180,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign revolution",
+        )
+        if partdesign_revolution["revolution"]["shape"]["solids"] != 1 or partdesign_revolution["body"]["partdesign"]["tip"] != "Revolution":
+            raise RuntimeError(f"partdesign revolution did not produce a body solid: {partdesign_revolution}")
+        groove_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "GrooveSketch",
+                    "body_name": "Body",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [6.5, 1, 0], "end": [7.5, 1, 0]},
+                                {"type": "line", "start": [7.5, 1, 0], "end": [7.5, 3, 0]},
+                                {"type": "line", "start": [7.5, 3, 0], "end": [6.5, 3, 0]},
+                                {"type": "line", "start": [6.5, 3, 0], "end": [6.5, 1, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign groove sketch profile",
+        )
+        if not groove_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign groove profile was not attached: {groove_profile}")
+        partdesign_groove = assert_ok(
+            service.definition_map()["freecad_partdesign_groove"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "Body",
+                    "sketch_name": "GrooveSketch",
+                    "attachment_plane": "XY",
+                    "groove_name": "Groove",
+                    "reference_axis": "sketch_v_axis",
+                    "angle": 180,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign groove",
+        )
+        if partdesign_groove["groove"]["shape"]["solids"] != 1 or partdesign_groove["body"]["partdesign"]["tip"] != "Groove":
+            raise RuntimeError(f"partdesign groove did not preserve a body solid: {partdesign_groove}")
         drift_rejected = assert_tool_failed(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

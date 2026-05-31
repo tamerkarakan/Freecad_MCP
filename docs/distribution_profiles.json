@@ -117,7 +117,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 68,
+      "tool_count": 70,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -143,6 +143,8 @@
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
+        "freecad_partdesign_revolution",
+        "freecad_partdesign_groove",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -234,7 +236,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 129,
+      "tool_count": 133,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -261,6 +263,8 @@
         "freecad_worker_partdesign_pad",
         "freecad_worker_partdesign_pocket",
         "freecad_worker_partdesign_hole",
+        "freecad_worker_partdesign_revolution",
+        "freecad_worker_partdesign_groove",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -310,6 +314,8 @@
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
+        "freecad_partdesign_revolution",
+        "freecad_partdesign_groove",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -414,7 +420,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 132,
+      "tool_count": 136,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -444,6 +450,8 @@
         "freecad_worker_partdesign_pad",
         "freecad_worker_partdesign_pocket",
         "freecad_worker_partdesign_hole",
+        "freecad_worker_partdesign_revolution",
+        "freecad_worker_partdesign_groove",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -493,6 +501,8 @@
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
+        "freecad_partdesign_revolution",
+        "freecad_partdesign_groove",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
