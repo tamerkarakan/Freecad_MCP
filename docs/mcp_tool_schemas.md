@@ -1600,6 +1600,98 @@ Create an additive PartDesign Loft from a worker profile sketch and one or more 
 }
 ```
 
+## `freecad_worker_partdesign_subtractive_loft`
+
+Create a subtractive PartDesign Loft that removes material from a worker Body solid using a profile sketch and one or more section sketches.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "profile_name": {
+      "type": "string"
+    },
+    "profile_sketch": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "profile_subname": {
+      "type": "string"
+    },
+    "profile_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "object"
+        ]
+      }
+    },
+    "section_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "loft_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "ruled": {
+      "type": "boolean"
+    },
+    "closed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.
@@ -4767,6 +4859,105 @@ Create a subtractive PartDesign Groove from a Sketcher profile around a sketch o
 ## `freecad_partdesign_additive_loft`
 
 Create an additive PartDesign Loft from a profile sketch and one or more section sketches inside a Body.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "profile_name": {
+      "type": "string"
+    },
+    "profile_sketch": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "profile_subname": {
+      "type": "string"
+    },
+    "profile_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": [
+          "string",
+          "object"
+        ]
+      }
+    },
+    "section_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "loft_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "ruled": {
+      "type": "boolean"
+    },
+    "closed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_subtractive_loft`
+
+Create a subtractive PartDesign Loft that removes material from an existing Body solid using a profile sketch and one or more section sketches.
 
 ```json
 {

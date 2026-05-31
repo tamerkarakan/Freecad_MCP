@@ -696,14 +696,168 @@ def main() -> int:
             )
             if worker_additive_loft["loft"]["shape"]["solids"] != 1 or worker_additive_loft["body"]["partdesign"]["tip"] != "WorkerAdditiveLoft":
                 raise RuntimeError(f"worker PartDesign Additive Loft did not produce a body solid: {worker_additive_loft}")
+            closed_additive_loft_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": loft_document_id}
+                ),
+                "worker_additive_loft_document_close",
+            )
+            if closed_additive_loft_doc["document_count"] != 0:
+                raise RuntimeError(f"worker additive loft document close failed: {closed_additive_loft_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted_subtractive_loft = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_subtractive_loft["session"]["session_id"]
+            if not restarted_subtractive_loft["session"]["running"]:
+                raise RuntimeError(f"subtractive loft worker did not start: {restarted_subtractive_loft}")
+            subtractive_loft_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerSubtractiveLoftSmoke",
+                    }
+                ),
+                "worker_subtractive_loft_document_new",
+            )
+            loft_document_id = subtractive_loft_document["document"]["document_id"]
+            worker_subtractive_loft_base_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "sketch_name": "WorkerSubtractiveLoftBaseSketch",
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0, 0, 0], "end": [8, 0, 0]},
+                                    {"type": "line", "start": [8, 0, 0], "end": [8, 4, 0]},
+                                    {"type": "line", "start": [8, 4, 0], "end": [0, 4, 0]},
+                                    {"type": "line", "start": [0, 4, 0], "end": [0, 0, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft_base_profile",
+            )
+            if not worker_subtractive_loft_base_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker subtractive loft base profile did not attach to PartDesign body: {worker_subtractive_loft_base_profile}")
+            worker_subtractive_loft_pad = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pad"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "sketch_name": "WorkerSubtractiveLoftBaseSketch",
+                        "attachment_plane": "XY",
+                        "pad_name": "WorkerSubtractiveLoftPad",
+                        "length": 6,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft_pad",
+            )
+            if worker_subtractive_loft_pad["pad"]["shape"]["solids"] != 1 or worker_subtractive_loft_pad["body"]["partdesign"]["tip"] != "WorkerSubtractiveLoftPad":
+                raise RuntimeError(f"worker subtractive loft base pad did not produce a body solid: {worker_subtractive_loft_pad}")
+            worker_subtractive_loft_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "sketch_name": "WorkerSubtractiveLoftProfileSketch",
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [2, 1, 0], "end": [6, 1, 0]},
+                                    {"type": "line", "start": [6, 1, 0], "end": [6, 3, 0]},
+                                    {"type": "line", "start": [6, 3, 0], "end": [2, 3, 0]},
+                                    {"type": "line", "start": [2, 3, 0], "end": [2, 1, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft_profile",
+            )
+            if not worker_subtractive_loft_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker subtractive loft profile did not attach to PartDesign body: {worker_subtractive_loft_profile}")
+            worker_subtractive_loft_plane = worker_result(
+                service.definition_map()["freecad_worker_partdesign_datum_plane_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "datum_plane_name": "WorkerSubtractiveLoftSectionPlane",
+                        "attachment_plane": "XY",
+                        "attachment_offset": 5,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft_datum_plane",
+            )
+            if worker_subtractive_loft_plane["datum_plane"]["type_id"] != "PartDesign::Plane":
+                raise RuntimeError(f"worker subtractive loft datum plane was not created: {worker_subtractive_loft_plane}")
+            worker_subtractive_loft_section = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "sketch_name": "WorkerSubtractiveLoftSectionSketch",
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "attachment_object": "WorkerSubtractiveLoftSectionPlane",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [3, 1.25, 0], "end": [5, 1.25, 0]},
+                                    {"type": "line", "start": [5, 1.25, 0], "end": [5, 2.75, 0]},
+                                    {"type": "line", "start": [5, 2.75, 0], "end": [3, 2.75, 0]},
+                                    {"type": "line", "start": [3, 2.75, 0], "end": [3, 1.25, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft_section",
+            )
+            if worker_subtractive_loft_section["attachment"].get("support_object") != "WorkerSubtractiveLoftSectionPlane":
+                raise RuntimeError(f"worker subtractive loft section did not attach to datum plane: {worker_subtractive_loft_section}")
+            worker_subtractive_loft = worker_result(
+                service.definition_map()["freecad_worker_partdesign_subtractive_loft"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": loft_document_id,
+                        "body_name": "WorkerSubtractiveLoftBody",
+                        "profile_name": "WorkerSubtractiveLoftProfileSketch",
+                        "sections": ["WorkerSubtractiveLoftSectionSketch"],
+                        "loft_name": "WorkerSubtractiveLoft",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_loft",
+            )
+            if worker_subtractive_loft["loft"]["shape"]["solids"] != 1 or worker_subtractive_loft["body"]["partdesign"]["tip"] != "WorkerSubtractiveLoft":
+                raise RuntimeError(f"worker PartDesign Subtractive Loft did not preserve a body solid: {worker_subtractive_loft}")
             closed_loft_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": loft_document_id}
                 ),
-                "worker_loft_document_close",
+                "worker_subtractive_loft_document_close",
             )
             if closed_loft_doc["document_count"] != 0:
-                raise RuntimeError(f"worker loft document close failed: {closed_loft_doc}")
+                raise RuntimeError(f"worker subtractive loft document close failed: {closed_loft_doc}")
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
             session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})

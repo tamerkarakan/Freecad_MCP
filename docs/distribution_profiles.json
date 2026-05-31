@@ -117,7 +117,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 72,
+      "tool_count": 73,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -147,6 +147,7 @@
         "freecad_partdesign_revolution",
         "freecad_partdesign_groove",
         "freecad_partdesign_additive_loft",
+        "freecad_partdesign_subtractive_loft",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -238,7 +239,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 137,
+      "tool_count": 139,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -269,6 +270,7 @@
         "freecad_worker_partdesign_revolution",
         "freecad_worker_partdesign_groove",
         "freecad_worker_partdesign_additive_loft",
+        "freecad_worker_partdesign_subtractive_loft",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -322,6 +324,7 @@
         "freecad_partdesign_revolution",
         "freecad_partdesign_groove",
         "freecad_partdesign_additive_loft",
+        "freecad_partdesign_subtractive_loft",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -426,7 +429,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 140,
+      "tool_count": 142,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -460,6 +463,7 @@
         "freecad_worker_partdesign_revolution",
         "freecad_worker_partdesign_groove",
         "freecad_worker_partdesign_additive_loft",
+        "freecad_worker_partdesign_subtractive_loft",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -513,6 +517,7 @@
         "freecad_partdesign_revolution",
         "freecad_partdesign_groove",
         "freecad_partdesign_additive_loft",
+        "freecad_partdesign_subtractive_loft",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",

@@ -1528,20 +1528,26 @@ def action_partdesign_groove(params):
     }
 
 
-def action_partdesign_additive_loft(params):
-    doc = get_doc(params)
+def action_partdesign_loft(doc, params, *, feature_type, default_name, transaction_name, require_base_solid=False):
     profile_link = resolve_partdesign_profile_link(doc, params)
     section_links = resolve_partdesign_section_links(doc, params)
     profile_obj = link_target_object(profile_link)
     body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(profile_obj)
-    doc.openTransaction("MCP worker create PartDesign additive loft")
+    doc.openTransaction(transaction_name)
     try:
         if body is None:
+            if require_base_solid:
+                raise ValueError("PartDesign Subtractive Loft requires an existing Body solid")
             body, _ = get_or_create_partdesign_body(doc, params)
         ensure_partdesign_body_member(body, profile_obj)
         for section_link in section_links:
             ensure_partdesign_body_member(body, link_target_object(section_link))
-        loft = doc.addObject("PartDesign::AdditiveLoft", params.get("loft_name") or params.get("result_name") or "AdditiveLoft")
+        if require_base_solid:
+            solid_tip = find_body_solid_tip(body)
+            if solid_tip is None:
+                raise ValueError("PartDesign Subtractive Loft requires an existing Body solid")
+            body.Tip = solid_tip
+        loft = doc.addObject(feature_type, params.get("loft_name") or params.get("result_name") or default_name)
         body.addObject(loft)
         loft.Profile = profile_link
         loft.Sections = section_links
@@ -1559,7 +1565,7 @@ def action_partdesign_additive_loft(params):
         shape = getattr(loft, "Shape", None)
         solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
         if solid_count < 1:
-            raise ValueError("PartDesign Additive Loft did not produce a solid")
+            raise ValueError(f"{default_name} did not produce a solid")
     saved = save_doc(doc, params)
     return {
         "saved_path": saved,
@@ -1569,6 +1575,29 @@ def action_partdesign_additive_loft(params):
         "loft": object_summary(loft),
         "document": document_summary(doc),
     }
+
+
+def action_partdesign_additive_loft(params):
+    doc = get_doc(params)
+    return action_partdesign_loft(
+        doc,
+        params,
+        feature_type="PartDesign::AdditiveLoft",
+        default_name="AdditiveLoft",
+        transaction_name="MCP worker create PartDesign additive loft",
+    )
+
+
+def action_partdesign_subtractive_loft(params):
+    doc = get_doc(params)
+    return action_partdesign_loft(
+        doc,
+        params,
+        feature_type="PartDesign::SubtractiveLoft",
+        default_name="SubtractiveLoft",
+        transaction_name="MCP worker create PartDesign subtractive loft",
+        require_base_solid=True,
+    )
 
 
 def action_part_revolve(params):
@@ -3089,6 +3118,7 @@ ACTIONS = {
     "partdesign_revolution": action_partdesign_revolution,
     "partdesign_groove": action_partdesign_groove,
     "partdesign_additive_loft": action_partdesign_additive_loft,
+    "partdesign_subtractive_loft": action_partdesign_subtractive_loft,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,

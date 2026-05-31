@@ -1089,6 +1089,136 @@ def main() -> int:
         )
         if additive_loft["loft"]["shape"]["solids"] != 1 or additive_loft["body"]["partdesign"]["tip"] != "AdditiveLoft":
             raise RuntimeError(f"partdesign additive loft did not produce a body solid: {additive_loft}")
+        subtractive_loft_base_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "SubtractiveLoftBaseSketch",
+                    "body_name": "SubtractiveLoftBody",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [8, 0, 0]},
+                                {"type": "line", "start": [8, 0, 0], "end": [8, 4, 0]},
+                                {"type": "line", "start": [8, 4, 0], "end": [0, 4, 0]},
+                                {"type": "line", "start": [0, 4, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft base profile",
+        )
+        if not subtractive_loft_base_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign subtractive loft base profile was not attached: {subtractive_loft_base_profile}")
+        subtractive_loft_pad = assert_ok(
+            service.definition_map()["freecad_partdesign_pad"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "SubtractiveLoftBody",
+                    "sketch_name": "SubtractiveLoftBaseSketch",
+                    "attachment_plane": "XY",
+                    "pad_name": "SubtractiveLoftPad",
+                    "length": 6,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft base pad",
+        )
+        if subtractive_loft_pad["pad"]["shape"]["solids"] != 1 or subtractive_loft_pad["body"]["partdesign"]["tip"] != "SubtractiveLoftPad":
+            raise RuntimeError(f"partdesign subtractive loft base pad did not produce a body solid: {subtractive_loft_pad}")
+        subtractive_loft_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "SubtractiveLoftProfileSketch",
+                    "body_name": "SubtractiveLoftBody",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [2, 1, 0], "end": [6, 1, 0]},
+                                {"type": "line", "start": [6, 1, 0], "end": [6, 3, 0]},
+                                {"type": "line", "start": [6, 3, 0], "end": [2, 3, 0]},
+                                {"type": "line", "start": [2, 3, 0], "end": [2, 1, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft profile sketch",
+        )
+        if not subtractive_loft_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign subtractive loft profile was not attached: {subtractive_loft_profile}")
+        subtractive_loft_plane = assert_ok(
+            service.definition_map()["freecad_partdesign_datum_plane_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "SubtractiveLoftBody",
+                    "datum_plane_name": "SubtractiveLoftSectionPlane",
+                    "attachment_plane": "XY",
+                    "attachment_offset": 5,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft datum plane",
+        )
+        if subtractive_loft_plane["datum_plane"]["type_id"] != "PartDesign::Plane":
+            raise RuntimeError(f"partdesign subtractive loft datum plane was not created: {subtractive_loft_plane}")
+        subtractive_loft_section = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "SubtractiveLoftSectionSketch",
+                    "body_name": "SubtractiveLoftBody",
+                    "attachment_object": "SubtractiveLoftSectionPlane",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [3, 1.25, 0], "end": [5, 1.25, 0]},
+                                {"type": "line", "start": [5, 1.25, 0], "end": [5, 2.75, 0]},
+                                {"type": "line", "start": [5, 2.75, 0], "end": [3, 2.75, 0]},
+                                {"type": "line", "start": [3, 2.75, 0], "end": [3, 1.25, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft section sketch",
+        )
+        if subtractive_loft_section["attachment"].get("support_object") != "SubtractiveLoftSectionPlane":
+            raise RuntimeError(f"partdesign subtractive loft section was not attached to datum plane: {subtractive_loft_section}")
+        subtractive_loft = assert_ok(
+            service.definition_map()["freecad_partdesign_subtractive_loft"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "SubtractiveLoftBody",
+                    "profile_name": "SubtractiveLoftProfileSketch",
+                    "sections": ["SubtractiveLoftSectionSketch"],
+                    "loft_name": "SubtractiveLoft",
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive loft",
+        )
+        if subtractive_loft["loft"]["shape"]["solids"] != 1 or subtractive_loft["body"]["partdesign"]["tip"] != "SubtractiveLoft":
+            raise RuntimeError(f"partdesign subtractive loft did not preserve a body solid: {subtractive_loft}")
         groove_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

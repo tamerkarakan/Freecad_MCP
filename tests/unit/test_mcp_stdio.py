@@ -52,6 +52,7 @@ class BuildServerTests(unittest.TestCase):
             "freecad_partdesign_revolution",
             "freecad_partdesign_groove",
             "freecad_partdesign_additive_loft",
+            "freecad_partdesign_subtractive_loft",
         ):
             self.assertIn(name, tools)
 
@@ -84,6 +85,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_partdesign_revolution", tools)
         self.assertIn("freecad_partdesign_groove", tools)
         self.assertIn("freecad_partdesign_additive_loft", tools)
+        self.assertIn("freecad_partdesign_subtractive_loft", tools)
         self.assertIn("freecad_object_rename_label", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
         self.assertNotIn("freecad_cam_path_create", tools)
