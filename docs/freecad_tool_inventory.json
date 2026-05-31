@@ -312,9 +312,12 @@
         "freecad_gui_view_fit",
         "freecad_gui_primitive_create",
         "freecad_gui_sketch_state",
-        "freecad_gui_partdesign_state"
+        "freecad_gui_sketch_enter",
+        "freecad_gui_sketch_leave",
+        "freecad_gui_partdesign_state",
+        "freecad_gui_body_activate"
       ],
-      "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, live Sketcher edit state, and PartDesign Body/Tip state."
+      "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, live Sketcher edit mode, and PartDesign Body/Tip activation state."
     },
     {
       "family": "freecad.document",

@@ -117,7 +117,10 @@ def main() -> int:
     assert "freecad_gui_attach" in tool_names
     assert "freecad_gui_selection_get" in tool_names
     assert "freecad_gui_sketch_state" in tool_names
+    assert "freecad_gui_sketch_enter" in tool_names
+    assert "freecad_gui_sketch_leave" in tool_names
     assert "freecad_gui_partdesign_state" in tool_names
+    assert "freecad_gui_body_activate" in tool_names
     assert "freecad_techdraw_page_create" in tool_names
     assert "freecad_techdraw_page_export" in tool_names
     assert "freecad_cam_path_create" in tool_names

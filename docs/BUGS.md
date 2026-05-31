@@ -25,6 +25,7 @@
 
 ## Closed
 
+- GUI bridge object summaries previously assumed every object `Shape` could expose topology and volume; empty/invalid Sketch shapes in live FreeCAD GUI can raise `shape is invalid`, so GUI shape summaries now guard invalid/null shapes and return bounded counts instead of failing state reads.
 - FreeCAD 1.1.1 can return a present-but-null `Shape` for shell-only Sketcher `Part::Extrusion` features; runtime shape summaries now report structured `is_null=true` metadata with zero counts instead of returning `None` and breaking downstream smoke/tool consumers.
 - Persistent worker mode previously covered only session/document/object basics, document export, and several Part operations; it now exposes worker Sketcher, mesh, and Assembly typed operations with real FreeCAD smoke coverage.
 - Persistent worker crashed/stopped sessions could remain in the manager after a request/status failure; manager cleanup now drops them and unit tests inject a fake worker crash.

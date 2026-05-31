@@ -179,22 +179,50 @@ def selection_record(sel: Any) -> dict[str, Any]:
     }
 
 
+def safe_shape_len(shape: Any, attr: str) -> int:
+    try:
+        return len(getattr(shape, attr, []) or [])
+    except Exception:
+        return 0
+
+
+def gui_shape_summary(shape: Any) -> dict[str, Any] | None:
+    if shape is None:
+        return None
+    try:
+        is_null = bool(shape.isNull())
+    except Exception:
+        is_null = False
+    valid = None
+    try:
+        valid = bool(shape.isValid())
+    except Exception:
+        valid = False if is_null else None
+    volume = None
+    if not is_null:
+        try:
+            volume = float(getattr(shape, "Volume", 0.0) or 0.0)
+        except Exception:
+            volume = None
+    return {
+        "valid": valid,
+        "is_null": is_null,
+        "solids": safe_shape_len(shape, "Solids"),
+        "shells": safe_shape_len(shape, "Shells"),
+        "faces": safe_shape_len(shape, "Faces"),
+        "edges": safe_shape_len(shape, "Edges"),
+        "vertices": safe_shape_len(shape, "Vertexes"),
+        "volume": volume,
+    }
+
+
 def object_summary(obj: Any) -> dict[str, Any]:
     shape = getattr(obj, "Shape", None)
-    shape_summary = None
-    if shape is not None:
-        shape_summary = {
-            "solids": len(getattr(shape, "Solids", []) or []),
-            "faces": len(getattr(shape, "Faces", []) or []),
-            "edges": len(getattr(shape, "Edges", []) or []),
-            "vertices": len(getattr(shape, "Vertexes", []) or []),
-            "volume": float(getattr(shape, "Volume", 0.0) or 0.0),
-        }
     return {
         "name": getattr(obj, "Name", None),
         "label": getattr(obj, "Label", None),
         "type_id": getattr(obj, "TypeId", None),
-        "shape": shape_summary,
+        "shape": gui_shape_summary(shape),
     }
 
 
@@ -458,6 +486,110 @@ def infer_body_for_object(bodies: list[Any], obj: Any) -> Any:
     return None
 
 
+def resolve_sketch(doc: Any, params: dict[str, Any], edit: dict[str, Any] | None = None, selected: list[Any] | None = None) -> Any:
+    if doc is None:
+        return None
+    sketch_name = params.get("sketch_name")
+    if sketch_name:
+        sketch = doc.getObject(str(sketch_name))
+        if sketch is None or not is_sketch_object(sketch):
+            raise ValueError("sketch not found: " + str(sketch_name))
+        return sketch
+    if edit and edit.get("object"):
+        edit_name = edit["object"].get("name")
+        edit_obj = doc.getObject(str(edit_name)) if edit_name else None
+        if is_sketch_object(edit_obj):
+            return edit_obj
+    for sel in selected or []:
+        obj = getattr(sel, "Object", None)
+        if is_sketch_object(obj):
+            return obj
+    active = getattr(doc, "ActiveObject", None)
+    if is_sketch_object(active):
+        return active
+    sketches = [obj for obj in doc.Objects if is_sketch_object(obj)]
+    if len(sketches) == 1:
+        return sketches[0]
+    return None
+
+
+def resolve_body(
+    doc: Any,
+    params: dict[str, Any],
+    edit: dict[str, Any] | None = None,
+    selected: list[Any] | None = None,
+    bodies: list[Any] | None = None,
+) -> Any:
+    if doc is None:
+        return None
+    body_candidates = bodies if bodies is not None else [obj for obj in doc.Objects if is_partdesign_body(obj)]
+    body_name = params.get("body_name")
+    if body_name:
+        body = doc.getObject(str(body_name))
+        if body is None or not is_partdesign_body(body):
+            raise ValueError("body not found: " + str(body_name))
+        return body
+    if edit and edit.get("object"):
+        edit_name = edit["object"].get("name")
+        edit_obj = doc.getObject(str(edit_name)) if edit_name else None
+        body = infer_body_for_object(body_candidates, edit_obj)
+        if body is not None:
+            return body
+    body = infer_body_for_object(body_candidates, getattr(doc, "ActiveObject", None))
+    if body is not None:
+        return body
+    for sel in selected or []:
+        body = infer_body_for_object(body_candidates, getattr(sel, "Object", None))
+        if body is not None:
+            return body
+    if len(body_candidates) == 1:
+        return body_candidates[0]
+    return None
+
+
+def activate_workbench(name: str, requested: bool = True) -> dict[str, Any]:
+    result: dict[str, Any] = {"requested": bool(requested), "name": name, "activated": False}
+    if not requested:
+        return result
+    try:
+        import FreeCADGui as Gui
+
+        Gui.activateWorkbench(name)
+        result["activated"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def select_object(doc: Any, obj: Any, clear: bool = True) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    if doc is None or obj is None:
+        return {"selected": False}
+    if clear:
+        Gui.Selection.clearSelection()
+    Gui.Selection.addSelection(doc.Name, obj.Name, "")
+    return {"selected": True, "document_name": doc.Name, "object_name": obj.Name}
+
+
+def fit_view_if_requested(gui_doc: Any, requested: bool, selection_only: bool = False) -> dict[str, Any]:
+    result: dict[str, Any] = {"requested": bool(requested), "fit": None}
+    if not requested:
+        return result
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+    view = gui_doc.activeView()
+    if view is None:
+        raise ValueError("no active GUI view")
+    if selection_only and hasattr(view, "fitSelection"):
+        view.fitSelection()
+        result["fit"] = "selection"
+    else:
+        view.fitAll()
+        result["fit"] = "all"
+    return result
+
+
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
@@ -602,27 +734,7 @@ def rpc_sketch_state(params: dict[str, Any]) -> dict[str, Any]:
     edit = active_edit_state(doc)
     sketches = [obj for obj in doc.Objects if is_sketch_object(obj)]
     selected = Gui.Selection.getSelectionEx(doc.Name, 0)
-
-    sketch = None
-    sketch_name = params.get("sketch_name")
-    if sketch_name:
-        sketch = doc.getObject(str(sketch_name))
-        if sketch is None or not is_sketch_object(sketch):
-            raise ValueError("sketch not found: " + str(sketch_name))
-    if sketch is None and edit.get("object"):
-        edit_obj = doc.getObject(str(edit["object"].get("name")))
-        if is_sketch_object(edit_obj):
-            sketch = edit_obj
-    if sketch is None:
-        for sel in selected:
-            obj = getattr(sel, "Object", None)
-            if is_sketch_object(obj):
-                sketch = obj
-                break
-    if sketch is None and is_sketch_object(getattr(doc, "ActiveObject", None)):
-        sketch = doc.ActiveObject
-    if sketch is None and len(sketches) == 1:
-        sketch = sketches[0]
+    sketch = resolve_sketch(doc, params, edit, selected)
 
     return {
         "document": active_document_summary(),
@@ -630,6 +742,98 @@ def rpc_sketch_state(params: dict[str, Any]) -> dict[str, Any]:
         "active_sketch": sketch_summary(sketch, params) if sketch is not None else None,
         "sketches": [object_summary(item) for item in sketches],
         "selection": [selection_record(sel) for sel in selected],
+    }
+
+
+def rpc_sketch_enter(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        raise ValueError("no active document")
+    gui_doc = gui_document_for(doc)
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+
+    selected = Gui.Selection.getSelectionEx(doc.Name, 0)
+    before = active_edit_state(doc)
+    sketch = resolve_sketch(doc, params, before, selected)
+    if sketch is None:
+        raise ValueError("sketch_name is required when no active, selected, or unique sketch can be inferred")
+
+    before_name = (before.get("object") or {}).get("name")
+    already_in_edit = before.get("in_edit") and before_name == getattr(sketch, "Name", None)
+    if before.get("in_edit") and not already_in_edit:
+        if not bool(params.get("reset_existing", True)):
+            raise ValueError("another object is already in edit mode: " + str(before_name))
+        gui_doc.resetEdit()
+
+    workbench = activate_workbench("SketcherWorkbench", bool(params.get("activate_workbench", True)))
+    if not already_in_edit:
+        edit_mode = params.get("edit_mode")
+        try:
+            if edit_mode is None:
+                gui_doc.setEdit(sketch.Name)
+            else:
+                gui_doc.setEdit(sketch.Name, int(edit_mode))
+        except TypeError:
+            gui_doc.setEdit(sketch.Name)
+
+    try:
+        doc.ActiveObject = sketch
+    except Exception:
+        pass
+    selection = select_object(doc, sketch, clear=True) if bool(params.get("select", True)) else {"selected": False}
+    view = fit_view_if_requested(gui_doc, bool(params.get("fit_view", False)), selection_only=True)
+
+    return {
+        "entered": not already_in_edit,
+        "already_in_edit": bool(already_in_edit),
+        "before": before,
+        "after": active_edit_state(doc),
+        "workbench": workbench,
+        "selection": selection,
+        "view": view,
+        "document": active_document_summary(),
+        "sketch": sketch_summary(sketch, params),
+    }
+
+
+def rpc_sketch_leave(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        raise ValueError("no active document")
+    gui_doc = gui_document_for(doc)
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+
+    selected = Gui.Selection.getSelectionEx(doc.Name, 0)
+    before = active_edit_state(doc)
+    sketch = resolve_sketch(doc, params, before, selected)
+    if params.get("sketch_name") and before.get("in_edit"):
+        before_name = (before.get("object") or {}).get("name")
+        if before_name and before_name != getattr(sketch, "Name", None):
+            raise ValueError("active edit object is not requested sketch: " + str(before_name))
+
+    left = False
+    if before.get("in_edit"):
+        gui_doc.resetEdit()
+        left = True
+    if bool(params.get("recompute", True)):
+        doc.recompute()
+    selection = select_object(doc, sketch, clear=True) if sketch is not None and bool(params.get("select", False)) else {"selected": False}
+    view = fit_view_if_requested(gui_doc, bool(params.get("fit_view", False)), selection_only=True)
+
+    return {
+        "left": left,
+        "before": before,
+        "after": active_edit_state(doc),
+        "selection": selection,
+        "view": view,
+        "document": active_document_summary(),
+        "sketch": sketch_summary(sketch, params) if sketch is not None else None,
     }
 
 
@@ -643,25 +847,7 @@ def rpc_partdesign_state(params: dict[str, Any]) -> dict[str, Any]:
     edit = active_edit_state(doc)
     bodies = [obj for obj in doc.Objects if is_partdesign_body(obj)]
     selected = Gui.Selection.getSelectionEx(doc.Name, 0)
-
-    active_body = None
-    body_name = params.get("body_name")
-    if body_name:
-        active_body = doc.getObject(str(body_name))
-        if active_body is None or not is_partdesign_body(active_body):
-            raise ValueError("body not found: " + str(body_name))
-    if active_body is None and edit.get("object"):
-        edit_obj = doc.getObject(str(edit["object"].get("name")))
-        active_body = infer_body_for_object(bodies, edit_obj)
-    if active_body is None:
-        active_body = infer_body_for_object(bodies, getattr(doc, "ActiveObject", None))
-    if active_body is None:
-        for sel in selected:
-            active_body = infer_body_for_object(bodies, getattr(sel, "Object", None))
-            if active_body is not None:
-                break
-    if active_body is None and len(bodies) == 1:
-        active_body = bodies[0]
+    active_body = resolve_body(doc, params, edit, selected, bodies)
 
     return {
         "document": active_document_summary(),
@@ -669,6 +855,59 @@ def rpc_partdesign_state(params: dict[str, Any]) -> dict[str, Any]:
         "active_body": body_summary(active_body, params) if active_body is not None else None,
         "bodies": [body_summary(body, params) for body in bodies],
         "selection": [selection_record(sel) for sel in selected],
+    }
+
+
+def rpc_body_activate(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        raise ValueError("no active document")
+    gui_doc = gui_document_for(doc)
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+
+    selected = Gui.Selection.getSelectionEx(doc.Name, 0)
+    edit = active_edit_state(doc)
+    bodies = [obj for obj in doc.Objects if is_partdesign_body(obj)]
+    body = resolve_body(doc, params, edit, selected, bodies)
+    if body is None:
+        raise ValueError("body_name is required when no active, selected, or unique Body can be inferred")
+
+    workbench = activate_workbench("PartDesignWorkbench", bool(params.get("activate_workbench", True)))
+    try:
+        doc.ActiveObject = body
+    except Exception:
+        pass
+
+    active_view_object: dict[str, Any] = {"requested": bool(params.get("set_active_view_object", True)), "set": False}
+    if active_view_object["requested"]:
+        view = gui_doc.activeView()
+        if view is None:
+            raise ValueError("no active GUI view")
+        try:
+            view.setActiveObject("pdbody", body)
+            active_view_object["set"] = True
+            try:
+                active_view_object["value"] = object_ref(view.getActiveObject("pdbody"))
+            except Exception:
+                active_view_object["value"] = object_ref(body)
+        except Exception as exc:
+            active_view_object["error"] = str(exc)
+
+    selection = select_object(doc, body, clear=True) if bool(params.get("select", True)) else {"selected": False}
+    view_state = fit_view_if_requested(gui_doc, bool(params.get("fit_view", False)), selection_only=True)
+    state_params = {"document_name": doc.Name, "body_name": body.Name, "include_features": params.get("include_features", True)}
+
+    return {
+        "activated": object_ref(body),
+        "workbench": workbench,
+        "active_view_object": active_view_object,
+        "selection": selection,
+        "view": view_state,
+        "document": active_document_summary(),
+        "partdesign": rpc_partdesign_state(state_params),
     }
 
 
@@ -682,7 +921,10 @@ RPC_METHODS = {
     "view_fit": rpc_view_fit,
     "primitive_create": rpc_primitive_create,
     "sketch_state": rpc_sketch_state,
+    "sketch_enter": rpc_sketch_enter,
+    "sketch_leave": rpc_sketch_leave,
     "partdesign_state": rpc_partdesign_state,
+    "body_activate": rpc_body_activate,
 }
 
 

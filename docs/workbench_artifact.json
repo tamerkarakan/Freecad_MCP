@@ -23,8 +23,8 @@
       "source": "scripts/freecad_gui_bridge_server.py",
       "target": "FreeCADMCP/freecad_gui_bridge_server.py",
       "role": "embedded-gui-bridge",
-      "size": 26638,
-      "sha256": "ef74b73fe97d49c4b0739dfacdc1d088a9dd2659bdc033860faeb17e3f9fc5d4"
+      "size": 35137,
+      "sha256": "cfb5c102dc6adc4bd40584844e45c8b5fa1802576c074fd97062fef12d140f53"
     }
   ],
   "install": {

@@ -127,6 +127,8 @@ try:
     box_b.Width = 5
     box_b.Height = 4
     box_b.Placement.Base.x = 16
+    sketch = doc.addObject("Sketcher::SketchObject", "GuiSketch")
+    body = doc.addObject("PartDesign::Body", "GuiBody")
     doc.recompute()
     doc.saveAs(str(DOCUMENT_PATH))
 
@@ -148,6 +150,8 @@ try:
                 "document_path": str(DOCUMENT_PATH),
                 "object_names": [box_a.Name, box_b.Name],
                 "assembly_name": assembly.Name,
+                "sketch_name": sketch.Name,
+                "body_name": body.Name,
                 "selection": ["Face1", "Face1"],
                 "bridge": bridge_status,
             }},
@@ -203,6 +207,58 @@ except Exception as exc:
         for index, record in enumerate(records):
             if record.get("object_name") != object_names[index] or "Face1" not in record.get("subelement_names", []):
                 raise RuntimeError(f"unexpected GUI selection record: {record}")
+        sketch_state = tools["freecad_gui_sketch_state"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "sketch_name": str(ready["sketch_name"]),
+            }
+        )
+        if sketch_state["gui"]["active_sketch"]["object"]["name"] != str(ready["sketch_name"]):
+            raise RuntimeError(f"unexpected GUI sketch state: {sketch_state}")
+        sketch_enter = tools["freecad_gui_sketch_enter"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "sketch_name": str(ready["sketch_name"]),
+                "reset_existing": True,
+                "fit_view": False,
+            }
+        )
+        if sketch_enter["gui"]["after"]["object"]["name"] != str(ready["sketch_name"]):
+            raise RuntimeError(f"sketch did not enter edit mode: {sketch_enter}")
+        sketch_leave = tools["freecad_gui_sketch_leave"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "sketch_name": str(ready["sketch_name"]),
+                "recompute": True,
+            }
+        )
+        if sketch_leave["gui"]["after"]["in_edit"]:
+            raise RuntimeError(f"sketch did not leave edit mode: {sketch_leave}")
+        partdesign_state = tools["freecad_gui_partdesign_state"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "body_name": str(ready["body_name"]),
+            }
+        )
+        if partdesign_state["gui"]["active_body"]["object"]["name"] != str(ready["body_name"]):
+            raise RuntimeError(f"unexpected GUI PartDesign state: {partdesign_state}")
+        body_activate = tools["freecad_gui_body_activate"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "body_name": str(ready["body_name"]),
+                "fit_view": False,
+            }
+        )
+        if body_activate["gui"]["activated"]["name"] != str(ready["body_name"]):
+            raise RuntimeError(f"body did not activate: {body_activate}")
+        restored_selection = tools["freecad_gui_selection_set"].handler(
+            {"session_id": session_id, "records": records, "clear": True}
+        )
         fit = tools["freecad_gui_view_fit"].handler({"session_id": session_id, "selection_only": True})
         tools["freecad_gui_detach"].handler({"session_id": session_id})
 
@@ -241,6 +297,12 @@ except Exception as exc:
             "attach": attach,
             "status_result": status,
             "selection_result": selection,
+            "sketch_state_result": sketch_state,
+            "sketch_enter_result": sketch_enter,
+            "sketch_leave_result": sketch_leave,
+            "partdesign_state_result": partdesign_state,
+            "body_activate_result": body_activate,
+            "restored_selection_result": restored_selection,
             "fit_result": fit,
             "assembly_joint_result": joint,
         }

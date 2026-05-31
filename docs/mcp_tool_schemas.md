@@ -6082,6 +6082,115 @@ Inspect active or selected Sketcher state from the live FreeCAD GUI without muta
 }
 ```
 
+## `freecad_gui_sketch_enter`
+
+Enter Sketcher edit mode for an explicit, selected, active, or uniquely inferable sketch in the live FreeCAD GUI.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "reset_existing": {
+      "type": "boolean",
+      "description": "Reset any existing edit object before entering the requested sketch."
+    },
+    "edit_mode": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "activate_workbench": {
+      "type": "boolean"
+    },
+    "select": {
+      "type": "boolean"
+    },
+    "fit_view": {
+      "type": "boolean"
+    },
+    "include_geometry": {
+      "type": "boolean"
+    },
+    "include_constraints": {
+      "type": "boolean"
+    },
+    "max_items": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_sketch_leave`
+
+Leave the current Sketcher edit mode, optionally recompute, select the sketch, and return fresh GUI sketch state.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "recompute": {
+      "type": "boolean"
+    },
+    "select": {
+      "type": "boolean"
+    },
+    "fit_view": {
+      "type": "boolean"
+    },
+    "include_geometry": {
+      "type": "boolean"
+    },
+    "include_constraints": {
+      "type": "boolean"
+    },
+    "max_items": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
 ## `freecad_gui_partdesign_state`
 
 Inspect PartDesign Body, Tip, feature chain, edit object, and selection state from the live FreeCAD GUI.
@@ -6104,6 +6213,56 @@ Inspect PartDesign Body, Tip, feature chain, edit object, and selection state fr
     },
     "body_name": {
       "type": "string"
+    },
+    "include_features": {
+      "type": "boolean"
+    },
+    "max_items": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_body_activate`
+
+Activate an explicit, selected, active, or uniquely inferable PartDesign Body in the live FreeCAD GUI.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "activate_workbench": {
+      "type": "boolean"
+    },
+    "set_active_view_object": {
+      "type": "boolean"
+    },
+    "select": {
+      "type": "boolean"
+    },
+    "fit_view": {
+      "type": "boolean"
     },
     "include_features": {
       "type": "boolean"

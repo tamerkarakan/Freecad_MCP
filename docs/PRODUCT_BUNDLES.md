@@ -5,9 +5,9 @@ Generated sellable bundle manifest for the current MCP tool surface.
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
 | FreeCAD MCP Free | `free` | base | 22 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part operations. |
-| FreeCAD MCP Pro | `pro` | paid | 61 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 119 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 122 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Pro | `pro` | paid | 64 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 122 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 125 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -53,7 +53,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `61`
+- Tool count: `64`
 - Upgrade path: `studio`
 
 Tools:
@@ -118,7 +118,10 @@ Tools:
 - `freecad_gui_view_fit`
 - `freecad_gui_primitive_create`
 - `freecad_gui_sketch_state`
+- `freecad_gui_sketch_enter`
+- `freecad_gui_sketch_leave`
 - `freecad_gui_partdesign_state`
+- `freecad_gui_body_activate`
 
 ### FreeCAD MCP Studio
 
@@ -126,7 +129,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `119`
+- Tool count: `122`
 - Upgrade path: `team`
 
 Tools:
@@ -249,7 +252,10 @@ Tools:
 - `freecad_gui_view_fit`
 - `freecad_gui_primitive_create`
 - `freecad_gui_sketch_state`
+- `freecad_gui_sketch_enter`
+- `freecad_gui_sketch_leave`
 - `freecad_gui_partdesign_state`
+- `freecad_gui_body_activate`
 
 ### FreeCAD MCP Team
 
@@ -257,7 +263,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `122`
+- Tool count: `125`
 
 Tools:
 
@@ -382,7 +388,10 @@ Tools:
 - `freecad_gui_view_fit`
 - `freecad_gui_primitive_create`
 - `freecad_gui_sketch_state`
+- `freecad_gui_sketch_enter`
+- `freecad_gui_sketch_leave`
 - `freecad_gui_partdesign_state`
+- `freecad_gui_body_activate`
 
 ### Source Intelligence Add-on
 

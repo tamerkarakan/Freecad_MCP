@@ -94,7 +94,10 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_gui_view_fit",
             "freecad_gui_primitive_create",
             "freecad_gui_sketch_state",
+            "freecad_gui_sketch_enter",
+            "freecad_gui_sketch_leave",
             "freecad_gui_partdesign_state",
+            "freecad_gui_body_activate",
         ]:
             self.assertIn(name, tools)
 

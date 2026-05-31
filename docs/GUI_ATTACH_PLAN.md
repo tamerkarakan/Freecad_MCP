@@ -23,7 +23,7 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 2. `scripts/freecad_gui_bridge_server.py` opens a localhost JSON bridge with an optional bearer token.
 3. MCP `freecad_gui_attach` connects to that bridge and returns a `session_id`.
 4. Read-only GUI tools can query active document/view/selection without mutating model state.
-5. GUI selection and view-fit tools can change GUI selection/view state, but model geometry still belongs in typed CAD tools.
+5. GUI selection, view-fit, Sketcher edit-mode, and PartDesign Body activation tools can change GUI state, but model geometry still belongs in typed CAD tools.
 6. Closing the MCP session detaches from the bridge but does not close FreeCAD GUI.
 
 The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thread when called from the HTTP server thread.
@@ -44,7 +44,10 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
 | `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
 | `freecad_gui_sketch_state` | Inspect active or selected Sketcher state, edit mode, DoF, geometry/constraint counts, diagnostics, selected records, and optional bounded geometry/constraint summaries. | No by default; optional diagnostics refresh can run solver/missing-constraint reads. |
+| `freecad_gui_sketch_enter` | Enter Sketcher edit mode for an explicit, selected, active, or uniquely inferable sketch, optionally selecting/fitting it. | GUI state only |
+| `freecad_gui_sketch_leave` | Leave current Sketcher edit mode, optionally recompute, select the sketch, and return fresh state. | GUI state plus optional recompute |
 | `freecad_gui_partdesign_state` | Inspect PartDesign Body candidates, inferred active Body, Tip, feature chain, origin features, edit object, and selected records. | No |
+| `freecad_gui_body_activate` | Activate an explicit, selected, active, or uniquely inferable PartDesign Body in the GUI active view. | GUI state only |
 
 ## Normalized Selection Record
 
@@ -74,7 +77,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Policy
 
 - GUI attach tools must be read-only by default.
-- Sketcher and PartDesign state tools are the first priority for GUI maturation; add mutation flows only after state reports are stable.
+- Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
 - Selection and view reads must not call broad Python execution.
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
@@ -84,9 +87,9 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert Sketcher and PartDesign GUI state tools are exposed and delegated through the bridge.
+- Unit tests assert Sketcher and PartDesign GUI state/edit/activation tools are exposed and delegated through the bridge.
 - Static MCP smoke confirms GUI attach schemas are listed.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, and verifies both `Face1` records.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, enters/leaves a sketch, and activates a PartDesign Body.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals

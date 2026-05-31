@@ -43,8 +43,14 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             }
         elif method == "sketch_state":
             result = {"active_sketch": {"object": {"name": "Sketch"}}, "params": payload.get("params") or {}}
+        elif method == "sketch_enter":
+            result = {"entered": True, "sketch": {"object": {"name": "Sketch"}}, "params": payload.get("params") or {}}
+        elif method == "sketch_leave":
+            result = {"left": True, "sketch": {"object": {"name": "Sketch"}}, "params": payload.get("params") or {}}
         elif method == "partdesign_state":
             result = {"active_body": {"object": {"name": "Body"}}, "params": payload.get("params") or {}}
+        elif method == "body_activate":
+            result = {"activated": {"name": "Body"}, "params": payload.get("params") or {}}
         else:
             result = {"method": method, "params": payload.get("params") or {}}
         self.send_payload({"ok": True, "result": result})
@@ -115,7 +121,10 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
+        self.assertIn("freecad_gui_sketch_enter", tools)
+        self.assertIn("freecad_gui_sketch_leave", tools)
         self.assertIn("freecad_gui_partdesign_state", tools)
+        self.assertIn("freecad_gui_body_activate", tools)
 
     def test_gui_primitive_create_delegates_to_bridge(self) -> None:
         service = GuiToolService()
@@ -164,6 +173,44 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertEqual(partdesign["gui"]["active_body"]["object"]["name"], "Body")
         self.assertEqual(FakeBridgeHandler.requests[-2]["payload"]["method"], "sketch_state")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "partdesign_state")
+
+    def test_gui_sketch_edit_and_body_activate_delegate_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        entered = tools["freecad_gui_sketch_enter"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "sketch_name": "Sketch",
+                "reset_existing": True,
+            }
+        )
+        left = tools["freecad_gui_sketch_leave"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "sketch_name": "Sketch",
+                "recompute": True,
+            }
+        )
+        activated = tools["freecad_gui_body_activate"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "body_name": "Body",
+                "set_active_view_object": True,
+            }
+        )
+
+        self.assertTrue(entered["gui"]["entered"])
+        self.assertTrue(left["gui"]["left"])
+        self.assertEqual(activated["gui"]["activated"]["name"], "Body")
+        self.assertEqual(FakeBridgeHandler.requests[-3]["payload"]["method"], "sketch_enter")
+        self.assertEqual(FakeBridgeHandler.requests[-2]["payload"]["method"], "sketch_leave")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "body_activate")
 
 
 if __name__ == "__main__":
