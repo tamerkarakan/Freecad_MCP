@@ -416,6 +416,21 @@ def find_body_origin_plane(body, plane_name):
     raise ValueError("origin plane not found for body " + body.Name + ": " + plane)
 
 
+def object_solid_count(obj):
+    shape = getattr(obj, "Shape", None) if obj is not None else None
+    return len(shape.Solids) if shape is not None and not shape.isNull() else 0
+
+
+def find_body_solid_tip(body):
+    tip = getattr(body, "Tip", None)
+    if object_solid_count(tip) > 0:
+        return tip
+    for candidate in reversed(list(getattr(body, "Group", []) or [])):
+        if object_solid_count(candidate) > 0:
+            return candidate
+    return None
+
+
 def find_partdesign_body(doc, name):
     obj = doc.getObject(name) if name else None
     if obj is None and name:
@@ -462,8 +477,11 @@ def attach_sketch_to_partdesign_body(doc, sketch, params, *, body=None):
         body, created = get_or_create_partdesign_body(doc, params)
     else:
         created = False
+    previous_tip = getattr(body, "Tip", None)
     if sketch not in getattr(body, "Group", []):
         body.addObject(sketch)
+    if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(sketch, "Name", None):
+        body.Tip = previous_tip
     plane_name = normalize_partdesign_plane(params.get("attachment_plane") or params.get("plane") or "XY")
     plane = find_body_origin_plane(body, plane_name)
     sketch.AttachmentSupport = [(plane, "")]
@@ -760,7 +778,6 @@ def action_object_rename_label(params):
     except Exception:
         doc.abortTransaction()
         raise
-    doc.recompute()
     saved = save_doc(doc, params)
     return {
         "saved_path": saved,
@@ -909,6 +926,54 @@ def action_partdesign_pad(params):
         "body": object_summary(body),
         "sketch": object_summary(sketch),
         "pad": object_summary(pad),
+        "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_pocket(params):
+    doc = get_doc(params)
+    sketch = get_object(doc, params.get("sketch_name") or "")
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(sketch)
+    doc.openTransaction("MCP worker create PartDesign pocket")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, params)
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError("PartDesign Pocket requires an existing solid feature in the Body (create a Pad first)")
+        body.Tip = solid_tip
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, params, body=body)
+        pocket = doc.addObject("PartDesign::Pocket", params.get("pocket_name") or params.get("result_name") or "Pocket")
+        body.addObject(pocket)
+        pocket.Profile = sketch
+        if hasattr(pocket, "Length"):
+            pocket.Length = float(params.get("length", params.get("length_fwd", 10.0)))
+        if params.get("length2") is not None and hasattr(pocket, "Length2"):
+            pocket.Length2 = float(params["length2"])
+        if params.get("midplane") is not None and hasattr(pocket, "Midplane"):
+            pocket.Midplane = bool(params["midplane"])
+        if params.get("reversed") is not None and hasattr(pocket, "Reversed"):
+            pocket.Reversed = bool(params["reversed"])
+        body.Tip = pocket
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(params.get("require_solid", True)):
+        shape = getattr(pocket, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Pocket did not produce a solid")
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "pocket": object_summary(pocket),
         "attachment": attachment,
         "document": document_summary(doc),
     }
@@ -2426,6 +2491,7 @@ ACTIONS = {
     "part_extrude": action_part_extrude,
     "partdesign_body_create": action_partdesign_body_create,
     "partdesign_pad": action_partdesign_pad,
+    "partdesign_pocket": action_partdesign_pocket,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,

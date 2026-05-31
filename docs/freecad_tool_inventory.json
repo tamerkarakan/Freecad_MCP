@@ -265,6 +265,7 @@
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
         "freecad_worker_partdesign_pad",
+        "freecad_worker_partdesign_pocket",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -379,7 +380,7 @@
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket"
       ],
-      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/plane attachment for Pad workflows."
+      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/plane attachment for Pad/Pocket workflows."
     },
     {
       "family": "freecad.sketcher",

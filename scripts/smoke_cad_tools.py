@@ -822,6 +822,50 @@ def main() -> int:
         )
         if partdesign_pad["pad"]["shape"]["solids"] != 1 or partdesign_pad["body"]["partdesign"]["tip"] != "Pad":
             raise RuntimeError(f"partdesign pad did not produce a body solid: {partdesign_pad}")
+        pocket_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "PocketSketch",
+                    "body_name": "Body",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [2, 1, 0], "end": [6, 1, 0]},
+                                {"type": "line", "start": [6, 1, 0], "end": [6, 3, 0]},
+                                {"type": "line", "start": [6, 3, 0], "end": [2, 3, 0]},
+                                {"type": "line", "start": [2, 3, 0], "end": [2, 1, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign pocket sketch profile",
+        )
+        if not pocket_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign pocket profile was not attached: {pocket_profile}")
+        partdesign_pocket = assert_ok(
+            service.definition_map()["freecad_partdesign_pocket"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "Body",
+                    "sketch_name": "PocketSketch",
+                    "attachment_plane": "XY",
+                    "pocket_name": "Pocket",
+                    "length": 3,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign pocket",
+        )
+        if partdesign_pocket["pocket"]["shape"]["solids"] != 1 or partdesign_pocket["body"]["partdesign"]["tip"] != "Pocket":
+            raise RuntimeError(f"partdesign pocket did not preserve a body solid: {partdesign_pocket}")
         drift_rejected = assert_tool_failed(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

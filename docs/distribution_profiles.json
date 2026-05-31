@@ -233,7 +233,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 126,
+      "tool_count": 127,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -258,6 +258,7 @@
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
         "freecad_worker_partdesign_pad",
+        "freecad_worker_partdesign_pocket",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -410,7 +411,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 129,
+      "tool_count": 130,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -438,6 +439,7 @@
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
         "freecad_worker_partdesign_pad",
+        "freecad_worker_partdesign_pocket",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",

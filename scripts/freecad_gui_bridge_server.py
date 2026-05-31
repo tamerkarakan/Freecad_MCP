@@ -971,7 +971,6 @@ def rpc_object_label_set(params: dict[str, Any]) -> dict[str, Any]:
     except Exception:
         doc.abortTransaction()
         raise
-    doc.recompute()
 
     selection = select_object(doc, obj, clear=True) if bool(params.get("select", False)) else {"selected": False}
     gui_doc = gui_document_for(doc) or Gui.activeDocument()

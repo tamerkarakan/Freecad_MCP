@@ -165,7 +165,7 @@
       "limits": "No source-code intelligence and no unsafe Python exec.",
       "upgrade_to": "team",
       "includes_unsafe": false,
-      "tool_count": 126,
+      "tool_count": 127,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -190,6 +190,7 @@
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
         "freecad_worker_partdesign_pad",
+        "freecad_worker_partdesign_pocket",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -322,7 +323,7 @@
       "limits": "No unsafe Python exec by default.",
       "upgrade_to": null,
       "includes_unsafe": false,
-      "tool_count": 129,
+      "tool_count": 130,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -350,6 +351,7 @@
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
         "freecad_worker_partdesign_pad",
+        "freecad_worker_partdesign_pocket",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",

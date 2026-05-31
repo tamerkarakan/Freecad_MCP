@@ -517,6 +517,21 @@ def find_body_origin_plane(body, plane_name):
     raise ValueError("origin plane not found for body " + body.Name + ": " + plane)
 
 
+def object_solid_count(obj):
+    shape = getattr(obj, "Shape", None) if obj is not None else None
+    return len(shape.Solids) if shape is not None and not shape.isNull() else 0
+
+
+def find_body_solid_tip(body):
+    tip = getattr(body, "Tip", None)
+    if object_solid_count(tip) > 0:
+        return tip
+    for candidate in reversed(list(getattr(body, "Group", []) or [])):
+        if object_solid_count(candidate) > 0:
+            return candidate
+    return None
+
+
 def find_partdesign_body(doc, name):
     obj = doc.getObject(name) if name else None
     if obj is None and name:
@@ -563,8 +578,11 @@ def attach_sketch_to_partdesign_body(doc, sketch, args, *, body=None):
         body, created = get_or_create_partdesign_body(doc, args)
     else:
         created = False
+    previous_tip = getattr(body, "Tip", None)
     if sketch not in getattr(body, "Group", []):
         body.addObject(sketch)
+    if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(sketch, "Name", None):
+        body.Tip = previous_tip
     plane_name = normalize_partdesign_plane(args.get("attachment_plane") or args.get("plane") or "XY")
     plane = find_body_origin_plane(body, plane_name)
     sketch.AttachmentSupport = [(plane, "")]
@@ -729,7 +747,6 @@ def action_object_rename_label(args):
     doc.openTransaction("MCP rename object label")
     obj.Label = label
     doc.commitTransaction()
-    doc.recompute()
     saved = save_if_requested(doc, args)
     return {
         "saved_path": saved,
@@ -1019,11 +1036,10 @@ def action_partdesign_pocket(args):
             body, _ = get_or_create_partdesign_body(doc, args)
         # Pocket removes material, so the Body must already contain a solid
         # feature (e.g. a Pad) for it to cut into.
-        tip = getattr(body, "Tip", None)
-        tip_shape = getattr(tip, "Shape", None) if tip is not None else None
-        tip_solids = len(tip_shape.Solids) if tip_shape is not None and not tip_shape.isNull() else 0
-        if tip_solids < 1:
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
             raise ValueError("PartDesign Pocket requires an existing solid feature in the Body (create a Pad first)")
+        body.Tip = solid_tip
         attachment = attach_sketch_to_partdesign_body(doc, sketch, args, body=body)
         pocket = doc.addObject("PartDesign::Pocket", args.get("pocket_name") or args.get("result_name") or "Pocket")
         body.addObject(pocket)

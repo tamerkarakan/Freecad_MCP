@@ -291,6 +291,48 @@ def main() -> int:
             )
             if worker_pad["pad"]["shape"]["solids"] != 1 or worker_pad["body"]["partdesign"]["tip"] != "WorkerPad":
                 raise RuntimeError(f"worker PartDesign Pad did not produce a body solid: {worker_pad}")
+            worker_pocket_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "sketch_name": "WorkerPocketSketch",
+                        "body_name": "WorkerBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [2, 71, 0], "end": [6, 71, 0]},
+                                    {"type": "line", "start": [6, 71, 0], "end": [6, 73, 0]},
+                                    {"type": "line", "start": [6, 73, 0], "end": [2, 73, 0]},
+                                    {"type": "line", "start": [2, 73, 0], "end": [2, 71, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_pocket_profile_create",
+            )
+            if not worker_pocket_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker pocket profile did not attach to PartDesign body: {worker_pocket_profile}")
+            worker_pocket = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pocket"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "body_name": "WorkerBody",
+                        "sketch_name": "WorkerPocketSketch",
+                        "attachment_plane": "XY",
+                        "pocket_name": "WorkerPocket",
+                        "length": 3,
+                    }
+                ),
+                "worker_partdesign_pocket",
+            )
+            if worker_pocket["pocket"]["shape"]["solids"] != 1 or worker_pocket["body"]["partdesign"]["tip"] != "WorkerPocket":
+                raise RuntimeError(f"worker PartDesign Pocket did not preserve a body solid: {worker_pocket}")
             closed_partdesign_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": partdesign_document_id}
@@ -537,6 +579,33 @@ def main() -> int:
             if validation["geometry_count"] < 4:
                 raise RuntimeError(f"worker sketch validation mismatch: {validation}")
 
+            closed_sketch_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": document_id}
+                ),
+                "worker_sketch_document_close",
+            )
+            if closed_sketch_doc["document_count"] != 0:
+                raise RuntimeError(f"worker sketch document close failed: {closed_sketch_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted["session"]["session_id"]
+            if not restarted["session"]["running"]:
+                raise RuntimeError(f"second worker did not start: {restarted}")
+            solid_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerSolidSmoke",
+                        "output_path": str(document_path),
+                        "overwrite": True,
+                    }
+                ),
+                "worker_solid_document_new",
+            )
+            document_id = solid_document["document"]["document_id"]
+
             created = worker_result(
                 service.definition_map()["freecad_worker_part_create_primitive"].handler(
                     {
@@ -632,15 +701,16 @@ def main() -> int:
             if not checks["checks"] or not checks["checks"][0]["is_valid"]:
                 raise RuntimeError(f"worker geometry check failed: {checks}")
 
-            exported_mesh_source = temp / "worker-fuse-export.stl"
+            exported_mesh_source = temp / "worker-box-export.stl"
             mesh_source_export = worker_result(
                 service.definition_map()["freecad_worker_document_export"].handler(
                     {
                         "session_id": session_id,
                         "document_id": document_id,
-                        "object_names": ["WorkerFuse"],
+                        "object_names": ["WorkerBox"],
                         "output_path": str(exported_mesh_source),
                         "overwrite": True,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_document_export_stl",
@@ -688,15 +758,16 @@ def main() -> int:
             if not mesh_repair["reports"] or not mesh_repair["reports"][0]["errors"]:
                 raise RuntimeError(f"worker mesh repair unsupported-action report missing: {mesh_repair}")
 
-            exported = temp / "worker-fuse.step"
+            exported = temp / "worker-box.step"
             export = worker_result(
                 service.definition_map()["freecad_worker_document_export"].handler(
                     {
                         "session_id": session_id,
                         "document_id": document_id,
-                        "object_names": ["WorkerFuse"],
+                        "object_names": ["WorkerBox"],
                         "output_path": str(exported),
                         "overwrite": True,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_document_export",

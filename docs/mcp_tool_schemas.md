@@ -996,6 +996,86 @@ Create a PartDesign Pad from a worker Sketcher profile inside a Body, attaching 
 }
 ```
 
+## `freecad_worker_partdesign_pocket`
+
+Create a PartDesign Pocket that removes material from an existing worker Body solid using a Sketcher profile.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "attachment_plane": {
+      "type": "string",
+      "enum": [
+        "XY",
+        "XZ",
+        "YZ"
+      ]
+    },
+    "create_body_if_missing": {
+      "type": "boolean"
+    },
+    "pocket_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "length": {
+      "type": "number"
+    },
+    "length2": {
+      "type": "number"
+    },
+    "midplane": {
+      "type": "boolean"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.

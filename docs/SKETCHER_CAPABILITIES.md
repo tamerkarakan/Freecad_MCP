@@ -48,7 +48,7 @@ FreeCAD GUI exposes rectangle, center rectangle, 3-point rectangle, regular poly
 
 ## PartDesign Body Attachment
 
-FreeCAD GUI asks whether to create a Body and which plane to use before a Sketcher profile can drive PartDesign features. The MCP equivalent is to pass `body_name` and `attachment_plane` (`XY`, `XZ`, or `YZ`) to `freecad_sketch_create` or `freecad_sketch_profile_create`. The tool creates or reuses the Body, adds the sketch to it, sets `AttachmentSupport` to the Body origin plane, and sets `MapMode="FlatFace"`. Use `freecad_partdesign_pad` afterward when the intended result is a PartDesign solid feature rather than a standalone Part extrusion.
+FreeCAD GUI asks whether to create a Body and which plane to use before a Sketcher profile can drive PartDesign features. The MCP equivalent is to pass `body_name` and `attachment_plane` (`XY`, `XZ`, or `YZ`) to `freecad_sketch_create` or `freecad_sketch_profile_create`. The tool creates or reuses the Body, adds the sketch to it, sets `AttachmentSupport` to the Body origin plane, and sets `MapMode="FlatFace"`. Use `freecad_partdesign_pad` when the intended result is an additive Body solid, and `freecad_partdesign_pocket` when an attached sketch should remove material from an existing Body solid.
 
 ## GUI-Only Boundary
 

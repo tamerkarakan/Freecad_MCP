@@ -129,6 +129,8 @@ def main() -> int:
     assert "freecad_fem_analysis_create" in tool_names
     assert "freecad_partdesign_body_create" in tool_names
     assert "freecad_partdesign_pad" in tool_names
+    assert "freecad_partdesign_pocket" in tool_names
+    assert "freecad_worker_partdesign_pocket" in tool_names
     assert "freecad_object_rename_label" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names

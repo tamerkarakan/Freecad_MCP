@@ -54,8 +54,8 @@ Current generated counts:
 | --- | --- | ---: | --- |
 | Free | `free` | 23 | File-based FreeCADCmd document/object/Part operations. |
 | Pro | `pro` | 67 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| Studio | `studio` | 126 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
-| Team | `team` | 129 | Adds source-intelligence tools. |
+| Studio | `studio` | 127 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
+| Team | `team` | 130 | Adds source-intelligence tools. |
 | Source add-on | `source` | 5 | Command/source intelligence only. |
 | Local developer | `developer` / `dev` / `local-dev` | Full surface | Same as `all`; not a sellable restricted package. |
 | Unsafe add-on | `unsafe` | 1 | Only `freecad_python_exec`; never included in paid tiers by default. |
