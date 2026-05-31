@@ -380,8 +380,9 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_gui_sketch_leave",
                 "freecad_gui_partdesign_state",
                 "freecad_gui_body_activate",
+                "freecad_gui_feature_task_state",
             ],
-            "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, live Sketcher edit mode, and PartDesign Body/Tip activation state.",
+            "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation.",
         },
         {
             "family": "freecad.document",

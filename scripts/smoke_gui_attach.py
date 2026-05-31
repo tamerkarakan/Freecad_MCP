@@ -227,6 +227,15 @@ except Exception as exc:
         )
         if sketch_enter["gui"]["after"]["object"]["name"] != str(ready["sketch_name"]):
             raise RuntimeError(f"sketch did not enter edit mode: {sketch_enter}")
+        feature_task_state = tools["freecad_gui_feature_task_state"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "include_widget_tree": False,
+            }
+        )
+        if "control" not in feature_task_state["gui"]:
+            raise RuntimeError(f"feature task state did not report GUI control metadata: {feature_task_state}")
         sketch_leave = tools["freecad_gui_sketch_leave"].handler(
             {
                 "session_id": session_id,
@@ -299,6 +308,7 @@ except Exception as exc:
             "selection_result": selection,
             "sketch_state_result": sketch_state,
             "sketch_enter_result": sketch_enter,
+            "feature_task_state_result": feature_task_state,
             "sketch_leave_result": sketch_leave,
             "partdesign_state_result": partdesign_state,
             "body_activate_result": body_activate,

@@ -48,6 +48,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_sketch_leave` | Leave current Sketcher edit mode, optionally recompute, select the sketch, and return fresh state. | GUI state plus optional recompute |
 | `freecad_gui_partdesign_state` | Inspect PartDesign Body candidates, inferred active Body, Tip, feature chain, origin features, edit object, and selected records. | No |
 | `freecad_gui_body_activate` | Activate an explicit, selected, active, or uniquely inferable PartDesign Body in the GUI active view. | GUI state only |
+| `freecad_gui_feature_task_state` | Inspect active GUI task/dialog/widget state around Sketcher and PartDesign feature workflows. | No |
 
 ## Normalized Selection Record
 
@@ -82,14 +83,14 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
 - Connector-aware Assembly flows should consume `freecad_gui_selection_get` records before writing native `JointObject` references.
-- Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, local screenshot evidence second, smallest useful crop/detail sent to vision models, and user confirmation for ambiguous B-spline/arc/polyline decisions.
+- Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, narrow programmatic GUI actions second, local screenshot evidence third, smallest useful crop/detail sent to vision models, and user confirmation for ambiguous B-spline/arc/polyline decisions.
 
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert Sketcher and PartDesign GUI state/edit/activation tools are exposed and delegated through the bridge.
+- Unit tests assert Sketcher and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge.
 - Static MCP smoke confirms GUI attach schemas are listed.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, enters/leaves a sketch, and activates a PartDesign Body.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, enters/leaves a sketch, reads feature-task state, and activates a PartDesign Body.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals

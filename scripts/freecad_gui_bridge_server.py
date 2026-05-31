@@ -590,6 +590,210 @@ def fit_view_if_requested(gui_doc: Any, requested: bool, selection_only: bool = 
     return result
 
 
+def clamped_int(params: dict[str, Any], name: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(params.get(name, default))
+    except Exception:
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def bounded_text(value: Any, max_length: int) -> str | None:
+    if value is None:
+        return None
+    text = str(value)
+    if not text:
+        return None
+    if len(text) <= max_length:
+        return text
+    return text[:max_length] + "...<truncated>"
+
+
+def call_noarg(obj: Any, method_name: str) -> Any:
+    attr = getattr(obj, method_name, None)
+    if not callable(attr):
+        return None
+    return attr()
+
+
+def widget_scalar_fields(widget: Any, text_max_length: int) -> dict[str, Any]:
+    fields: dict[str, Any] = {}
+    for key, method in (
+        ("object_name", "objectName"),
+        ("window_title", "windowTitle"),
+        ("title", "title"),
+        ("text", "text"),
+        ("tool_tip", "toolTip"),
+        ("status_tip", "statusTip"),
+        ("placeholder_text", "placeholderText"),
+        ("current_text", "currentText"),
+    ):
+        try:
+            value = call_noarg(widget, method)
+        except Exception:
+            continue
+        text = bounded_text(value, text_max_length)
+        if text is not None:
+            fields[key] = text
+    for key, method in (
+        ("visible", "isVisible"),
+        ("enabled", "isEnabled"),
+        ("checked", "isChecked"),
+    ):
+        try:
+            value = call_noarg(widget, method)
+        except Exception:
+            continue
+        if value is not None:
+            fields[key] = bool(value)
+    for key, method in (("value", "value"), ("minimum", "minimum"), ("maximum", "maximum")):
+        try:
+            value = call_noarg(widget, method)
+        except Exception:
+            continue
+        if isinstance(value, (int, float)):
+            fields[key] = value
+    return fields
+
+
+def widget_summary(
+    widget: Any,
+    *,
+    depth: int,
+    max_depth: int,
+    max_children: int,
+    text_max_length: int,
+    seen: set[int] | None = None,
+) -> dict[str, Any]:
+    seen = seen or set()
+    widget_id = id(widget)
+    if widget_id in seen:
+        return {"type": type(widget).__name__, "recursive": True}
+    seen.add(widget_id)
+
+    result: dict[str, Any] = {"type": type(widget).__name__, "repr": bounded_text(repr(widget), text_max_length)}
+    result.update(widget_scalar_fields(widget, text_max_length))
+    try:
+        children = list(call_noarg(widget, "children") or [])
+    except Exception:
+        children = []
+    result["child_count"] = len(children)
+    if depth < max_depth and children:
+        result["children"] = [
+            widget_summary(
+                child,
+                depth=depth + 1,
+                max_depth=max_depth,
+                max_children=max_children,
+                text_max_length=text_max_length,
+                seen=seen,
+            )
+            for child in children[:max_children]
+        ]
+        result["children_truncated"] = len(children) > max_children
+    return result
+
+
+def looks_like_task_widget(widget: Any, text_max_length: int) -> bool:
+    fields = widget_scalar_fields(widget, text_max_length)
+    haystack = " ".join([type(widget).__name__, *(str(value) for value in fields.values())]).lower()
+    return "task" in haystack or "combi view" in haystack or "combo view" in haystack
+
+
+def collect_task_widgets(root: Any, params: dict[str, Any]) -> list[Any]:
+    max_widgets = clamped_int(params, "max_widgets", 12, 1, 50)
+    text_max_length = clamped_int(params, "text_max_length", 120, 20, 500)
+    result = []
+    queue_items = [root]
+    seen: set[int] = set()
+    while queue_items and len(result) < max_widgets:
+        widget = queue_items.pop(0)
+        widget_id = id(widget)
+        if widget_id in seen:
+            continue
+        seen.add(widget_id)
+        if looks_like_task_widget(widget, text_max_length):
+            result.append(widget)
+        try:
+            queue_items.extend(list(call_noarg(widget, "children") or []))
+        except Exception:
+            pass
+    return result
+
+
+def value_or_widget_summary(value: Any, params: dict[str, Any]) -> Any:
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    max_depth = clamped_int(params, "max_depth", 2, 0, 4)
+    max_children = clamped_int(params, "max_children", 16, 1, 80)
+    text_max_length = clamped_int(params, "text_max_length", 120, 20, 500)
+    if callable(getattr(value, "children", None)) or callable(getattr(value, "objectName", None)):
+        return widget_summary(
+            value,
+            depth=0,
+            max_depth=max_depth,
+            max_children=max_children,
+            text_max_length=text_max_length,
+        )
+    return {"type": type(value).__name__, "repr": bounded_text(repr(value), text_max_length)}
+
+
+def rpc_feature_task_state(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    main_window = Gui.getMainWindow()
+    max_depth = clamped_int(params, "max_depth", 2, 0, 4)
+    max_children = clamped_int(params, "max_children", 16, 1, 80)
+    text_max_length = clamped_int(params, "text_max_length", 120, 20, 500)
+    include_widget_tree = bool(params.get("include_widget_tree", True))
+
+    control_summary: dict[str, Any] = {"available": hasattr(Gui, "Control")}
+    control = getattr(Gui, "Control", None)
+    if control is not None:
+        control_summary["methods"] = [
+            name
+            for name in ("activeDialog", "showDialog", "closeDialog")
+            if callable(getattr(control, name, None))
+        ]
+        if callable(getattr(control, "activeDialog", None)):
+            try:
+                active_dialog = control.activeDialog()
+                control_summary["active_dialog"] = value_or_widget_summary(active_dialog, params)
+                control_summary["has_active_dialog"] = bool(active_dialog)
+            except Exception as exc:
+                control_summary["active_dialog_error"] = str(exc)
+
+    task_widgets = collect_task_widgets(main_window, params) if main_window is not None else []
+    task_summaries = [
+        widget_summary(
+            widget,
+            depth=0,
+            max_depth=max_depth if include_widget_tree else 0,
+            max_children=max_children,
+            text_max_length=text_max_length,
+        )
+        for widget in task_widgets
+    ]
+    return {
+        "document": active_document_summary(),
+        "edit": active_edit_state(doc),
+        "active_workbench": active_workbench_summary(),
+        "control": control_summary,
+        "main_window": widget_summary(
+            main_window,
+            depth=0,
+            max_depth=0,
+            max_children=max_children,
+            text_max_length=text_max_length,
+        )
+        if main_window is not None
+        else None,
+        "task_widgets": task_summaries,
+        "task_widget_count": len(task_summaries),
+    }
+
+
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
@@ -925,6 +1129,7 @@ RPC_METHODS = {
     "sketch_leave": rpc_sketch_leave,
     "partdesign_state": rpc_partdesign_state,
     "body_activate": rpc_body_activate,
+    "feature_task_state": rpc_feature_task_state,
 }
 
 

@@ -67,7 +67,7 @@
       "limits": "No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.",
       "upgrade_to": "studio",
       "includes_unsafe": false,
-      "tool_count": 64,
+      "tool_count": 65,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -132,7 +132,8 @@
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
         "freecad_gui_partdesign_state",
-        "freecad_gui_body_activate"
+        "freecad_gui_body_activate",
+        "freecad_gui_feature_task_state"
       ]
     },
     {
@@ -161,7 +162,7 @@
       "limits": "No source-code intelligence and no unsafe Python exec.",
       "upgrade_to": "team",
       "includes_unsafe": false,
-      "tool_count": 122,
+      "tool_count": 123,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -284,7 +285,8 @@
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
         "freecad_gui_partdesign_state",
-        "freecad_gui_body_activate"
+        "freecad_gui_body_activate",
+        "freecad_gui_feature_task_state"
       ]
     },
     {
@@ -314,7 +316,7 @@
       "limits": "No unsafe Python exec by default.",
       "upgrade_to": null,
       "includes_unsafe": false,
-      "tool_count": 125,
+      "tool_count": 126,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -440,7 +442,8 @@
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
         "freecad_gui_partdesign_state",
-        "freecad_gui_body_activate"
+        "freecad_gui_body_activate",
+        "freecad_gui_feature_task_state"
       ]
     },
     {

@@ -6278,3 +6278,53 @@ Activate an explicit, selected, active, or uniquely inferable PartDesign Body in
   ]
 }
 ```
+
+## `freecad_gui_feature_task_state`
+
+Inspect the active FreeCAD GUI task/dialog state around Sketcher and PartDesign feature workflows.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "include_widget_tree": {
+      "type": "boolean"
+    },
+    "max_widgets": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "max_depth": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4
+    },
+    "max_children": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 80
+    },
+    "text_max_length": {
+      "type": "integer",
+      "minimum": 20,
+      "maximum": 500
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```

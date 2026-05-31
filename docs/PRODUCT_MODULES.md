@@ -21,7 +21,7 @@ $env:FREECAD_MCP_MODULES = "core,headless,gui,sketcher,partdesign"
 | `core` | FreeCAD command inventory and runtime status/discovery. |
 | `headless` | FreeCADCmd document/object/import-export/Part primitives and operations. |
 | `worker` | Persistent FreeCADCmd worker sessions and in-memory document workflows. |
-| `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, first live primitive creation, live Sketcher/PartDesign state inspection, Sketcher edit mode, and PartDesign Body activation. |
+| `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, first live primitive creation, live Sketcher/PartDesign state inspection, Sketcher edit mode, PartDesign Body activation, and feature-task state. |
 | `sketcher` | Sketcher creation, geometry, constraints, profile validation, transforms, and curve-fit guidance. |
 | `partdesign` | PartDesign Body, Pad, and Pocket typed tools. |
 | `mesh` | Mesh import/export/evaluate/repair/boolean tools. |
@@ -53,9 +53,9 @@ Current generated counts:
 | Bundle | Profile | Tool Count | Notes |
 | --- | --- | ---: | --- |
 | Free | `free` | 22 | File-based FreeCADCmd document/object/Part operations. |
-| Pro | `pro` | 64 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| Studio | `studio` | 122 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
-| Team | `team` | 125 | Adds source-intelligence tools. |
+| Pro | `pro` | 65 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| Studio | `studio` | 123 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
+| Team | `team` | 126 | Adds source-intelligence tools. |
 | Source add-on | `source` | 5 | Command/source intelligence only. |
 | Local developer | `developer` / `dev` / `local-dev` | Full surface | Same as `all`; not a sellable restricted package. |
 | Unsafe add-on | `unsafe` | 1 | Only `freecad_python_exec`; never included in paid tiers by default. |

@@ -110,7 +110,7 @@ Command count is not the same as product value. For mechanical 3D engineering, p
 ## Agent Rules
 
 - Read this file before expanding GUI, Sketcher, PartDesign, Assembly, TechDraw, CAM, or FEM behavior.
-- Current first slices implemented from this plan: `freecad_gui_sketch_state`, `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_partdesign_state`, and `freecad_gui_body_activate`.
+- Current first slices implemented from this plan: `freecad_gui_sketch_state`, `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_partdesign_state`, `freecad_gui_body_activate`, and `freecad_gui_feature_task_state`.
 - Prefer typed tools for deterministic model mutation.
 - Use GUI attach for observing live user state, selection-driven commands, TechDraw GUI exporters, task panels, and visual helpers.
 - Do not add broad GUI command execution as the happy path. If command execution is needed, gate it behind an allowlist, structured preconditions, transactions, recompute, and smoke tests.

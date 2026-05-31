@@ -197,6 +197,21 @@ class GuiToolService:
                 [],
                 "body_activate",
             ),
+            self._gui_tool(
+                "freecad_gui_feature_task_state",
+                "Get GUI Feature Task State",
+                "Inspect the active FreeCAD GUI task/dialog state around Sketcher and PartDesign feature workflows.",
+                {
+                    "document_name": {"type": "string"},
+                    "include_widget_tree": {"type": "boolean"},
+                    "max_widgets": {"type": "integer", "minimum": 1, "maximum": 50},
+                    "max_depth": {"type": "integer", "minimum": 0, "maximum": 4},
+                    "max_children": {"type": "integer", "minimum": 1, "maximum": 80},
+                    "text_max_length": {"type": "integer", "minimum": 20, "maximum": 500},
+                },
+                [],
+                "feature_task_state",
+            ),
         ]
 
     def definition_map(self) -> dict[str, ToolDefinition]:
