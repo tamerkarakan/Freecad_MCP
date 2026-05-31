@@ -452,6 +452,25 @@ def get_object(doc, name):
     return obj
 
 
+def get_object_for_label_update(doc, selector):
+    obj = doc.getObject(selector)
+    if obj is not None:
+        return obj
+    matches = [candidate for candidate in doc.Objects if candidate.Label == selector]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError("object label is ambiguous: " + str(selector))
+    raise ValueError("object not found: " + str(selector))
+
+
+def ensure_unique_label(doc, obj, label):
+    obj_name = getattr(obj, "Name", None)
+    for candidate in doc.Objects:
+        if getattr(candidate, "Name", None) != obj_name and candidate.Label == label:
+            raise ValueError("label already exists on object: " + candidate.Name)
+
+
 def partdesign_summary(obj):
     type_id = getattr(obj, "TypeId", "")
     if not str(type_id).startswith("PartDesign::"):
@@ -696,6 +715,29 @@ def action_object_set_properties(args):
     doc.recompute()
     saved = save_if_requested(doc, args)
     return {"saved_path": saved, "changed": changed, "object": object_summary(obj), "document": document_summary(doc)}
+
+
+def action_object_rename_label(args):
+    doc = App.openDocument(args["document_path"])
+    obj = get_object_for_label_update(doc, args["object_name"])
+    label = str(args.get("label") or "").strip()
+    if not label:
+        raise ValueError("label is required")
+    if bool(args.get("require_unique", True)):
+        ensure_unique_label(doc, obj, label)
+    before = {"name": obj.Name, "label": obj.Label}
+    doc.openTransaction("MCP rename object label")
+    obj.Label = label
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "before": before,
+        "after": {"name": obj.Name, "label": obj.Label},
+        "object": object_summary(obj),
+        "document": document_summary(doc),
+    }
 
 
 def action_object_delete(args):
@@ -3136,6 +3178,7 @@ DISPATCH = {
     "object_list": action_object_list,
     "object_get": action_object_get,
     "object_set_properties": action_object_set_properties,
+    "object_rename_label": action_object_rename_label,
     "object_delete": action_object_delete,
     "part_create_primitive": action_part_create_primitive,
     "part_boolean": action_part_boolean,

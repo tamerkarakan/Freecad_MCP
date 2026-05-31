@@ -46,7 +46,7 @@
         }
       },
       "workbench_artifact": null,
-      "tool_count": 22,
+      "tool_count": 23,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -59,6 +59,7 @@
         "freecad_object_list",
         "freecad_object_get",
         "freecad_object_set_properties",
+        "freecad_object_rename_label",
         "freecad_object_delete",
         "freecad_part_create_primitive",
         "freecad_part_boolean",
@@ -116,7 +117,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 65,
+      "tool_count": 67,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -129,6 +130,7 @@
         "freecad_object_list",
         "freecad_object_get",
         "freecad_object_set_properties",
+        "freecad_object_rename_label",
         "freecad_object_delete",
         "freecad_part_create_primitive",
         "freecad_part_boolean",
@@ -177,6 +179,7 @@
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
         "freecad_gui_primitive_create",
+        "freecad_gui_object_label_set",
         "freecad_gui_sketch_state",
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
@@ -230,7 +233,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 123,
+      "tool_count": 126,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -281,6 +284,7 @@
         "freecad_worker_object_list",
         "freecad_worker_object_get",
         "freecad_worker_object_set_properties",
+        "freecad_worker_object_rename_label",
         "freecad_worker_object_delete",
         "freecad_document_new",
         "freecad_document_open",
@@ -290,6 +294,7 @@
         "freecad_object_list",
         "freecad_object_get",
         "freecad_object_set_properties",
+        "freecad_object_rename_label",
         "freecad_object_delete",
         "freecad_part_create_primitive",
         "freecad_part_boolean",
@@ -349,6 +354,7 @@
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
         "freecad_gui_primitive_create",
+        "freecad_gui_object_label_set",
         "freecad_gui_sketch_state",
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
@@ -404,7 +410,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 126,
+      "tool_count": 129,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -458,6 +464,7 @@
         "freecad_worker_object_list",
         "freecad_worker_object_get",
         "freecad_worker_object_set_properties",
+        "freecad_worker_object_rename_label",
         "freecad_worker_object_delete",
         "freecad_document_new",
         "freecad_document_open",
@@ -467,6 +474,7 @@
         "freecad_object_list",
         "freecad_object_get",
         "freecad_object_set_properties",
+        "freecad_object_rename_label",
         "freecad_object_delete",
         "freecad_part_create_primitive",
         "freecad_part_boolean",
@@ -526,6 +534,7 @@
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
         "freecad_gui_primitive_create",
+        "freecad_gui_object_label_set",
         "freecad_gui_sketch_state",
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",

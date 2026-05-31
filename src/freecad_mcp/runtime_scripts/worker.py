@@ -381,6 +381,25 @@ def get_object(doc, name):
     raise ValueError("object not found: " + name)
 
 
+def get_object_for_label_update(doc, selector):
+    obj = doc.getObject(selector)
+    if obj is not None:
+        return obj
+    matches = [candidate for candidate in doc.Objects if candidate.Label == selector]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError("object label is ambiguous: " + str(selector))
+    raise ValueError("object not found: " + str(selector))
+
+
+def ensure_unique_label(doc, obj, label):
+    obj_name = getattr(obj, "Name", None)
+    for candidate in doc.Objects:
+        if getattr(candidate, "Name", None) != obj_name and candidate.Label == label:
+            raise ValueError("label already exists on object: " + candidate.Name)
+
+
 def normalize_partdesign_plane(value):
     raw = str(value or "XY").upper().replace("_PLANE", "").replace("-PLANE", "").replace(" PLANE", "")
     if raw not in {"XY", "XZ", "YZ"}:
@@ -723,6 +742,33 @@ def action_object_set_properties(params):
     doc.recompute()
     saved = save_doc(doc, params)
     return {"saved_path": saved, "changed": changed, "object": object_summary(obj), "document": document_summary(doc)}
+
+
+def action_object_rename_label(params):
+    doc = get_doc(params)
+    obj = get_object_for_label_update(doc, params.get("object_name") or "")
+    label = str(params.get("label") or "").strip()
+    if not label:
+        raise ValueError("label is required")
+    if bool(params.get("require_unique", True)):
+        ensure_unique_label(doc, obj, label)
+    before = {"name": obj.Name, "label": obj.Label}
+    doc.openTransaction("MCP worker rename object label")
+    try:
+        obj.Label = label
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "before": before,
+        "after": {"name": obj.Name, "label": obj.Label},
+        "object": object_summary(obj),
+        "document": document_summary(doc),
+    }
 
 
 def action_object_delete(params):
@@ -2406,6 +2452,7 @@ ACTIONS = {
     "object_list": action_object_list,
     "object_get": action_object_get,
     "object_set_properties": action_object_set_properties,
+    "object_rename_label": action_object_rename_label,
     "object_delete": action_object_delete,
 }
 

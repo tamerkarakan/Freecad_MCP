@@ -26,6 +26,22 @@ def worker_result(result: dict, label: str) -> dict:
     return worker["result"]
 
 
+def write_tiny_ascii_stl(path: Path) -> None:
+    path.write_text(
+        """solid freecad_mcp_worker_fixture
+  facet normal 0 0 1
+    outer loop
+      vertex 0 0 0
+      vertex 10 0 0
+      vertex 0 10 0
+    endloop
+  endfacet
+endsolid freecad_mcp_worker_fixture
+""",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     if not os.environ.get("FREECAD_MCP_FREECAD_HOME") and not os.environ.get("FREECAD_MCP_FREECAD_CMD"):
         message = "persistent worker smoke SKIPPED: FreeCAD runtime env not configured"
@@ -551,6 +567,32 @@ def main() -> int:
             if updated_bbox["xmax"] != 8.0:
                 raise RuntimeError(f"worker object property update failed: {updated}")
 
+            renamed = worker_result(
+                service.definition_map()["freecad_worker_object_rename_label"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_name": "WorkerBox",
+                        "label": "Worker Main Box",
+                    }
+                ),
+                "worker_object_rename_label",
+            )
+            if renamed["after"]["name"] != "WorkerBox" or renamed["after"]["label"] != "Worker Main Box":
+                raise RuntimeError(f"worker object label rename changed the wrong fields: {renamed}")
+            renamed_lookup = worker_result(
+                service.definition_map()["freecad_worker_object_get"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "object_name": "Worker Main Box",
+                    }
+                ),
+                "worker_object_get renamed label",
+            )
+            if renamed_lookup["object"]["name"] != "WorkerBox":
+                raise RuntimeError(f"worker renamed label lookup failed: {renamed_lookup}")
+
             second = worker_result(
                 service.definition_map()["freecad_worker_part_create_primitive"].handler(
                     {
@@ -590,14 +632,14 @@ def main() -> int:
             if not checks["checks"] or not checks["checks"][0]["is_valid"]:
                 raise RuntimeError(f"worker geometry check failed: {checks}")
 
-            mesh_source = temp / "worker-fuse.stl"
+            exported_mesh_source = temp / "worker-fuse-export.stl"
             mesh_source_export = worker_result(
                 service.definition_map()["freecad_worker_document_export"].handler(
                     {
                         "session_id": session_id,
                         "document_id": document_id,
                         "object_names": ["WorkerFuse"],
-                        "output_path": str(mesh_source),
+                        "output_path": str(exported_mesh_source),
                         "overwrite": True,
                     }
                 ),
@@ -606,12 +648,15 @@ def main() -> int:
             if not Path(mesh_source_export["exported_path"]).exists():
                 raise RuntimeError(f"worker STL export missing: {mesh_source_export}")
 
+            mesh_source = temp / "worker-import-fixture.stl"
+            write_tiny_ascii_stl(mesh_source)
             mesh_import = worker_result(
                 service.definition_map()["freecad_worker_mesh_import"].handler(
                     {
                         "session_id": session_id,
                         "document_id": document_id,
                         "input_path": str(mesh_source),
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_mesh_import",

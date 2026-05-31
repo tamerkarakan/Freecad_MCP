@@ -207,6 +207,18 @@ except Exception as exc:
         for index, record in enumerate(records):
             if record.get("object_name") != object_names[index] or "Face1" not in record.get("subelement_names", []):
                 raise RuntimeError(f"unexpected GUI selection record: {record}")
+        label_set = tools["freecad_gui_object_label_set"].handler(
+            {
+                "session_id": session_id,
+                "document_name": str(ready["document_name"]),
+                "object_name": object_names[0],
+                "label": "GUI Primary Box",
+                "require_unique": True,
+                "select": False,
+            }
+        )
+        if label_set["gui"]["object"]["label"] != "GUI Primary Box":
+            raise RuntimeError(f"GUI label set failed: {label_set}")
         sketch_state = tools["freecad_gui_sketch_state"].handler(
             {
                 "session_id": session_id,
@@ -306,6 +318,7 @@ except Exception as exc:
             "attach": attach,
             "status_result": status,
             "selection_result": selection,
+            "label_set_result": label_set,
             "sketch_state_result": sketch_state,
             "sketch_enter_result": sketch_enter,
             "feature_task_state_result": feature_task_state,

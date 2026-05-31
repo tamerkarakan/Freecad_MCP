@@ -2361,6 +2361,58 @@ Set simple object properties inside an in-memory worker document.
 }
 ```
 
+## `freecad_worker_object_rename_label`
+
+Set the user-visible object Label while keeping the internal FreeCAD Name stable inside an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "require_unique": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "object_name",
+    "label"
+  ]
+}
+```
+
 ## `freecad_worker_object_delete`
 
 Delete object(s) inside an in-memory worker document.
@@ -2774,6 +2826,65 @@ Set simple object properties and save optionally.
     "document_path",
     "object_name",
     "properties"
+  ]
+}
+```
+
+## `freecad_object_rename_label`
+
+Set the user-visible object Label while keeping the internal FreeCAD Name stable.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "require_unique": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "object_name",
+    "label"
   ]
 }
 ```
@@ -6024,6 +6135,50 @@ Create a typed primitive in the active FreeCAD GUI document.
   },
   "required": [
     "session_id"
+  ]
+}
+```
+
+## `freecad_gui_object_label_set`
+
+Set the user-visible object Label in the live FreeCAD GUI while keeping the internal FreeCAD Name stable.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "require_unique": {
+      "type": "boolean"
+    },
+    "select": {
+      "type": "boolean"
+    },
+    "fit_view": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id",
+    "object_name",
+    "label"
   ]
 }
 ```

@@ -43,6 +43,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
 | `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
+| `freecad_gui_object_label_set` | Set a user-visible object Label while keeping the internal FreeCAD Name stable. | Yes |
 | `freecad_gui_sketch_state` | Inspect active or selected Sketcher state, edit mode, DoF, geometry/constraint counts, diagnostics, selected records, and optional bounded geometry/constraint summaries. | No by default; optional diagnostics refresh can run solver/missing-constraint reads. |
 | `freecad_gui_sketch_enter` | Enter Sketcher edit mode for an explicit, selected, active, or uniquely inferable sketch, optionally selecting/fitting it. | GUI state only |
 | `freecad_gui_sketch_leave` | Leave current Sketcher edit mode, optionally recompute, select the sketch, and return fresh state. | GUI state plus optional recompute |
@@ -79,6 +80,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 
 - GUI attach tools must be read-only by default.
 - Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
+- Object `Name` is treated as the stable technical identifier; user-facing rename flows set `Label` and should keep labels unique by default.
 - Selection and view reads must not call broad Python execution.
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
@@ -90,7 +92,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
 - Unit tests assert Sketcher and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge.
 - Static MCP smoke confirms GUI attach schemas are listed.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, enters/leaves a sketch, reads feature-task state, and activates a PartDesign Body.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, and activates a PartDesign Body.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals

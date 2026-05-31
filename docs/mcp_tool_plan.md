@@ -20,7 +20,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
-| `freecad_worker_object_list/get/set_properties/delete` | Inspect and mutate in-memory worker document objects. | FreeCAD process |
+| `freecad_worker_object_list/get/set_properties/rename_label/delete` | Inspect and mutate in-memory worker document objects, including user-visible Labels. | FreeCAD process |
 | `freecad_gui_attach/list/detach/status` | Attach to a running FreeCAD GUI loopback bridge and manage GUI bridge sessions. | FreeCAD GUI bridge |
 | `freecad_gui_active_document_get/active_view_get` | Read the active GUI document and active view/camera snapshot. | FreeCADGui API |
 | `freecad_gui_selection_get/preselection_get/selection_set/view_fit` | Read or set GUI selection/preselection records and fit the active view. | FreeCADGui Selection/View API |
@@ -33,6 +33,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_object_list` | List objects with labels, types, visibility, placement. | FreeCAD API |
 | `freecad_object_get` | Inspect object properties and shape summary. | FreeCAD API |
 | `freecad_object_set_properties` | Set validated object properties. | FreeCAD API |
+| `freecad_object_rename_label` | Set a user-visible object Label while keeping internal Name stable. | FreeCAD API |
 | `freecad_object_delete` | Remove object(s) by stable name. | FreeCAD API |
 
 ## P1 Tools

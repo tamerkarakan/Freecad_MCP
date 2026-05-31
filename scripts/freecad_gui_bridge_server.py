@@ -236,6 +236,28 @@ def object_ref(obj: Any) -> dict[str, Any] | None:
     }
 
 
+def resolve_object_for_label_update(doc: Any, selector: Any) -> Any:
+    raw = str(selector or "")
+    if not raw:
+        raise ValueError("object_name is required")
+    obj = doc.getObject(raw)
+    if obj is not None:
+        return obj
+    matches = [candidate for candidate in doc.Objects if getattr(candidate, "Label", None) == raw]
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        raise ValueError("object label is ambiguous: " + raw)
+    raise ValueError("object not found: " + raw)
+
+
+def ensure_unique_label(doc: Any, obj: Any, label: str) -> None:
+    obj_name = getattr(obj, "Name", None)
+    for candidate in doc.Objects:
+        if getattr(candidate, "Name", None) != obj_name and getattr(candidate, "Label", None) == label:
+            raise ValueError("label already exists on object: " + str(getattr(candidate, "Name", candidate)))
+
+
 def document_from_params(params: dict[str, Any]) -> Any:
     import FreeCAD as App
 
@@ -928,6 +950,42 @@ def rpc_primitive_create(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def rpc_object_label_set(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        raise ValueError("no active document")
+    obj = resolve_object_for_label_update(doc, params.get("object_name"))
+    label = str(params.get("label") or "").strip()
+    if not label:
+        raise ValueError("label is required")
+    if bool(params.get("require_unique", True)):
+        ensure_unique_label(doc, obj, label)
+
+    before = {"name": obj.Name, "label": obj.Label}
+    doc.openTransaction("MCP GUI set object label")
+    try:
+        obj.Label = label
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+
+    selection = select_object(doc, obj, clear=True) if bool(params.get("select", False)) else {"selected": False}
+    gui_doc = gui_document_for(doc) or Gui.activeDocument()
+    view = fit_view_if_requested(gui_doc, bool(params.get("fit_view", False)), selection_only=True)
+    return {
+        "before": before,
+        "after": {"name": obj.Name, "label": obj.Label},
+        "object": object_summary(obj),
+        "selection": selection,
+        "view": view,
+        "document": active_document_summary(),
+    }
+
+
 def rpc_sketch_state(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCADGui as Gui
 
@@ -1124,6 +1182,7 @@ RPC_METHODS = {
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
     "primitive_create": rpc_primitive_create,
+    "object_label_set": rpc_object_label_set,
     "sketch_state": rpc_sketch_state,
     "sketch_enter": rpc_sketch_enter,
     "sketch_leave": rpc_sketch_leave,

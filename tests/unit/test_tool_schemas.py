@@ -70,6 +70,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_assembly_create_joint",
             "freecad_worker_object_get",
             "freecad_worker_object_set_properties",
+            "freecad_worker_object_rename_label",
             "freecad_worker_object_delete",
         ]:
             self.assertIn(name, tools)
@@ -93,6 +94,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_gui_selection_set",
             "freecad_gui_view_fit",
             "freecad_gui_primitive_create",
+            "freecad_gui_object_label_set",
             "freecad_gui_sketch_state",
             "freecad_gui_sketch_enter",
             "freecad_gui_sketch_leave",
@@ -138,6 +140,14 @@ class ToolSchemaTests(unittest.TestCase):
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
+
+    def test_object_label_rename_tool_is_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        self.assertIn("freecad_object_rename_label", tools)
+        props = tools["freecad_object_rename_label"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("label", props)
+        self.assertIn("require_unique", props)
 
     def test_sketch_profile_tools_are_exposed(self) -> None:
         tools = CadToolService().definition_map()

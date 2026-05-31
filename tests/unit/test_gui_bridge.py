@@ -53,6 +53,8 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             result = {"activated": {"name": "Body"}, "params": payload.get("params") or {}}
         elif method == "feature_task_state":
             result = {"control": {"has_active_dialog": True}, "params": payload.get("params") or {}}
+        elif method == "object_label_set":
+            result = {"object": {"name": "Box", "label": payload.get("params", {}).get("label")}, "params": payload.get("params") or {}}
         else:
             result = {"method": method, "params": payload.get("params") or {}}
         self.send_payload({"ok": True, "result": result})
@@ -122,6 +124,7 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertEqual(status["gui"]["bridge"], "ok")
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertIn("freecad_gui_object_label_set", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
         self.assertIn("freecad_gui_sketch_enter", tools)
         self.assertIn("freecad_gui_sketch_leave", tools)
@@ -149,6 +152,26 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(created["gui"]["method"], "primitive_create")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "GuiCylinder")
+
+    def test_gui_object_label_set_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        renamed = tools["freecad_gui_object_label_set"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "object_name": "Box",
+                "label": "Main Housing",
+                "require_unique": True,
+            }
+        )
+
+        self.assertEqual(renamed["gui"]["object"]["label"], "Main Housing")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "object_label_set")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["label"], "Main Housing")
 
     def test_gui_sketch_and_partdesign_state_delegate_to_bridge(self) -> None:
         service = GuiToolService()

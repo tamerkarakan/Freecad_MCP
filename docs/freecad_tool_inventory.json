@@ -291,6 +291,7 @@
         "freecad_worker_object_list",
         "freecad_worker_object_get",
         "freecad_worker_object_set_properties",
+        "freecad_worker_object_rename_label",
         "freecad_worker_object_delete",
         "freecad_python_exec"
       ],
@@ -311,6 +312,7 @@
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
         "freecad_gui_primitive_create",
+        "freecad_gui_object_label_set",
         "freecad_gui_sketch_state",
         "freecad_gui_sketch_enter",
         "freecad_gui_sketch_leave",
@@ -318,7 +320,7 @@
         "freecad_gui_body_activate",
         "freecad_gui_feature_task_state"
       ],
-      "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation."
+      "evidence": "GUI attach mode is required for active view, preselection, picked points, selected edge/face state, user-visible labels, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation."
     },
     {
       "family": "freecad.document",
@@ -339,10 +341,11 @@
         "freecad_object_list",
         "freecad_object_get",
         "freecad_object_set_properties",
+        "freecad_object_rename_label",
         "freecad_object_delete",
         "freecad_object_fit_view"
       ],
-      "evidence": "MCP clients need deterministic object inspection instead of blind command execution."
+      "evidence": "MCP clients need deterministic object inspection and user-visible naming instead of blind command execution."
     },
     {
       "family": "freecad.command",

@@ -114,6 +114,21 @@ class GuiToolService:
                 "primitive_create",
             ),
             self._gui_tool(
+                "freecad_gui_object_label_set",
+                "Set GUI Object Label",
+                "Set the user-visible object Label in the live FreeCAD GUI while keeping the internal FreeCAD Name stable.",
+                {
+                    "document_name": {"type": "string"},
+                    "object_name": {"type": "string"},
+                    "label": {"type": "string"},
+                    "require_unique": {"type": "boolean"},
+                    "select": {"type": "boolean"},
+                    "fit_view": {"type": "boolean"},
+                },
+                ["object_name", "label"],
+                "object_label_set",
+            ),
+            self._gui_tool(
                 "freecad_gui_sketch_state",
                 "Get GUI Sketch State",
                 "Inspect active or selected Sketcher state from the live FreeCAD GUI without mutating geometry.",

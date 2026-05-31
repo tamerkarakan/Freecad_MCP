@@ -98,6 +98,29 @@ def main() -> int:
         if objects["document"]["object_count"] < 1:
             raise RuntimeError(f"object list empty: {objects}")
 
+        renamed = assert_ok(
+            service.definition_map()["freecad_object_rename_label"].handler(
+                {
+                    "document_path": str(document),
+                    "object_name": "Box",
+                    "label": "Main Housing",
+                    "output_path": str(document),
+                    "overwrite": True,
+                }
+            ),
+            "object_rename_label",
+        )
+        if renamed["after"]["name"] != "Box" or renamed["after"]["label"] != "Main Housing":
+            raise RuntimeError(f"object label rename changed the wrong fields: {renamed}")
+        renamed_lookup = assert_ok(
+            service.definition_map()["freecad_object_get"].handler(
+                {"document_path": str(document), "object_name": "Main Housing"}
+            ),
+            "object_get renamed label",
+        )
+        if renamed_lookup["object"]["name"] != "Box":
+            raise RuntimeError(f"renamed label lookup did not resolve stable object name: {renamed_lookup}")
+
         export = assert_ok(
             service.definition_map()["freecad_export_file"].handler(
                 {"document_path": str(document), "output_path": str(exported), "overwrite": True}

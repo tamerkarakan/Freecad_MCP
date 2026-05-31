@@ -116,6 +116,7 @@ def main() -> int:
     assert "freecad_worker_document_new" in tool_names
     assert "freecad_gui_attach" in tool_names
     assert "freecad_gui_selection_get" in tool_names
+    assert "freecad_gui_object_label_set" in tool_names
     assert "freecad_gui_sketch_state" in tool_names
     assert "freecad_gui_sketch_enter" in tool_names
     assert "freecad_gui_sketch_leave" in tool_names
@@ -128,6 +129,7 @@ def main() -> int:
     assert "freecad_fem_analysis_create" in tool_names
     assert "freecad_partdesign_body_create" in tool_names
     assert "freecad_partdesign_pad" in tool_names
+    assert "freecad_object_rename_label" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names
     assert "freecad_curve_fit_analyze" in tool_names

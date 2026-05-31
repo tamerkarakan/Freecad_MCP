@@ -632,6 +632,20 @@ class PersistentToolService:
                 "object_set_properties",
             ),
             self._worker_tool(
+                "freecad_worker_object_rename_label",
+                "Worker Rename Object Label",
+                "Set the user-visible object Label while keeping the internal FreeCAD Name stable inside an in-memory worker document.",
+                {
+                    "document_id": {"type": "string"},
+                    "object_name": {"type": "string"},
+                    "label": {"type": "string"},
+                    "require_unique": {"type": "boolean"},
+                    **SAVE_PROPS,
+                },
+                ["document_id", "object_name", "label"],
+                "object_rename_label",
+            ),
+            self._worker_tool(
                 "freecad_worker_object_delete",
                 "Worker Delete Objects",
                 "Delete object(s) inside an in-memory worker document.",

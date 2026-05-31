@@ -54,6 +54,7 @@ class BuildServerTests(unittest.TestCase):
 
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertIn("freecad_gui_object_label_set", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
         self.assertIn("freecad_gui_sketch_enter", tools)
         self.assertIn("freecad_gui_sketch_leave", tools)
@@ -71,6 +72,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("partdesign", selection.expanded)
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_partdesign_pad", tools)
+        self.assertIn("freecad_object_rename_label", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
         self.assertNotIn("freecad_cam_path_create", tools)
         self.assertNotIn("freecad_fem_analysis_create", tools)
