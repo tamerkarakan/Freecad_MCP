@@ -54,6 +54,8 @@ class BuildServerTests(unittest.TestCase):
 
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertIn("freecad_gui_sketch_state", tools)
+        self.assertIn("freecad_gui_partdesign_state", tools)
         self.assertNotIn("freecad_part_create_primitive", tools)
         self.assertNotIn("freecad_command_describe", tools)
 

@@ -62,6 +62,7 @@ class WorkerScriptTests(unittest.TestCase):
         self.assertGreater(len(FREECAD_WORKER_SCRIPT), 1000)
         self.assertIn(WORKER_PREFIX, FREECAD_WORKER_SCRIPT)
         self.assertIn("ACTIONS", FREECAD_WORKER_SCRIPT)
+        self.assertIn('"is_null": True', FREECAD_WORKER_SCRIPT)
         compile(FREECAD_WORKER_SCRIPT, "<worker_script>", "exec")
 
 

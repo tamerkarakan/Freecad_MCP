@@ -204,11 +204,23 @@ def shape_summary(obj):
     if not hasattr(obj, "Shape"):
         return None
     shape = obj.Shape
-    if shape is None or shape.isNull():
+    if shape is None:
         return None
+    if shape.isNull():
+        return {
+            "valid": False,
+            "is_null": True,
+            "solids": 0,
+            "shells": 0,
+            "faces": 0,
+            "edges": 0,
+            "vertices": 0,
+            "bound_box": None,
+        }
     box = shape.BoundBox
     return {
         "valid": bool(shape.isValid()),
+        "is_null": False,
         "solids": len(shape.Solids),
         "shells": len(shape.Shells),
         "faces": len(shape.Faces),

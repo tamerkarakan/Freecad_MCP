@@ -6027,3 +6027,95 @@ Create a typed primitive in the active FreeCAD GUI document.
   ]
 }
 ```
+
+## `freecad_gui_sketch_state`
+
+Inspect active or selected Sketcher state from the live FreeCAD GUI without mutating geometry.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "include_geometry": {
+      "type": "boolean"
+    },
+    "include_constraints": {
+      "type": "boolean"
+    },
+    "refresh_diagnostics": {
+      "type": "boolean",
+      "description": "Optionally run solver/missing-constraint diagnostics before reading state."
+    },
+    "precision": {
+      "type": "number"
+    },
+    "angle_precision": {
+      "type": "number"
+    },
+    "include_construction": {
+      "type": "boolean"
+    },
+    "max_items": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_partdesign_state`
+
+Inspect PartDesign Body, Tip, feature chain, edit object, and selection state from the live FreeCAD GUI.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "include_features": {
+      "type": "boolean"
+    },
+    "max_items": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```

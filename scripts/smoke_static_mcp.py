@@ -116,6 +116,8 @@ def main() -> int:
     assert "freecad_worker_document_new" in tool_names
     assert "freecad_gui_attach" in tool_names
     assert "freecad_gui_selection_get" in tool_names
+    assert "freecad_gui_sketch_state" in tool_names
+    assert "freecad_gui_partdesign_state" in tool_names
     assert "freecad_techdraw_page_create" in tool_names
     assert "freecad_techdraw_page_export" in tool_names
     assert "freecad_cam_path_create" in tool_names
@@ -134,6 +136,7 @@ def main() -> int:
     assert any(resource["uri"] == "freecad://schemas/tools" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/roadmap-status" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/workbench-bridge" for resource in resources["result"]["resources"])
+    assert any(resource["uri"] == "freecad://docs/gui-1-1-1-research" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/vision-debug-pipeline" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/techdraw-cam-fem-plan" for resource in resources["result"]["resources"])
     assert any(resource["uri"] == "freecad://docs/product-modules" for resource in resources["result"]["resources"])

@@ -198,6 +198,266 @@ def object_summary(obj: Any) -> dict[str, Any]:
     }
 
 
+def object_ref(obj: Any) -> dict[str, Any] | None:
+    if obj is None:
+        return None
+    return {
+        "name": getattr(obj, "Name", None),
+        "label": getattr(obj, "Label", None),
+        "type_id": getattr(obj, "TypeId", None),
+    }
+
+
+def document_from_params(params: dict[str, Any]) -> Any:
+    import FreeCAD as App
+
+    doc_name = params.get("document_name")
+    if doc_name:
+        doc = App.getDocument(str(doc_name))
+        if doc is None:
+            raise ValueError("document not found: " + str(doc_name))
+        return doc
+    return App.activeDocument()
+
+
+def gui_document_for(doc: Any) -> Any:
+    import FreeCADGui as Gui
+
+    if doc is not None:
+        try:
+            gui_doc = Gui.getDocument(doc.Name)
+            if gui_doc is not None:
+                return gui_doc
+        except Exception:
+            pass
+    return Gui.activeDocument()
+
+
+def is_sketch_object(obj: Any) -> bool:
+    return str(getattr(obj, "TypeId", "")).startswith("Sketcher::SketchObject")
+
+
+def is_partdesign_body(obj: Any) -> bool:
+    return str(getattr(obj, "TypeId", "")) == "PartDesign::Body"
+
+
+def active_edit_state(doc: Any) -> dict[str, Any]:
+    gui_doc = gui_document_for(doc)
+    edit_vp = None
+    edit_obj = None
+    subname = None
+    subelement = None
+    mode = None
+    if gui_doc is not None:
+        try:
+            info = getattr(gui_doc, "InEditInfo", None)
+            if info:
+                edit_obj = info[0] if len(info) > 0 else None
+                subname = info[1] if len(info) > 1 else None
+                subelement = info[2] if len(info) > 2 else None
+                mode = int(info[3]) if len(info) > 3 else None
+        except Exception:
+            pass
+        try:
+            edit_vp = gui_doc.getInEdit()
+        except Exception:
+            edit_vp = None
+        if edit_obj is None and edit_vp is not None:
+            edit_obj = getattr(edit_vp, "Object", None)
+    return {
+        "in_edit": edit_obj is not None or edit_vp is not None,
+        "object": object_ref(edit_obj),
+        "view_provider_type": type(edit_vp).__name__ if edit_vp is not None else None,
+        "subname": subname,
+        "subelement": subelement,
+        "mode": mode,
+    }
+
+
+def safe_int_list(value: Any) -> list[int]:
+    try:
+        return [int(item) for item in (value or [])]
+    except Exception:
+        return []
+
+
+def bounded_max_items(params: dict[str, Any], default: int = 50) -> int:
+    try:
+        raw = int(params.get("max_items", default))
+    except Exception:
+        raw = default
+    return max(1, min(200, raw))
+
+
+def constraint_summary(constraint: Any, index: int) -> dict[str, Any]:
+    result: dict[str, Any] = {"index": index}
+    for attr in ("Type", "Name", "First", "FirstPos", "Second", "SecondPos", "Third", "ThirdPos", "Value", "IsDriving"):
+        try:
+            value = getattr(constraint, attr)
+        except Exception:
+            continue
+        try:
+            json.dumps(value)
+            result[attr[0].lower() + attr[1:]] = value
+        except Exception:
+            result[attr[0].lower() + attr[1:]] = str(value)
+    return result
+
+
+def geometry_summary(geometry: Any, index: int) -> dict[str, Any]:
+    result = {"index": index, "type": type(geometry).__name__, "repr": repr(geometry)}
+    for attr in ("Construction", "Tag", "Layer"):
+        try:
+            value = getattr(geometry, attr)
+        except Exception:
+            continue
+        try:
+            json.dumps(value)
+            result[attr[0].lower() + attr[1:]] = value
+        except Exception:
+            result[attr[0].lower() + attr[1:]] = str(value)
+    return result
+
+
+def sketch_summary(sketch: Any, params: dict[str, Any]) -> dict[str, Any]:
+    max_items = bounded_max_items(params)
+    refresh = bool(params.get("refresh_diagnostics", False))
+    solve_code = None
+    refresh_errors = []
+    if refresh:
+        for label, call in (
+            ("solve", lambda: sketch.solve()),
+            ("detectMissingPointOnPointConstraints", lambda: sketch.detectMissingPointOnPointConstraints(float(params.get("precision", 1e-4)), bool(params.get("include_construction", True)))),
+            ("analyseMissingPointOnPointCoincident", lambda: sketch.analyseMissingPointOnPointCoincident(float(params.get("angle_precision", 0.3926990817)))),
+            ("detectMissingVerticalHorizontalConstraints", lambda: sketch.detectMissingVerticalHorizontalConstraints(float(params.get("angle_precision", 0.3926990817)))),
+            ("detectMissingEqualityConstraints", lambda: sketch.detectMissingEqualityConstraints(float(params.get("precision", 1e-4)))),
+        ):
+            try:
+                value = call()
+                if label == "solve":
+                    solve_code = int(value)
+            except Exception as exc:
+                refresh_errors.append({"operation": label, "error": str(exc)})
+
+    geometry = list(getattr(sketch, "Geometry", []) or [])
+    constraints = list(getattr(sketch, "Constraints", []) or [])
+    dof = getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None))
+    try:
+        dof = int(dof) if dof is not None else None
+    except Exception:
+        pass
+
+    result: dict[str, Any] = {
+        "object": object_summary(sketch),
+        "geometry_count": len(geometry),
+        "constraint_count": len(constraints),
+        "degrees_of_freedom": dof,
+        "fully_constrained": dof == 0 if isinstance(dof, int) else None,
+        "open_vertices": [point for point in (vector_list(v) for v in getattr(sketch, "OpenVertices", []) or []) if point is not None],
+        "conflicting_constraints": safe_int_list(getattr(sketch, "ConflictingConstraints", [])),
+        "redundant_constraints": safe_int_list(getattr(sketch, "RedundantConstraints", [])),
+        "partially_redundant_constraints": safe_int_list(getattr(sketch, "PartiallyRedundantConstraints", [])),
+        "malformed_constraints": safe_int_list(getattr(sketch, "MalformedConstraints", [])),
+        "missing_point_on_point": list(getattr(sketch, "MissingPointOnPointConstraints", []) or []),
+        "missing_vertical_horizontal": list(getattr(sketch, "MissingVerticalHorizontalConstraints", []) or []),
+        "missing_line_equality": list(getattr(sketch, "MissingLineEqualityConstraints", []) or []),
+        "missing_radius": list(getattr(sketch, "MissingRadiusConstraints", []) or []),
+        "refresh_diagnostics": refresh,
+        "solve_code": solve_code,
+        "refresh_errors": refresh_errors,
+    }
+    try:
+        result["dependent_geometry"] = [list(pair) for pair in sketch.getGeometryWithDependentParameters()]
+    except Exception:
+        result["dependent_geometry"] = []
+    if bool(params.get("include_geometry", False)):
+        result["geometry"] = [geometry_summary(item, index) for index, item in enumerate(geometry[:max_items])]
+        result["geometry_truncated"] = len(geometry) > max_items
+    if bool(params.get("include_constraints", False)):
+        result["constraints"] = [constraint_summary(item, index) for index, item in enumerate(constraints[:max_items])]
+        result["constraints_truncated"] = len(constraints) > max_items
+    return result
+
+
+def body_contains(body: Any, obj: Any) -> bool:
+    if body is None or obj is None:
+        return False
+    try:
+        return bool(body.hasObject(obj))
+    except Exception:
+        pass
+    try:
+        return obj in (getattr(body, "Group", []) or [])
+    except Exception:
+        return False
+
+
+def link_summary(value: Any) -> Any:
+    if value is None:
+        return None
+    if hasattr(value, "Name") and hasattr(value, "TypeId"):
+        return object_ref(value)
+    if isinstance(value, (list, tuple)):
+        return [link_summary(item) for item in value[:10]]
+    return str(value)
+
+
+def body_feature_summary(body: Any, feature: Any, tip: Any) -> dict[str, Any]:
+    result = object_summary(feature)
+    result["is_tip"] = feature is tip
+    try:
+        result["after_tip"] = bool(body.isAfterInsertPoint(feature))
+    except Exception:
+        result["after_tip"] = None
+    links = {}
+    for attr in ("Profile", "BaseFeature", "Base", "Sketch", "Support"):
+        try:
+            value = getattr(feature, attr)
+        except Exception:
+            continue
+        if value is not None:
+            links[attr[0].lower() + attr[1:]] = link_summary(value)
+    if links:
+        result["links"] = links
+    return result
+
+
+def body_summary(body: Any, params: dict[str, Any]) -> dict[str, Any]:
+    max_items = bounded_max_items(params)
+    group = list(getattr(body, "Group", []) or [])
+    tip = getattr(body, "Tip", None)
+    origin = getattr(body, "Origin", None)
+    result: dict[str, Any] = {
+        "object": object_summary(body),
+        "tip": object_ref(tip),
+        "base_feature": object_ref(getattr(body, "BaseFeature", None)),
+        "feature_count": len(group),
+        "origin": object_ref(origin),
+    }
+    try:
+        result["is_solid"] = bool(body.isSolid())
+    except Exception:
+        result["is_solid"] = None
+    if origin is not None:
+        origin_group = list(getattr(origin, "Group", []) or getattr(origin, "OriginFeatures", []) or [])
+        result["origin_features"] = [object_ref(item) for item in origin_group[:max_items]]
+    if bool(params.get("include_features", True)):
+        result["features"] = [body_feature_summary(body, feature, tip) for feature in group[:max_items]]
+        result["features_truncated"] = len(group) > max_items
+    return result
+
+
+def infer_body_for_object(bodies: list[Any], obj: Any) -> Any:
+    if obj is None:
+        return None
+    if is_partdesign_body(obj):
+        return obj
+    for body in bodies:
+        if body_contains(body, obj):
+            return body
+    return None
+
+
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
@@ -332,6 +592,86 @@ def rpc_primitive_create(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def rpc_sketch_state(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        return {"document": None, "edit": active_edit_state(None), "active_sketch": None, "sketches": []}
+
+    edit = active_edit_state(doc)
+    sketches = [obj for obj in doc.Objects if is_sketch_object(obj)]
+    selected = Gui.Selection.getSelectionEx(doc.Name, 0)
+
+    sketch = None
+    sketch_name = params.get("sketch_name")
+    if sketch_name:
+        sketch = doc.getObject(str(sketch_name))
+        if sketch is None or not is_sketch_object(sketch):
+            raise ValueError("sketch not found: " + str(sketch_name))
+    if sketch is None and edit.get("object"):
+        edit_obj = doc.getObject(str(edit["object"].get("name")))
+        if is_sketch_object(edit_obj):
+            sketch = edit_obj
+    if sketch is None:
+        for sel in selected:
+            obj = getattr(sel, "Object", None)
+            if is_sketch_object(obj):
+                sketch = obj
+                break
+    if sketch is None and is_sketch_object(getattr(doc, "ActiveObject", None)):
+        sketch = doc.ActiveObject
+    if sketch is None and len(sketches) == 1:
+        sketch = sketches[0]
+
+    return {
+        "document": active_document_summary(),
+        "edit": edit,
+        "active_sketch": sketch_summary(sketch, params) if sketch is not None else None,
+        "sketches": [object_summary(item) for item in sketches],
+        "selection": [selection_record(sel) for sel in selected],
+    }
+
+
+def rpc_partdesign_state(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        return {"document": None, "edit": active_edit_state(None), "active_body": None, "bodies": []}
+
+    edit = active_edit_state(doc)
+    bodies = [obj for obj in doc.Objects if is_partdesign_body(obj)]
+    selected = Gui.Selection.getSelectionEx(doc.Name, 0)
+
+    active_body = None
+    body_name = params.get("body_name")
+    if body_name:
+        active_body = doc.getObject(str(body_name))
+        if active_body is None or not is_partdesign_body(active_body):
+            raise ValueError("body not found: " + str(body_name))
+    if active_body is None and edit.get("object"):
+        edit_obj = doc.getObject(str(edit["object"].get("name")))
+        active_body = infer_body_for_object(bodies, edit_obj)
+    if active_body is None:
+        active_body = infer_body_for_object(bodies, getattr(doc, "ActiveObject", None))
+    if active_body is None:
+        for sel in selected:
+            active_body = infer_body_for_object(bodies, getattr(sel, "Object", None))
+            if active_body is not None:
+                break
+    if active_body is None and len(bodies) == 1:
+        active_body = bodies[0]
+
+    return {
+        "document": active_document_summary(),
+        "edit": edit,
+        "active_body": body_summary(active_body, params) if active_body is not None else None,
+        "bodies": [body_summary(body, params) for body in bodies],
+        "selection": [selection_record(sel) for sel in selected],
+    }
+
+
 RPC_METHODS = {
     "status": rpc_status,
     "active_document_get": rpc_active_document_get,
@@ -341,6 +681,8 @@ RPC_METHODS = {
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
     "primitive_create": rpc_primitive_create,
+    "sketch_state": rpc_sketch_state,
+    "partdesign_state": rpc_partdesign_state,
 }
 
 

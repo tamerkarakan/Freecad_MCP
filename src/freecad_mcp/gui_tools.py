@@ -113,6 +113,37 @@ class GuiToolService:
                 [],
                 "primitive_create",
             ),
+            self._gui_tool(
+                "freecad_gui_sketch_state",
+                "Get GUI Sketch State",
+                "Inspect active or selected Sketcher state from the live FreeCAD GUI without mutating geometry.",
+                {
+                    "document_name": {"type": "string"},
+                    "sketch_name": {"type": "string"},
+                    "include_geometry": {"type": "boolean"},
+                    "include_constraints": {"type": "boolean"},
+                    "refresh_diagnostics": {"type": "boolean", "description": "Optionally run solver/missing-constraint diagnostics before reading state."},
+                    "precision": {"type": "number"},
+                    "angle_precision": {"type": "number"},
+                    "include_construction": {"type": "boolean"},
+                    "max_items": {"type": "integer", "minimum": 1, "maximum": 200},
+                },
+                [],
+                "sketch_state",
+            ),
+            self._gui_tool(
+                "freecad_gui_partdesign_state",
+                "Get GUI PartDesign State",
+                "Inspect PartDesign Body, Tip, feature chain, edit object, and selection state from the live FreeCAD GUI.",
+                {
+                    "document_name": {"type": "string"},
+                    "body_name": {"type": "string"},
+                    "include_features": {"type": "boolean"},
+                    "max_items": {"type": "integer", "minimum": 1, "maximum": 200},
+                },
+                [],
+                "partdesign_state",
+            ),
         ]
 
     def definition_map(self) -> dict[str, ToolDefinition]:

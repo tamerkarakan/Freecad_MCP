@@ -116,7 +116,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 59,
+      "tool_count": 61,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -176,7 +176,9 @@
         "freecad_gui_preselection_get",
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
-        "freecad_gui_primitive_create"
+        "freecad_gui_primitive_create",
+        "freecad_gui_sketch_state",
+        "freecad_gui_partdesign_state"
       ]
     },
     {
@@ -224,7 +226,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 117,
+      "tool_count": 119,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -342,7 +344,9 @@
         "freecad_gui_preselection_get",
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
-        "freecad_gui_primitive_create"
+        "freecad_gui_primitive_create",
+        "freecad_gui_sketch_state",
+        "freecad_gui_partdesign_state"
       ]
     },
     {
@@ -392,7 +396,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 120,
+      "tool_count": 122,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -513,7 +517,9 @@
         "freecad_gui_preselection_get",
         "freecad_gui_selection_set",
         "freecad_gui_view_fit",
-        "freecad_gui_primitive_create"
+        "freecad_gui_primitive_create",
+        "freecad_gui_sketch_state",
+        "freecad_gui_partdesign_state"
       ]
     },
     {

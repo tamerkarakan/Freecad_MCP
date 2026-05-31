@@ -41,6 +41,10 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
                 ],
                 "count": 1,
             }
+        elif method == "sketch_state":
+            result = {"active_sketch": {"object": {"name": "Sketch"}}, "params": payload.get("params") or {}}
+        elif method == "partdesign_state":
+            result = {"active_body": {"object": {"name": "Body"}}, "params": payload.get("params") or {}}
         else:
             result = {"method": method, "params": payload.get("params") or {}}
         self.send_payload({"ok": True, "result": result})
@@ -110,6 +114,8 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertEqual(status["gui"]["bridge"], "ok")
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertIn("freecad_gui_sketch_state", tools)
+        self.assertIn("freecad_gui_partdesign_state", tools)
 
     def test_gui_primitive_create_delegates_to_bridge(self) -> None:
         service = GuiToolService()
@@ -131,6 +137,33 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(created["gui"]["method"], "primitive_create")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "GuiCylinder")
+
+    def test_gui_sketch_and_partdesign_state_delegate_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        sketch = tools["freecad_gui_sketch_state"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "sketch_name": "Sketch",
+                "include_constraints": True,
+            }
+        )
+        partdesign = tools["freecad_gui_partdesign_state"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "body_name": "Body",
+            }
+        )
+
+        self.assertEqual(sketch["gui"]["active_sketch"]["object"]["name"], "Sketch")
+        self.assertEqual(partdesign["gui"]["active_body"]["object"]["name"], "Body")
+        self.assertEqual(FakeBridgeHandler.requests[-2]["payload"]["method"], "sketch_state")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "partdesign_state")
 
 
 if __name__ == "__main__":

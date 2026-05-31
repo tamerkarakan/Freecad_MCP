@@ -35,6 +35,7 @@ class CadActionScriptTests(unittest.TestCase):
         # sending it to FreeCADCmd. This protects any move to an external script file.
         self.assertIn("__ARGS_B64__", CAD_ACTION_SCRIPT)
         self.assertIn("def emit(", CAD_ACTION_SCRIPT)
+        self.assertIn('"is_null": True', CAD_ACTION_SCRIPT)
         compile(CAD_ACTION_SCRIPT, "<cad_action_script>", "exec")
 
 
