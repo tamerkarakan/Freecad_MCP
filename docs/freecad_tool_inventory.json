@@ -272,6 +272,8 @@
         "freecad_worker_partdesign_groove",
         "freecad_worker_partdesign_additive_loft",
         "freecad_worker_partdesign_subtractive_loft",
+        "freecad_worker_partdesign_additive_pipe",
+        "freecad_worker_partdesign_subtractive_pipe",
         "freecad_worker_part_revolve",
         "freecad_worker_part_check_geometry",
         "freecad_worker_sketch_create",
@@ -390,9 +392,11 @@
         "freecad_partdesign_revolution",
         "freecad_partdesign_groove",
         "freecad_partdesign_additive_loft",
-        "freecad_partdesign_subtractive_loft"
+        "freecad_partdesign_subtractive_loft",
+        "freecad_partdesign_additive_pipe",
+        "freecad_partdesign_subtractive_pipe"
       ],
-      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft workflows."
+      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe workflows."
     },
     {
       "family": "freecad.sketcher",

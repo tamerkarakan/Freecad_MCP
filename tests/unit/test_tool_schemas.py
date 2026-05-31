@@ -61,6 +61,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_groove",
             "freecad_worker_partdesign_additive_loft",
             "freecad_worker_partdesign_subtractive_loft",
+            "freecad_worker_partdesign_additive_pipe",
+            "freecad_worker_partdesign_subtractive_pipe",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -149,6 +151,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_groove",
             "freecad_partdesign_additive_loft",
             "freecad_partdesign_subtractive_loft",
+            "freecad_partdesign_additive_pipe",
+            "freecad_partdesign_subtractive_pipe",
         ]:
             self.assertIn(name, tools)
         loft_props = tools["freecad_partdesign_additive_loft"].to_mcp()["inputSchema"]["properties"]
@@ -157,6 +161,12 @@ class ToolSchemaTests(unittest.TestCase):
         subtractive_loft_props = tools["freecad_partdesign_subtractive_loft"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("sections", subtractive_loft_props)
         self.assertIn("profile_name", subtractive_loft_props)
+        pipe_props = tools["freecad_partdesign_additive_pipe"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("spine_name", pipe_props)
+        self.assertIn("profile_name", pipe_props)
+        subtractive_pipe_props = tools["freecad_partdesign_subtractive_pipe"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("spine_name", subtractive_pipe_props)
+        self.assertIn("profile_name", subtractive_pipe_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)

@@ -136,6 +136,8 @@ def main() -> int:
     assert "freecad_partdesign_groove" in tool_names
     assert "freecad_partdesign_additive_loft" in tool_names
     assert "freecad_partdesign_subtractive_loft" in tool_names
+    assert "freecad_partdesign_additive_pipe" in tool_names
+    assert "freecad_partdesign_subtractive_pipe" in tool_names
     assert "freecad_worker_partdesign_datum_plane_create" in tool_names
     assert "freecad_worker_partdesign_pocket" in tool_names
     assert "freecad_worker_partdesign_hole" in tool_names
@@ -143,6 +145,8 @@ def main() -> int:
     assert "freecad_worker_partdesign_groove" in tool_names
     assert "freecad_worker_partdesign_additive_loft" in tool_names
     assert "freecad_worker_partdesign_subtractive_loft" in tool_names
+    assert "freecad_worker_partdesign_additive_pipe" in tool_names
+    assert "freecad_worker_partdesign_subtractive_pipe" in tool_names
     assert "freecad_object_rename_label" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names

@@ -1625,6 +1625,296 @@
       }
     },
     {
+      "name": "freecad_worker_partdesign_additive_pipe",
+      "title": "Worker Create PartDesign Additive Pipe",
+      "description": "Create an additive PartDesign Pipe by sweeping a worker profile sketch along a spine/path sketch inside a Body.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile_sketch": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "profile_subname": {
+            "type": "string"
+          },
+          "profile_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "spine_name": {
+            "type": "string"
+          },
+          "spine_sketch": {
+            "type": "string"
+          },
+          "path_name": {
+            "type": "string"
+          },
+          "path_sketch": {
+            "type": "string"
+          },
+          "spine_subname": {
+            "type": "string"
+          },
+          "spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path_subname": {
+            "type": "string"
+          },
+          "spine_tangent": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ]
+            }
+          },
+          "section_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "transformed",
+              "right_corner",
+              "round_corner"
+            ]
+          },
+          "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "binormal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "pipe_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
+      "name": "freecad_worker_partdesign_subtractive_pipe",
+      "title": "Worker Create PartDesign Subtractive Pipe",
+      "description": "Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a spine/path sketch to remove material from an existing Body solid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "description": "Persistent FreeCAD worker session id."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile_sketch": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "profile_subname": {
+            "type": "string"
+          },
+          "profile_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "spine_name": {
+            "type": "string"
+          },
+          "spine_sketch": {
+            "type": "string"
+          },
+          "path_name": {
+            "type": "string"
+          },
+          "path_sketch": {
+            "type": "string"
+          },
+          "spine_subname": {
+            "type": "string"
+          },
+          "spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path_subname": {
+            "type": "string"
+          },
+          "spine_tangent": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ]
+            }
+          },
+          "section_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "transformed",
+              "right_corner",
+              "round_corner"
+            ]
+          },
+          "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "binormal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "pipe_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "session_id",
+          "document_id"
+        ]
+      }
+    },
+    {
       "name": "freecad_worker_part_revolve",
       "title": "Worker Part Revolve",
       "description": "Revolve a source shape inside an in-memory worker document.",
@@ -4838,6 +5128,310 @@
           },
           "closed": {
             "type": "boolean"
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Return compact execution metadata without stdout/stderr/argv text."
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_partdesign_additive_pipe",
+      "title": "Create PartDesign Additive Pipe",
+      "description": "Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch inside a Body.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile_sketch": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "profile_subname": {
+            "type": "string"
+          },
+          "profile_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "spine_name": {
+            "type": "string"
+          },
+          "spine_sketch": {
+            "type": "string"
+          },
+          "path_name": {
+            "type": "string"
+          },
+          "path_sketch": {
+            "type": "string"
+          },
+          "spine_subname": {
+            "type": "string"
+          },
+          "spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path_subname": {
+            "type": "string"
+          },
+          "spine_tangent": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ]
+            }
+          },
+          "section_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "transformed",
+              "right_corner",
+              "round_corner"
+            ]
+          },
+          "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "binormal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "pipe_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Return compact execution metadata without stdout/stderr/argv text."
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "document_path"
+        ]
+      }
+    },
+    {
+      "name": "freecad_partdesign_subtractive_pipe",
+      "title": "Create PartDesign Subtractive Pipe",
+      "description": "Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch to remove material from an existing Body solid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile_sketch": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "profile_subname": {
+            "type": "string"
+          },
+          "profile_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "spine_name": {
+            "type": "string"
+          },
+          "spine_sketch": {
+            "type": "string"
+          },
+          "path_name": {
+            "type": "string"
+          },
+          "path_sketch": {
+            "type": "string"
+          },
+          "spine_subname": {
+            "type": "string"
+          },
+          "spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "path_subname": {
+            "type": "string"
+          },
+          "spine_tangent": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ]
+            }
+          },
+          "section_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "transformed",
+              "right_corner",
+              "round_corner"
+            ]
+          },
+          "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "binormal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "pipe_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
           },
           "require_solid": {
             "type": "boolean"

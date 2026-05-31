@@ -860,10 +860,286 @@ def main() -> int:
                 raise RuntimeError(f"worker subtractive loft document close failed: {closed_loft_doc}")
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
             session_id = None
+            restarted_additive_pipe = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_additive_pipe["session"]["session_id"]
+            if not restarted_additive_pipe["session"]["running"]:
+                raise RuntimeError(f"additive pipe worker did not start: {restarted_additive_pipe}")
+            additive_pipe_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerAdditivePipeSmoke",
+                    }
+                ),
+                "worker_additive_pipe_document_new",
+            )
+            additive_pipe_document_id = additive_pipe_document["document"]["document_id"]
+            worker_additive_pipe_profile_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeProfileSketch",
+                        "body_name": "WorkerAdditivePipeBody",
+                        "attachment_plane": "XY",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_profile_sketch",
+            )
+            if not worker_additive_pipe_profile_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker additive pipe profile sketch did not attach: {worker_additive_pipe_profile_sketch}")
+            worker_additive_pipe_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeProfileSketch",
+                        "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_profile",
+            )
+            if worker_additive_pipe_profile["profile_type"] != "circle":
+                raise RuntimeError(f"worker additive pipe profile was not a circle: {worker_additive_pipe_profile}")
+            worker_additive_pipe_spine_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeSpineSketch",
+                        "body_name": "WorkerAdditivePipeBody",
+                        "attachment_plane": "XZ",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_spine_sketch",
+            )
+            if not worker_additive_pipe_spine_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker additive pipe spine sketch did not attach: {worker_additive_pipe_spine_sketch}")
+            worker_additive_pipe_spine = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeSpineSketch",
+                        "geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 2, 0]}],
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_spine",
+            )
+            if len(worker_additive_pipe_spine["added_indices"]) != 1:
+                raise RuntimeError(f"worker additive pipe spine line was not added: {worker_additive_pipe_spine}")
+            worker_additive_pipe_spine_constraints = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeSpineSketch",
+                        "constraints": [
+                            {"type": "Coincident", "values": [0, 1, -1, 1]},
+                            {"type": "PointOnObject", "values": [0, 2, -2]},
+                            {"type": "DistanceY", "values": [0, 1, 0, 2, 2]},
+                        ],
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_spine_constraints",
+            )
+            if len(worker_additive_pipe_spine_constraints["added_indices"]) != 3:
+                raise RuntimeError(f"worker additive pipe spine constraints were not added: {worker_additive_pipe_spine_constraints}")
+            worker_additive_pipe = worker_result(
+                service.definition_map()["freecad_worker_partdesign_additive_pipe"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "body_name": "WorkerAdditivePipeBody",
+                        "profile_name": "WorkerAdditivePipeProfileSketch",
+                        "spine_name": "WorkerAdditivePipeSpineSketch",
+                        "pipe_name": "WorkerAdditivePipe",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe",
+            )
+            if worker_additive_pipe["pipe"]["shape"]["solids"] != 1 or worker_additive_pipe["body"]["partdesign"]["tip"] != "WorkerAdditivePipe":
+                raise RuntimeError(f"worker PartDesign Additive Pipe did not produce a body solid: {worker_additive_pipe}")
+            closed_additive_pipe_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": additive_pipe_document_id}
+                ),
+                "worker_additive_pipe_document_close",
+            )
+            if closed_additive_pipe_doc["document_count"] != 0:
+                raise RuntimeError(f"worker additive pipe document close failed: {closed_additive_pipe_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted_subtractive_pipe = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_subtractive_pipe["session"]["session_id"]
+            if not restarted_subtractive_pipe["session"]["running"]:
+                raise RuntimeError(f"subtractive pipe worker did not start: {restarted_subtractive_pipe}")
+            subtractive_pipe_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerSubtractivePipeSmoke",
+                    }
+                ),
+                "worker_subtractive_pipe_document_new",
+            )
+            subtractive_pipe_document_id = subtractive_pipe_document["document"]["document_id"]
+            worker_subtractive_pipe_base_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeBaseSketch",
+                        "body_name": "WorkerSubtractivePipeBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [-5, -5, 0], "end": [5, -5, 0]},
+                                    {"type": "line", "start": [5, -5, 0], "end": [5, 5, 0]},
+                                    {"type": "line", "start": [5, 5, 0], "end": [-5, 5, 0]},
+                                    {"type": "line", "start": [-5, 5, 0], "end": [-5, -5, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_base_profile",
+            )
+            if not worker_subtractive_pipe_base_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker subtractive pipe base profile did not attach: {worker_subtractive_pipe_base_profile}")
+            worker_subtractive_pipe_pad = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pad"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "body_name": "WorkerSubtractivePipeBody",
+                        "sketch_name": "WorkerSubtractivePipeBaseSketch",
+                        "attachment_plane": "XY",
+                        "pad_name": "WorkerSubtractivePipePad",
+                        "length": 2,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_pad",
+            )
+            if worker_subtractive_pipe_pad["pad"]["shape"]["solids"] != 1 or worker_subtractive_pipe_pad["body"]["partdesign"]["tip"] != "WorkerSubtractivePipePad":
+                raise RuntimeError(f"worker subtractive pipe base pad did not produce a body solid: {worker_subtractive_pipe_pad}")
+            worker_subtractive_pipe_profile_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeProfileSketch",
+                        "body_name": "WorkerSubtractivePipeBody",
+                        "attachment_plane": "XY",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_profile_sketch",
+            )
+            if not worker_subtractive_pipe_profile_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker subtractive pipe profile sketch did not attach: {worker_subtractive_pipe_profile_sketch}")
+            worker_subtractive_pipe_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeProfileSketch",
+                        "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_profile",
+            )
+            if worker_subtractive_pipe_profile["profile_type"] != "circle":
+                raise RuntimeError(f"worker subtractive pipe profile was not a circle: {worker_subtractive_pipe_profile}")
+            worker_subtractive_pipe_spine_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeSpineSketch",
+                        "body_name": "WorkerSubtractivePipeBody",
+                        "attachment_plane": "XZ",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_spine_sketch",
+            )
+            if not worker_subtractive_pipe_spine_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker subtractive pipe spine sketch did not attach: {worker_subtractive_pipe_spine_sketch}")
+            worker_subtractive_pipe_spine = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeSpineSketch",
+                        "geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 2, 0]}],
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_spine",
+            )
+            if len(worker_subtractive_pipe_spine["added_indices"]) != 1:
+                raise RuntimeError(f"worker subtractive pipe spine line was not added: {worker_subtractive_pipe_spine}")
+            worker_subtractive_pipe_spine_constraints = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "sketch_name": "WorkerSubtractivePipeSpineSketch",
+                        "constraints": [
+                            {"type": "Coincident", "values": [0, 1, -1, 1]},
+                            {"type": "PointOnObject", "values": [0, 2, -2]},
+                            {"type": "DistanceY", "values": [0, 1, 0, 2, 2]},
+                        ],
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe_spine_constraints",
+            )
+            if len(worker_subtractive_pipe_spine_constraints["added_indices"]) != 3:
+                raise RuntimeError(f"worker subtractive pipe spine constraints were not added: {worker_subtractive_pipe_spine_constraints}")
+            worker_subtractive_pipe = worker_result(
+                service.definition_map()["freecad_worker_partdesign_subtractive_pipe"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": subtractive_pipe_document_id,
+                        "body_name": "WorkerSubtractivePipeBody",
+                        "profile_name": "WorkerSubtractivePipeProfileSketch",
+                        "spine_name": "WorkerSubtractivePipeSpineSketch",
+                        "pipe_name": "WorkerSubtractivePipe",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_subtractive_pipe",
+            )
+            if worker_subtractive_pipe["pipe"]["shape"]["solids"] != 1 or worker_subtractive_pipe["body"]["partdesign"]["tip"] != "WorkerSubtractivePipe":
+                raise RuntimeError(f"worker PartDesign Subtractive Pipe did not preserve a body solid: {worker_subtractive_pipe}")
+            closed_subtractive_pipe_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": subtractive_pipe_document_id}
+                ),
+                "worker_subtractive_pipe_document_close",
+            )
+            if closed_subtractive_pipe_doc["document_count"] != 0:
+                raise RuntimeError(f"worker subtractive pipe document close failed: {closed_subtractive_pipe_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_sketch["session"]["session_id"]
             if not restarted_sketch["session"]["running"]:
-                raise RuntimeError(f"fourth worker did not start: {restarted_sketch}")
+                raise RuntimeError(f"next sketch worker did not start: {restarted_sketch}")
             edit_document = worker_result(
                 service.definition_map()["freecad_worker_document_new"].handler(
                     {

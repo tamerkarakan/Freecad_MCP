@@ -1219,6 +1219,236 @@ def main() -> int:
         )
         if subtractive_loft["loft"]["shape"]["solids"] != 1 or subtractive_loft["body"]["partdesign"]["tip"] != "SubtractiveLoft":
             raise RuntimeError(f"partdesign subtractive loft did not preserve a body solid: {subtractive_loft}")
+        additive_pipe_doc = temp / "partdesign_additive_pipe.FCStd"
+        subtractive_pipe_doc = temp / "partdesign_subtractive_pipe.FCStd"
+        additive_pipe_profile_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "AdditivePipeSmoke",
+                    "sketch_name": "AdditivePipeProfileSketch",
+                    "body_name": "AdditivePipeBody",
+                    "attachment_plane": "XY",
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe profile sketch",
+        )
+        if not additive_pipe_profile_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign additive pipe profile sketch was not attached: {additive_pipe_profile_sketch}")
+        additive_pipe_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeProfileSketch",
+                    "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe circle profile",
+        )
+        if additive_pipe_profile["profile_type"] != "circle":
+            raise RuntimeError(f"partdesign additive pipe profile was not a circle: {additive_pipe_profile}")
+        additive_pipe_spine_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeSpineSketch",
+                    "body_name": "AdditivePipeBody",
+                    "attachment_plane": "XZ",
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe spine sketch",
+        )
+        if not additive_pipe_spine_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign additive pipe spine sketch was not attached: {additive_pipe_spine_sketch}")
+        additive_pipe_spine = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeSpineSketch",
+                    "geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 2, 0]}],
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe spine line",
+        )
+        if len(additive_pipe_spine["added_indices"]) != 1:
+            raise RuntimeError(f"partdesign additive pipe spine line was not added: {additive_pipe_spine}")
+        additive_pipe_spine_constraints = assert_ok(
+            service.definition_map()["freecad_sketch_add_constraint"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeSpineSketch",
+                    "constraints": [
+                        {"type": "Coincident", "values": [0, 1, -1, 1]},
+                        {"type": "PointOnObject", "values": [0, 2, -2]},
+                        {"type": "DistanceY", "values": [0, 1, 0, 2, 2]},
+                    ],
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe spine constraints",
+        )
+        if len(additive_pipe_spine_constraints["added_indices"]) != 3:
+            raise RuntimeError(f"partdesign additive pipe spine constraints were not added: {additive_pipe_spine_constraints}")
+        additive_pipe = assert_ok(
+            service.definition_map()["freecad_partdesign_additive_pipe"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "body_name": "AdditivePipeBody",
+                    "profile_name": "AdditivePipeProfileSketch",
+                    "spine_name": "AdditivePipeSpineSketch",
+                    "pipe_name": "AdditivePipe",
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe",
+        )
+        if additive_pipe["pipe"]["shape"]["solids"] != 1 or additive_pipe["body"]["partdesign"]["tip"] != "AdditivePipe":
+            raise RuntimeError(f"partdesign additive pipe did not produce a body solid: {additive_pipe}")
+        subtractive_pipe_base_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "SubtractivePipeSmoke",
+                    "sketch_name": "SubtractivePipeBaseSketch",
+                    "body_name": "SubtractivePipeBody",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [-5, -5, 0], "end": [5, -5, 0]},
+                                {"type": "line", "start": [5, -5, 0], "end": [5, 5, 0]},
+                                {"type": "line", "start": [5, 5, 0], "end": [-5, 5, 0]},
+                                {"type": "line", "start": [-5, 5, 0], "end": [-5, -5, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe base profile",
+        )
+        if not subtractive_pipe_base_profile["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign subtractive pipe base profile was not attached: {subtractive_pipe_base_profile}")
+        subtractive_pipe_pad = assert_ok(
+            service.definition_map()["freecad_partdesign_pad"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "body_name": "SubtractivePipeBody",
+                    "sketch_name": "SubtractivePipeBaseSketch",
+                    "attachment_plane": "XY",
+                    "pad_name": "SubtractivePipePad",
+                    "length": 2,
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe base pad",
+        )
+        if subtractive_pipe_pad["pad"]["shape"]["solids"] != 1 or subtractive_pipe_pad["body"]["partdesign"]["tip"] != "SubtractivePipePad":
+            raise RuntimeError(f"partdesign subtractive pipe base pad did not produce a body solid: {subtractive_pipe_pad}")
+        subtractive_pipe_profile_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "sketch_name": "SubtractivePipeProfileSketch",
+                    "body_name": "SubtractivePipeBody",
+                    "attachment_plane": "XY",
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe profile sketch",
+        )
+        if not subtractive_pipe_profile_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign subtractive pipe profile sketch was not attached: {subtractive_pipe_profile_sketch}")
+        subtractive_pipe_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "sketch_name": "SubtractivePipeProfileSketch",
+                    "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe circle profile",
+        )
+        if subtractive_pipe_profile["profile_type"] != "circle":
+            raise RuntimeError(f"partdesign subtractive pipe profile was not a circle: {subtractive_pipe_profile}")
+        subtractive_pipe_spine_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "sketch_name": "SubtractivePipeSpineSketch",
+                    "body_name": "SubtractivePipeBody",
+                    "attachment_plane": "XZ",
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe spine sketch",
+        )
+        if not subtractive_pipe_spine_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign subtractive pipe spine sketch was not attached: {subtractive_pipe_spine_sketch}")
+        subtractive_pipe_spine = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "sketch_name": "SubtractivePipeSpineSketch",
+                    "geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 2, 0]}],
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe spine line",
+        )
+        if len(subtractive_pipe_spine["added_indices"]) != 1:
+            raise RuntimeError(f"partdesign subtractive pipe spine line was not added: {subtractive_pipe_spine}")
+        subtractive_pipe_spine_constraints = assert_ok(
+            service.definition_map()["freecad_sketch_add_constraint"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "sketch_name": "SubtractivePipeSpineSketch",
+                    "constraints": [
+                        {"type": "Coincident", "values": [0, 1, -1, 1]},
+                        {"type": "PointOnObject", "values": [0, 2, -2]},
+                        {"type": "DistanceY", "values": [0, 1, 0, 2, 2]},
+                    ],
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe spine constraints",
+        )
+        if len(subtractive_pipe_spine_constraints["added_indices"]) != 3:
+            raise RuntimeError(f"partdesign subtractive pipe spine constraints were not added: {subtractive_pipe_spine_constraints}")
+        subtractive_pipe = assert_ok(
+            service.definition_map()["freecad_partdesign_subtractive_pipe"].handler(
+                {
+                    "document_path": str(subtractive_pipe_doc),
+                    "body_name": "SubtractivePipeBody",
+                    "profile_name": "SubtractivePipeProfileSketch",
+                    "spine_name": "SubtractivePipeSpineSketch",
+                    "pipe_name": "SubtractivePipe",
+                    "output_path": str(subtractive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign subtractive pipe",
+        )
+        if subtractive_pipe["pipe"]["shape"]["solids"] != 1 or subtractive_pipe["body"]["partdesign"]["tip"] != "SubtractivePipe":
+            raise RuntimeError(f"partdesign subtractive pipe did not preserve a body solid: {subtractive_pipe}")
         groove_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

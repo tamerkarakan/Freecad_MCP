@@ -365,6 +365,18 @@ def partdesign_summary(obj):
             summary["ruled"] = bool(obj.Ruled)
         if hasattr(obj, "Closed"):
             summary["closed"] = bool(obj.Closed)
+    elif type_id.startswith("PartDesign::AdditivePipe") or type_id.startswith("PartDesign::SubtractivePipe"):
+        summary["profile"] = link_item_summary(getattr(obj, "Profile", None))
+        summary["spine"] = link_item_summary(getattr(obj, "Spine", None))
+        summary["sections"] = link_list_summary(getattr(obj, "Sections", []))
+        if hasattr(obj, "SpineTangent"):
+            summary["spine_tangent"] = bool(obj.SpineTangent)
+        if hasattr(obj, "Mode"):
+            summary["mode"] = str(obj.Mode)
+        if hasattr(obj, "Transition"):
+            summary["transition"] = str(obj.Transition)
+        if hasattr(obj, "Transformation"):
+            summary["transformation"] = str(obj.Transformation)
     elif type_id in {"PartDesign::Plane", "PartDesign::Line", "PartDesign::Point", "PartDesign::CoordinateSystem"}:
         summary["attachment"] = attachment_summary(obj)
     return summary
@@ -784,12 +796,70 @@ def resolve_partdesign_section_links(doc, params):
     return [partdesign_link_sub_value(doc, item) for item in sections]
 
 
+def resolve_partdesign_optional_section_links(doc, params):
+    sections = params.get("sections")
+    if sections is None:
+        sections = params.get("section_names")
+    if not sections:
+        return []
+    return [partdesign_link_sub_value(doc, item) for item in sections]
+
+
+def resolve_partdesign_spine_link(doc, params):
+    spine_name = params.get("spine_name") or params.get("spine_sketch") or params.get("path_name") or params.get("path_sketch")
+    if spine_name:
+        subnames = params.get("spine_subnames")
+        if subnames is None:
+            subname = params.get("spine_subname") or params.get("path_subname")
+            subnames = [subname] if subname else []
+        if isinstance(subnames, str):
+            subnames = [subnames] if subnames else []
+        obj = get_object(doc, str(spine_name))
+        return (obj, [str(sub) for sub in subnames if sub]) if subnames else obj
+    spine = params.get("spine") or params.get("path")
+    if spine is None:
+        raise ValueError("spine_name, spine_sketch, path_name, or spine is required")
+    return partdesign_link_sub_value(doc, spine)
+
+
 def ensure_partdesign_body_member(body, obj):
     previous_tip = getattr(body, "Tip", None)
     if obj not in getattr(body, "Group", []):
         body.addObject(obj)
     if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(obj, "Name", None):
         body.Tip = previous_tip
+
+
+def partdesign_pipe_enum(value, mapping, default_key, field_name):
+    return enum_index(value, mapping, default_key, field_name)
+
+
+def apply_pipe_parameters(pipe, params):
+    if params.get("spine_tangent") is not None and hasattr(pipe, "SpineTangent"):
+        pipe.SpineTangent = bool(params["spine_tangent"])
+    if params.get("mode") is not None and hasattr(pipe, "Mode"):
+        pipe.Mode = partdesign_pipe_enum(
+            params.get("mode"),
+            {"standard": 0, "fixed": 1, "frenet": 2, "auxiliary": 3, "binormal": 4},
+            "standard",
+            "mode",
+        )
+    if params.get("transition") is not None and hasattr(pipe, "Transition"):
+        pipe.Transition = partdesign_pipe_enum(
+            params.get("transition"),
+            {"transformed": 0, "right_corner": 1, "right": 1, "round_corner": 2, "round": 2},
+            "transformed",
+            "transition",
+        )
+    if params.get("transformation") is not None and hasattr(pipe, "Transformation"):
+        pipe.Transformation = partdesign_pipe_enum(
+            params.get("transformation"),
+            {"constant": 0, "multisection": 1, "multi_section": 1, "linear": 2, "s_shape": 3, "interpolation": 4},
+            "constant",
+            "transformation",
+        )
+    if params.get("binormal") is not None and hasattr(pipe, "Binormal"):
+        pipe.Binormal = vector(params["binormal"])
 
 
 def find_partdesign_body(doc, name):
@@ -1596,6 +1666,81 @@ def action_partdesign_subtractive_loft(params):
         feature_type="PartDesign::SubtractiveLoft",
         default_name="SubtractiveLoft",
         transaction_name="MCP worker create PartDesign subtractive loft",
+        require_base_solid=True,
+    )
+
+
+def action_partdesign_pipe(doc, params, *, feature_type, default_name, transaction_name, require_base_solid=False):
+    profile_link = resolve_partdesign_profile_link(doc, params)
+    spine_link = resolve_partdesign_spine_link(doc, params)
+    section_links = resolve_partdesign_optional_section_links(doc, params)
+    profile_obj = link_target_object(profile_link)
+    spine_obj = link_target_object(spine_link)
+    body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(profile_obj)
+    doc.openTransaction(transaction_name)
+    try:
+        if body is None:
+            if require_base_solid:
+                raise ValueError(f"{default_name} requires an existing Body solid")
+            body, _ = get_or_create_partdesign_body(doc, params)
+        ensure_partdesign_body_member(body, profile_obj)
+        ensure_partdesign_body_member(body, spine_obj)
+        for section_link in section_links:
+            ensure_partdesign_body_member(body, link_target_object(section_link))
+        if require_base_solid:
+            solid_tip = find_body_solid_tip(body)
+            if solid_tip is None:
+                raise ValueError(f"{default_name} requires an existing Body solid")
+            body.Tip = solid_tip
+        pipe = doc.addObject(feature_type, params.get("pipe_name") or params.get("result_name") or default_name)
+        body.addObject(pipe)
+        pipe.Profile = profile_link
+        pipe.Spine = spine_link
+        if section_links:
+            pipe.Sections = section_links
+        apply_pipe_parameters(pipe, params)
+        body.Tip = pipe
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(params.get("require_solid", True)):
+        shape = getattr(pipe, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError(f"{default_name} did not produce a solid")
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "profile": object_summary(profile_obj),
+        "spine": object_summary(spine_obj),
+        "sections": [object_summary(link_target_object(item)) for item in section_links],
+        "pipe": object_summary(pipe),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_additive_pipe(params):
+    doc = get_doc(params)
+    return action_partdesign_pipe(
+        doc,
+        params,
+        feature_type="PartDesign::AdditivePipe",
+        default_name="AdditivePipe",
+        transaction_name="MCP worker create PartDesign additive pipe",
+    )
+
+
+def action_partdesign_subtractive_pipe(params):
+    doc = get_doc(params)
+    return action_partdesign_pipe(
+        doc,
+        params,
+        feature_type="PartDesign::SubtractivePipe",
+        default_name="SubtractivePipe",
+        transaction_name="MCP worker create PartDesign subtractive pipe",
         require_base_solid=True,
     )
 
@@ -3119,6 +3264,8 @@ ACTIONS = {
     "partdesign_groove": action_partdesign_groove,
     "partdesign_additive_loft": action_partdesign_additive_loft,
     "partdesign_subtractive_loft": action_partdesign_subtractive_loft,
+    "partdesign_additive_pipe": action_partdesign_additive_pipe,
+    "partdesign_subtractive_pipe": action_partdesign_subtractive_pipe,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,
