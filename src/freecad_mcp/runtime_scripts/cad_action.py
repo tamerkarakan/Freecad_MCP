@@ -487,7 +487,7 @@ def partdesign_summary(obj):
                 if getattr(item, "TypeId", "") == "App::Plane":
                     planes.append({"name": item.Name, "label": item.Label})
         summary["planes"] = planes
-    elif type_id.startswith("PartDesign::Pad"):
+    elif type_id.startswith("PartDesign::Pad") or type_id.startswith("PartDesign::Pocket"):
         profile = getattr(obj, "Profile", None)
         summary["profile"] = getattr(profile, "Name", None)
         if hasattr(obj, "Length"):
@@ -498,6 +498,16 @@ def partdesign_summary(obj):
             summary["midplane"] = bool(obj.Midplane)
         if hasattr(obj, "Reversed"):
             summary["reversed"] = bool(obj.Reversed)
+    elif type_id.startswith("PartDesign::Hole"):
+        profile = getattr(obj, "Profile", None)
+        summary["profile"] = getattr(profile, "Name", None)
+        for prop in ("Diameter", "Depth", "DrillPointAngle", "TaperedAngle", "HoleCutDiameter", "HoleCutDepth", "HoleCutCountersinkAngle"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = quantity_summary(getattr(obj, prop))
+        for prop in ("DepthType", "DrillPoint", "Tapered", "ThreadType", "HoleCutType"):
+            if hasattr(obj, prop):
+                value = getattr(obj, prop)
+                summary[prop[0].lower() + prop[1:]] = value if isinstance(value, (str, int, float, bool)) else str(value)
     return summary
 
 
@@ -530,6 +540,45 @@ def find_body_solid_tip(body):
         if object_solid_count(candidate) > 0:
             return candidate
     return None
+
+
+def enum_index(value, mapping, default_key, field_name):
+    if value is None:
+        return mapping[default_key]
+    if isinstance(value, (int, float)):
+        return int(value)
+    raw = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    if raw in mapping:
+        return mapping[raw]
+    raise ValueError(field_name + " must be one of: " + ", ".join(sorted(mapping)))
+
+
+def apply_hole_parameters(hole, args):
+    if hasattr(hole, "Diameter"):
+        hole.Diameter = float(args["diameter"])
+    if hasattr(hole, "Depth"):
+        hole.Depth = float(args.get("depth", 10.0))
+    if hasattr(hole, "DepthType"):
+        hole.DepthType = enum_index(args.get("depth_type"), {"dimension": 0, "blind": 0, "through_all": 1, "through": 1}, "dimension", "depth_type")
+    if hasattr(hole, "ThreadType"):
+        thread_type = args.get("thread_type", 0)
+        hole.ThreadType = 0 if str(thread_type).strip().lower() in {"", "none"} else int(thread_type)
+    if hasattr(hole, "HoleCutType"):
+        hole.HoleCutType = enum_index(args.get("hole_cut_type"), {"none": 0, "counterbore": 1, "countersink": 2}, "none", "hole_cut_type")
+    if hasattr(hole, "DrillPoint"):
+        hole.DrillPoint = enum_index(args.get("drill_point"), {"flat": 0, "none": 0, "angled": 1}, "flat", "drill_point")
+    if hasattr(hole, "Tapered"):
+        hole.Tapered = bool(args.get("tapered", False))
+    optional_lengths = {
+        "drill_point_angle": "DrillPointAngle",
+        "tapered_angle": "TaperedAngle",
+        "hole_cut_diameter": "HoleCutDiameter",
+        "hole_cut_depth": "HoleCutDepth",
+        "hole_cut_countersink_angle": "HoleCutCountersinkAngle",
+    }
+    for key, prop in optional_lengths.items():
+        if args.get(key) is not None and hasattr(hole, prop):
+            setattr(hole, prop, float(args[key]))
 
 
 def find_partdesign_body(doc, name):
@@ -1069,6 +1118,48 @@ def action_partdesign_pocket(args):
         "body": object_summary(body),
         "sketch": object_summary(sketch),
         "pocket": object_summary(pocket),
+        "attachment": attachment,
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_hole(args):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    if getattr(sketch, "TypeId", "") != "Sketcher::SketchObject":
+        raise ValueError("sketch_name must reference a Sketcher::SketchObject")
+    body = find_partdesign_body(doc, args.get("body_name")) if args.get("body_name") else find_body_for_object(sketch)
+    attachment = None
+    doc.openTransaction("MCP create PartDesign hole")
+    try:
+        if body is None:
+            body, _ = get_or_create_partdesign_body(doc, args)
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError("PartDesign Hole requires an existing solid feature in the Body (create a Pad first)")
+        body.Tip = solid_tip
+        attachment = attach_sketch_to_partdesign_body(doc, sketch, args, body=body)
+        hole = doc.addObject("PartDesign::Hole", args.get("hole_name") or args.get("result_name") or "Hole")
+        body.addObject(hole)
+        hole.Profile = sketch
+        apply_hole_parameters(hole, args)
+        body.Tip = hole
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_solid", True)):
+        shape = getattr(hole, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError("PartDesign Hole did not produce a solid")
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "sketch": object_summary(sketch),
+        "hole": object_summary(hole),
         "attachment": attachment,
         "document": document_summary(doc),
     }
@@ -3202,6 +3293,7 @@ DISPATCH = {
     "partdesign_body_create": action_partdesign_body_create,
     "partdesign_pad": action_partdesign_pad,
     "partdesign_pocket": action_partdesign_pocket,
+    "partdesign_hole": action_partdesign_hole,
     "part_revolve": action_part_revolve,
     "part_fillet": action_part_fillet,
     "part_chamfer": action_part_chamfer,

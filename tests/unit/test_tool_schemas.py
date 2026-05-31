@@ -55,6 +55,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_body_create",
             "freecad_worker_partdesign_pad",
             "freecad_worker_partdesign_pocket",
+            "freecad_worker_partdesign_hole",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -137,6 +138,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_body_create",
             "freecad_partdesign_pad",
             "freecad_partdesign_pocket",
+            "freecad_partdesign_hole",
         ]:
             self.assertIn(name, tools)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]

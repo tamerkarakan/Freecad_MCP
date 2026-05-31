@@ -27,7 +27,7 @@
 - Extend CAM/FEM beyond first slice only with fixture-backed job/solver contracts.
 - Add TechDraw SVG/PDF export only behind GUI attach or Workbench validation because those APIs live behind `TechDrawGui`.
 - Add official-tutorial-driven GUI workflows for scaled reference images, Measure, clipping view, PartDesign-to-TechDraw, and Assembly examples.
-- Add higher-level semantic naming helpers: batch label planning, tree-readability linting, and automatic labels for common generated Body/Sketch/Pad/Pocket patterns.
+- Add higher-level semantic naming helpers: batch label planning, tree-readability linting, and automatic labels for common generated Body/Sketch/Pad/Pocket/Hole patterns.
 
 ## Later
 

@@ -866,6 +866,53 @@ def main() -> int:
         )
         if partdesign_pocket["pocket"]["shape"]["solids"] != 1 or partdesign_pocket["body"]["partdesign"]["tip"] != "Pocket":
             raise RuntimeError(f"partdesign pocket did not preserve a body solid: {partdesign_pocket}")
+        hole_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "HoleSketch",
+                    "body_name": "Body",
+                    "attachment_plane": "XY",
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign hole sketch create",
+        )
+        if not hole_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign hole sketch was not attached: {hole_sketch}")
+        hole_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "HoleSketch",
+                    "profile": {"type": "circle", "center": [1, 2, 0], "radius": 0.5},
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign hole circle profile",
+        )
+        if hole_profile["profile_type"] != "circle":
+            raise RuntimeError(f"partdesign hole profile was not a circle: {hole_profile}")
+        partdesign_hole = assert_ok(
+            service.definition_map()["freecad_partdesign_hole"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "Body",
+                    "sketch_name": "HoleSketch",
+                    "attachment_plane": "XY",
+                    "hole_name": "Hole",
+                    "diameter": 1.0,
+                    "depth": 6,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign hole",
+        )
+        if partdesign_hole["hole"]["shape"]["solids"] != 1 or partdesign_hole["body"]["partdesign"]["tip"] != "Hole":
+            raise RuntimeError(f"partdesign hole did not preserve a body solid: {partdesign_hole}")
         drift_rejected = assert_tool_failed(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

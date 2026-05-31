@@ -47,6 +47,7 @@ class BuildServerTests(unittest.TestCase):
             "freecad_gui_attach",
             "freecad_partdesign_pad",
             "freecad_partdesign_pocket",
+            "freecad_partdesign_hole",
         ):
             self.assertIn(name, tools)
 
@@ -74,6 +75,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_partdesign_pad", tools)
         self.assertIn("freecad_partdesign_pocket", tools)
+        self.assertIn("freecad_partdesign_hole", tools)
         self.assertIn("freecad_object_rename_label", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
         self.assertNotIn("freecad_cam_path_create", tools)

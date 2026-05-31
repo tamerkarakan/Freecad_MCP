@@ -333,6 +333,50 @@ def main() -> int:
             )
             if worker_pocket["pocket"]["shape"]["solids"] != 1 or worker_pocket["body"]["partdesign"]["tip"] != "WorkerPocket":
                 raise RuntimeError(f"worker PartDesign Pocket did not preserve a body solid: {worker_pocket}")
+            worker_hole_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "sketch_name": "WorkerHoleSketch",
+                        "body_name": "WorkerBody",
+                        "attachment_plane": "XY",
+                    }
+                ),
+                "worker_partdesign_hole_sketch_create",
+            )
+            if not worker_hole_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker hole sketch did not attach to PartDesign body: {worker_hole_sketch}")
+            worker_hole_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "sketch_name": "WorkerHoleSketch",
+                        "profile": {"type": "circle", "center": [1, 72, 0], "radius": 0.5},
+                    }
+                ),
+                "worker_partdesign_hole_circle_profile",
+            )
+            if worker_hole_profile["profile_type"] != "circle":
+                raise RuntimeError(f"worker hole profile was not a circle: {worker_hole_profile}")
+            worker_hole = worker_result(
+                service.definition_map()["freecad_worker_partdesign_hole"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "body_name": "WorkerBody",
+                        "sketch_name": "WorkerHoleSketch",
+                        "attachment_plane": "XY",
+                        "hole_name": "WorkerHole",
+                        "diameter": 1.0,
+                        "depth": 6,
+                    }
+                ),
+                "worker_partdesign_hole",
+            )
+            if worker_hole["hole"]["shape"]["solids"] != 1 or worker_hole["body"]["partdesign"]["tip"] != "WorkerHole":
+                raise RuntimeError(f"worker PartDesign Hole did not preserve a body solid: {worker_hole}")
             closed_partdesign_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": partdesign_document_id}
@@ -341,6 +385,43 @@ def main() -> int:
             )
             if closed_partdesign_doc["document_count"] != 1:
                 raise RuntimeError(f"worker PartDesign document close failed: {closed_partdesign_doc}")
+
+            closed_initial_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": document_id}
+                ),
+                "worker_initial_sketch_document_close",
+            )
+            if closed_initial_doc["document_count"] != 0:
+                raise RuntimeError(f"worker initial sketch document close failed: {closed_initial_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_sketch["session"]["session_id"]
+            if not restarted_sketch["session"]["running"]:
+                raise RuntimeError(f"second worker did not start: {restarted_sketch}")
+            edit_document = worker_result(
+                service.definition_map()["freecad_worker_document_new"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_name": "WorkerEditSmoke",
+                    }
+                ),
+                "worker_edit_document_new",
+            )
+            document_id = edit_document["document"]["document_id"]
+            sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                    }
+                ),
+                "worker_edit_sketch_create",
+            )
+            if sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+                raise RuntimeError(f"worker edit sketch create failed: {sketch}")
 
             worker_line_fallback = service.definition_map()["freecad_worker_sketch_profile_create"].handler(
                 {
@@ -433,12 +514,44 @@ def main() -> int:
             if profile_alias["profile_type"] != "slot_start_end_radius" or len(profile_alias["added_indices"]) != 4:
                 raise RuntimeError(f"worker sketch profile alias mismatch: {profile_alias}")
 
+            worker_extrude_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerExtrudeSketch",
+                    }
+                ),
+                "worker_extrude_sketch_create",
+            )
+            if worker_extrude_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+                raise RuntimeError(f"worker extrude sketch create failed: {worker_extrude_sketch}")
+            worker_extrude_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerExtrudeSketch",
+                        "profile": {
+                            "type": "rectangle",
+                            "origin": [0, 0, 0],
+                            "width": 4,
+                            "height": 2,
+                            "constrain": True,
+                        },
+                    }
+                ),
+                "worker_extrude_sketch_profile",
+            )
+            if worker_extrude_profile["sketch"]["sketch"]["geometry_count"] != 4:
+                raise RuntimeError(f"worker extrude sketch profile mismatch: {worker_extrude_profile}")
+
             sketch_extrude = worker_result(
                 service.definition_map()["freecad_worker_part_extrude"].handler(
                     {
                         "session_id": session_id,
                         "document_id": document_id,
-                        "source_object": "WorkerSketch",
+                        "source_object": "WorkerExtrudeSketch",
                         "vector": [0, 0, 4],
                         "result_name": "WorkerSketchExtrude",
                     }
@@ -453,7 +566,7 @@ def main() -> int:
                     {
                         "session_id": session_id,
                         "document_id": document_id,
-                        "source_object": "WorkerSketch",
+                        "source_object": "WorkerExtrudeSketch",
                         "vector": [0, 0, 2],
                         "extrude_mode": "feature",
                         "solid": False,
