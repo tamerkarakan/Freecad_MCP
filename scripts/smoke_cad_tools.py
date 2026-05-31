@@ -913,6 +913,51 @@ def main() -> int:
         )
         if partdesign_hole["hole"]["shape"]["solids"] != 1 or partdesign_hole["body"]["partdesign"]["tip"] != "Hole":
             raise RuntimeError(f"partdesign hole did not preserve a body solid: {partdesign_hole}")
+        datum_plane = assert_ok(
+            service.definition_map()["freecad_partdesign_datum_plane_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "body_name": "Body",
+                    "datum_plane_name": "OffsetPlane",
+                    "attachment_plane": "XY",
+                    "attachment_offset": 8,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign datum plane",
+        )
+        if datum_plane["datum_plane"]["type_id"] != "PartDesign::Plane":
+            raise RuntimeError(f"partdesign datum plane was not created: {datum_plane}")
+        if datum_plane["body"]["partdesign"]["tip"] != "Hole":
+            raise RuntimeError(f"partdesign datum plane should not steal the solid Body Tip: {datum_plane}")
+        offset_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "sketch_name": "OffsetSketch",
+                    "body_name": "Body",
+                    "attachment_object": "OffsetPlane",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [0, 0, 0], "end": [4, 0, 0]},
+                                {"type": "line", "start": [4, 0, 0], "end": [4, 2, 0]},
+                                {"type": "line", "start": [4, 2, 0], "end": [0, 2, 0]},
+                                {"type": "line", "start": [0, 2, 0], "end": [0, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign datum-attached sketch profile",
+        )
+        if offset_profile["attachment"].get("support_object") != "OffsetPlane":
+            raise RuntimeError(f"offset sketch was not attached to datum plane: {offset_profile}")
         revolution_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

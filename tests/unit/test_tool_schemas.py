@@ -53,6 +53,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_part_create_primitive",
             "freecad_worker_part_boolean",
             "freecad_worker_partdesign_body_create",
+            "freecad_worker_partdesign_datum_plane_create",
             "freecad_worker_partdesign_pad",
             "freecad_worker_partdesign_pocket",
             "freecad_worker_partdesign_hole",
@@ -138,6 +139,7 @@ class ToolSchemaTests(unittest.TestCase):
 
         for name in [
             "freecad_partdesign_body_create",
+            "freecad_partdesign_datum_plane_create",
             "freecad_partdesign_pad",
             "freecad_partdesign_pocket",
             "freecad_partdesign_hole",
@@ -148,6 +150,7 @@ class ToolSchemaTests(unittest.TestCase):
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
+        self.assertIn("attachment_object", sketch_props)
 
     def test_object_label_rename_tool_is_exposed(self) -> None:
         tools = CadToolService().definition_map()
@@ -174,6 +177,7 @@ class ToolSchemaTests(unittest.TestCase):
             "minimum_curve_segments",
             "forbid_polyline_fallback",
             "forbid_all_line_loops",
+            "attachment_object",
         ]:
             self.assertIn(name, props)
         validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]

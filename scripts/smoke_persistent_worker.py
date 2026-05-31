@@ -377,6 +377,49 @@ def main() -> int:
             )
             if worker_hole["hole"]["shape"]["solids"] != 1 or worker_hole["body"]["partdesign"]["tip"] != "WorkerHole":
                 raise RuntimeError(f"worker PartDesign Hole did not preserve a body solid: {worker_hole}")
+            worker_datum = worker_result(
+                service.definition_map()["freecad_worker_partdesign_datum_plane_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "body_name": "WorkerBody",
+                        "datum_plane_name": "WorkerOffsetPlane",
+                        "attachment_plane": "XY",
+                        "attachment_offset": 8,
+                    }
+                ),
+                "worker_partdesign_datum_plane",
+            )
+            if worker_datum["datum_plane"]["type_id"] != "PartDesign::Plane":
+                raise RuntimeError(f"worker PartDesign datum plane was not created: {worker_datum}")
+            if worker_datum["body"]["partdesign"]["tip"] != "WorkerHole":
+                raise RuntimeError(f"worker PartDesign datum plane should not steal Body Tip: {worker_datum}")
+            worker_offset_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": partdesign_document_id,
+                        "sketch_name": "WorkerOffsetSketch",
+                        "body_name": "WorkerBody",
+                        "attachment_object": "WorkerOffsetPlane",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [0, 70, 0], "end": [4, 70, 0]},
+                                    {"type": "line", "start": [4, 70, 0], "end": [4, 72, 0]},
+                                    {"type": "line", "start": [4, 72, 0], "end": [0, 72, 0]},
+                                    {"type": "line", "start": [0, 72, 0], "end": [0, 70, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                    }
+                ),
+                "worker_partdesign_datum_attached_profile",
+            )
+            if worker_offset_profile["attachment"].get("support_object") != "WorkerOffsetPlane":
+                raise RuntimeError(f"worker offset sketch did not attach to datum plane: {worker_offset_profile}")
             closed_partdesign_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": partdesign_document_id}

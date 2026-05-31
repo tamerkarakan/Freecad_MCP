@@ -17,7 +17,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
 | `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
-| `freecad_worker_partdesign_body_create/pad/pocket/hole/revolution/groove` | Create Body-based additive/subtractive PartDesign features in persistent worker documents. | PartDesign App API |
+| `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove` | Create Body-based datum, additive, and subtractive PartDesign features in persistent worker documents. | PartDesign App API |
 | `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
@@ -48,6 +48,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_part_boolean` | Fuse/cut/common selected Part shapes. | Part workbench commands |
 | `freecad_part_extrude` | Extrude selected profile/face with direct shape mode or opt-in parametric `Part::Extrusion` options. | Part workbench commands |
 | `freecad_partdesign_body_create` | Create or reuse a PartDesign Body with origin planes. | PartDesign App API |
+| `freecad_partdesign_datum_plane_create` | Create a PartDesign datum plane inside a Body, attached to an origin plane or support object with optional offset. | PartDesign App API |
 | `freecad_partdesign_pad` | Create a PartDesign Pad from a Sketcher profile inside a Body, attaching to `XY`/`XZ`/`YZ` when needed. | PartDesign App API |
 | `freecad_partdesign_pocket` | Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. | PartDesign App API |
 | `freecad_partdesign_hole` | Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid. | PartDesign App API |
@@ -57,11 +58,11 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |
 | `freecad_part_check_geometry` | Run geometry validation. | `Part_CheckGeometry` |
-| `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane. | Sketcher + PartDesign App API |
+| `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane or datum/support object. | Sketcher + PartDesign App API |
 | `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, and circular-arc actual geometry reports. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
 | `freecad_sketch_add_profile` | Add helper profiles such as rectangle variants, named/arbitrary regular polygons, circle, straight/oriented/arc slots, and polyline. | Sketcher App API |
-| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, optional Block constraints, and optional PartDesign Body/plane attachment. | Sketcher + PartDesign App API |
+| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments with endpoint drift rejection, curve-preservation contracts, optional Block constraints, and optional PartDesign Body origin-plane or datum/support attachment. | Sketcher + PartDesign App API |
 | `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, and intent-mismatch checks. | Sketcher + Part App API |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend line, arc, or B-spline before sketch creation. | Geometry analysis |
 | `freecad_sketch_geometry_method_catalog` | List supported typed Sketcher creation methods, including arc 3-point, start/end/radius, and center/angle forms. | Tool metadata |

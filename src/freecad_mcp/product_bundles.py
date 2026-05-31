@@ -52,7 +52,7 @@ PRODUCT_BUNDLES: tuple[ProductBundle, ...] = (
         profile="pro",
         kind="paid",
         audience="Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.",
-        position="Adds GUI attach plus Sketcher, PartDesign, mesh, and Assembly typed tools.",
+        position="Adds GUI attach plus Sketcher, PartDesign datum/feature, mesh, and Assembly typed tools.",
         limits="No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.",
         upgrade_to="studio",
     ),

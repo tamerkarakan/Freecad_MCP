@@ -72,7 +72,7 @@ class CadToolServiceDefinitionTests(unittest.TestCase):
                 "fem",
             ],
         )
-        self.assertEqual(len(service.definitions()), 60)
+        self.assertEqual(len(service.definitions()), 61)
 
     def test_definitions_have_unique_names_and_merge_common_runtime_props(self) -> None:
         definitions = CadToolService().definitions()

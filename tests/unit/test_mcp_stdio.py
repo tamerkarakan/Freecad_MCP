@@ -45,6 +45,7 @@ class BuildServerTests(unittest.TestCase):
             "freecad_session_status",
             "freecad_session_start",
             "freecad_gui_attach",
+            "freecad_partdesign_datum_plane_create",
             "freecad_partdesign_pad",
             "freecad_partdesign_pocket",
             "freecad_partdesign_hole",
@@ -75,6 +76,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("gui", selection.expanded)
         self.assertIn("partdesign", selection.expanded)
         self.assertIn("freecad_gui_attach", tools)
+        self.assertIn("freecad_partdesign_datum_plane_create", tools)
         self.assertIn("freecad_partdesign_pad", tools)
         self.assertIn("freecad_partdesign_pocket", tools)
         self.assertIn("freecad_partdesign_hole", tools)

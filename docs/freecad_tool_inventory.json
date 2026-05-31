@@ -264,6 +264,7 @@
         "freecad_worker_part_boolean",
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
+        "freecad_worker_partdesign_datum_plane_create",
         "freecad_worker_partdesign_pad",
         "freecad_worker_partdesign_pocket",
         "freecad_worker_partdesign_hole",
@@ -380,13 +381,14 @@
       "priority": "P1",
       "tools": [
         "freecad_partdesign_body_create",
+        "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
         "freecad_partdesign_revolution",
         "freecad_partdesign_groove"
       ],
-      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/plane attachment for Pad/Pocket/Hole/Revolution/Groove workflows."
+      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove workflows."
     },
     {
       "family": "freecad.sketcher",

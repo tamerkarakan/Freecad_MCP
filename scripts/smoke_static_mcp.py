@@ -128,11 +128,13 @@ def main() -> int:
     assert "freecad_cam_path_create" in tool_names
     assert "freecad_fem_analysis_create" in tool_names
     assert "freecad_partdesign_body_create" in tool_names
+    assert "freecad_partdesign_datum_plane_create" in tool_names
     assert "freecad_partdesign_pad" in tool_names
     assert "freecad_partdesign_pocket" in tool_names
     assert "freecad_partdesign_hole" in tool_names
     assert "freecad_partdesign_revolution" in tool_names
     assert "freecad_partdesign_groove" in tool_names
+    assert "freecad_worker_partdesign_datum_plane_create" in tool_names
     assert "freecad_worker_partdesign_pocket" in tool_names
     assert "freecad_worker_partdesign_hole" in tool_names
     assert "freecad_worker_partdesign_revolution" in tool_names

@@ -117,7 +117,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 70,
+      "tool_count": 71,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -140,6 +140,7 @@
         "freecad_part_chamfer",
         "freecad_part_check_geometry",
         "freecad_partdesign_body_create",
+        "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
@@ -236,7 +237,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 133,
+      "tool_count": 135,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -260,6 +261,7 @@
         "freecad_worker_part_boolean",
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
+        "freecad_worker_partdesign_datum_plane_create",
         "freecad_worker_partdesign_pad",
         "freecad_worker_partdesign_pocket",
         "freecad_worker_partdesign_hole",
@@ -311,6 +313,7 @@
         "freecad_part_chamfer",
         "freecad_part_check_geometry",
         "freecad_partdesign_body_create",
+        "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",
@@ -420,7 +423,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 136,
+      "tool_count": 138,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -447,6 +450,7 @@
         "freecad_worker_part_boolean",
         "freecad_worker_part_extrude",
         "freecad_worker_partdesign_body_create",
+        "freecad_worker_partdesign_datum_plane_create",
         "freecad_worker_partdesign_pad",
         "freecad_worker_partdesign_pocket",
         "freecad_worker_partdesign_hole",
@@ -498,6 +502,7 @@
         "freecad_part_chamfer",
         "freecad_part_check_geometry",
         "freecad_partdesign_body_create",
+        "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
         "freecad_partdesign_pocket",
         "freecad_partdesign_hole",

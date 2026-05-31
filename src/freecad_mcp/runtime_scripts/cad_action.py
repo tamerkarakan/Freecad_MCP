@@ -528,7 +528,39 @@ def partdesign_summary(obj):
                 }
             except Exception:
                 summary["referenceAxis"] = str(axis)
+    elif type_id in {"PartDesign::Plane", "PartDesign::Line", "PartDesign::Point", "PartDesign::CoordinateSystem"}:
+        summary["attachment"] = attachment_summary(obj)
     return summary
+
+
+def attachment_summary(obj):
+    supports = []
+    try:
+        for item in getattr(obj, "AttachmentSupport", []) or []:
+            if isinstance(item, (list, tuple)):
+                support_obj = item[0] if item else None
+                subnames = item[1] if len(item) > 1 else []
+            else:
+                support_obj = item
+                subnames = []
+            if isinstance(subnames, str):
+                subnames = [subnames] if subnames else []
+            supports.append(
+                {
+                    "object": getattr(support_obj, "Name", None),
+                    "label": getattr(support_obj, "Label", None),
+                    "type_id": getattr(support_obj, "TypeId", None),
+                    "subnames": list(subnames or []),
+                }
+            )
+    except Exception:
+        supports = [{"raw": str(getattr(obj, "AttachmentSupport", ""))}]
+    offset = getattr(obj, "AttachmentOffset", None)
+    return {
+        "support": supports,
+        "map_mode": str(getattr(obj, "MapMode", "")),
+        "offset_base": point_list(offset.Base) if offset is not None and hasattr(offset, "Base") else None,
+    }
 
 
 def normalize_partdesign_plane(value):
@@ -545,6 +577,107 @@ def find_body_origin_plane(body, plane_name):
         if getattr(item, "TypeId", "") == "App::Plane" and (item.Name.startswith(plane + "_Plane") or item.Label.startswith(plane + "-plane")):
             return item
     raise ValueError("origin plane not found for body " + body.Name + ": " + plane)
+
+
+def resolve_partdesign_attachment_support(doc, body, args):
+    support_name = (
+        args.get("attachment_object")
+        or args.get("attachment_object_name")
+        or args.get("support_object")
+        or args.get("support_object_name")
+        or args.get("datum_plane_name")
+    )
+    if support_name:
+        support = get_object(doc, support_name)
+        subname = args.get("attachment_subname") or args.get("support_subname") or ""
+        return support, str(subname), {
+            "support_type": "object",
+            "support_object": getattr(support, "Name", None),
+            "support_label": getattr(support, "Label", None),
+            "support_type_id": getattr(support, "TypeId", None),
+            "support_subname": str(subname),
+        }
+    plane_name = normalize_partdesign_plane(args.get("attachment_plane") or args.get("plane") or "XY")
+    plane = find_body_origin_plane(body, plane_name)
+    return plane, "", {
+        "support_type": "origin_plane",
+        "plane": plane_name,
+        "plane_object": plane.Name,
+        "support_object": plane.Name,
+        "support_subname": "",
+    }
+
+
+def attachment_support_name(args):
+    return (
+        args.get("attachment_object")
+        or args.get("attachment_object_name")
+        or args.get("support_object")
+        or args.get("support_object_name")
+        or args.get("datum_plane_name")
+    )
+
+
+def attachment_requested(args):
+    return any(
+        key in args
+        for key in (
+            "body_name",
+            "attachment_plane",
+            "plane",
+            "attachment_object",
+            "attachment_object_name",
+            "support_object",
+            "support_object_name",
+            "datum_plane_name",
+            "attachment_subname",
+            "support_subname",
+            "attachment_map_mode",
+            "map_mode",
+            "attachment_offset",
+            "offset",
+            "attachment_offset_vector",
+            "offset_vector",
+            "create_body_if_missing",
+        )
+    )
+
+
+def attachment_target_requested(args):
+    return any(
+        key in args
+        for key in (
+            "attachment_plane",
+            "plane",
+            "attachment_object",
+            "attachment_object_name",
+            "support_object",
+            "support_object_name",
+            "datum_plane_name",
+            "attachment_subname",
+            "support_subname",
+            "attachment_map_mode",
+            "map_mode",
+            "attachment_offset",
+            "offset",
+            "attachment_offset_vector",
+            "offset_vector",
+        )
+    )
+
+
+def apply_attachment_offset(obj, args):
+    raw_vector = args.get("attachment_offset_vector") or args.get("offset_vector")
+    if raw_vector is None and (args.get("attachment_offset") is not None or args.get("offset") is not None):
+        offset = args.get("attachment_offset")
+        if offset is None:
+            offset = args.get("offset")
+        raw_vector = [0, 0, float(offset)]
+    if raw_vector is None:
+        return None
+    placement = App.Placement(vector(raw_vector), App.Rotation())
+    obj.AttachmentOffset = placement
+    return point_list(placement.Base)
 
 
 def object_solid_count(obj):
@@ -695,7 +828,7 @@ def find_body_for_object(obj):
 
 def get_or_create_partdesign_body(doc, args, *, default_if_requested=True):
     requested = args.get("body_name")
-    requested_partdesign = any(key in args for key in ("body_name", "attachment_plane", "plane", "create_body_if_missing"))
+    requested_partdesign = attachment_requested(args)
     if not requested and not requested_partdesign and not default_if_requested:
         return None, False
     body_name = str(requested or "Body")
@@ -711,9 +844,14 @@ def get_or_create_partdesign_body(doc, args, *, default_if_requested=True):
 
 
 def attach_sketch_to_partdesign_body(doc, sketch, args, *, body=None):
-    requested = any(key in args for key in ("body_name", "attachment_plane", "plane", "create_body_if_missing"))
+    requested = attachment_requested(args)
+    target_requested = attachment_target_requested(args)
     if body is None:
         body = find_body_for_object(sketch)
+    support_name = attachment_support_name(args)
+    if body is None and support_name:
+        support = get_object(doc, support_name)
+        body = find_body_for_object(support)
     if body is None:
         if not requested:
             return {"attached": False, "body_created": False}
@@ -725,18 +863,38 @@ def attach_sketch_to_partdesign_body(doc, sketch, args, *, body=None):
         body.addObject(sketch)
     if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(sketch, "Name", None):
         body.Tip = previous_tip
-    plane_name = normalize_partdesign_plane(args.get("attachment_plane") or args.get("plane") or "XY")
-    plane = find_body_origin_plane(body, plane_name)
-    sketch.AttachmentSupport = [(plane, "")]
-    sketch.MapMode = "FlatFace"
-    return {
+    if not target_requested and getattr(sketch, "AttachmentSupport", None):
+        existing = attachment_summary(sketch)
+        result = {
+            "attached": True,
+            "body_created": created,
+            "body_name": body.Name,
+            "support_type": "existing",
+            "map_mode": existing.get("map_mode", ""),
+        }
+        if existing.get("support"):
+            first = existing["support"][0]
+            result["support_object"] = first.get("object")
+            result["support_label"] = first.get("label")
+            result["support_type_id"] = first.get("type_id")
+            result["support_subname"] = (first.get("subnames") or [""])[0] if first.get("subnames") else ""
+        if existing.get("offset_base") is not None:
+            result["offset_base"] = existing["offset_base"]
+        return result
+    support, subname, support_info = resolve_partdesign_attachment_support(doc, body, args)
+    sketch.AttachmentSupport = [(support, subname)]
+    sketch.MapMode = str(args.get("attachment_map_mode") or args.get("map_mode") or "FlatFace")
+    offset_base = apply_attachment_offset(sketch, args)
+    result = {
         "attached": True,
         "body_created": created,
         "body_name": body.Name,
-        "plane": plane_name,
-        "plane_object": plane.Name,
         "map_mode": str(getattr(sketch, "MapMode", "")),
     }
+    result.update(support_info)
+    if offset_base is not None:
+        result["offset_base"] = offset_base
+    return result
 
 
 def safe_output_path(path, args):
@@ -1116,6 +1274,50 @@ def action_partdesign_body_create(args):
         "saved_path": saved,
         "created": created,
         "body": object_summary(body),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_datum_plane_create(args):
+    doc = open_or_new(args)
+    doc.openTransaction("MCP create PartDesign datum plane")
+    try:
+        body, body_created = get_or_create_partdesign_body(doc, args)
+        previous_tip = getattr(body, "Tip", None)
+        datum = doc.addObject("PartDesign::Plane", args.get("datum_plane_name") or args.get("plane_name") or args.get("result_name") or "DatumPlane")
+        body.addObject(datum)
+        support_args = dict(args)
+        support_args.pop("datum_plane_name", None)
+        support, subname, attachment = resolve_partdesign_attachment_support(doc, body, support_args)
+        datum.AttachmentSupport = [(support, subname)]
+        datum.MapMode = str(args.get("attachment_map_mode") or args.get("map_mode") or "FlatFace")
+        offset_base = apply_attachment_offset(datum, args)
+        if previous_tip is not None and getattr(previous_tip, "Name", None) != getattr(datum, "Name", None):
+            body.Tip = previous_tip
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_valid", True)) and "Invalid" in list(getattr(datum, "State", []) or []):
+        raise ValueError("PartDesign datum plane is invalid: " + str(getattr(datum, "State", [])))
+    saved = save_if_requested(doc, args)
+    attachment.update(
+        {
+            "attached": True,
+            "body_created": body_created,
+            "body_name": body.Name,
+            "map_mode": str(getattr(datum, "MapMode", "")),
+        }
+    )
+    if offset_base is not None:
+        attachment["offset_base"] = offset_base
+    return {
+        "saved_path": saved,
+        "created": True,
+        "body": object_summary(body),
+        "datum_plane": object_summary(datum),
+        "attachment": attachment,
         "document": document_summary(doc),
     }
 
@@ -3464,6 +3666,7 @@ DISPATCH = {
     "part_boolean": action_part_boolean,
     "part_extrude": action_part_extrude,
     "partdesign_body_create": action_partdesign_body_create,
+    "partdesign_datum_plane_create": action_partdesign_datum_plane_create,
     "partdesign_pad": action_partdesign_pad,
     "partdesign_pocket": action_partdesign_pocket,
     "partdesign_hole": action_partdesign_hole,

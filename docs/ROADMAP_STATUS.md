@@ -1,6 +1,6 @@
 # Roadmap Status
 
-Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-31.
+Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-06-01.
 
 ## Completed
 
@@ -8,7 +8,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-05-3
 - Phase 2 process-per-call `FreeCADCmd` runtime bridge with typed document/object/Part/Sketcher/import-export/mesh/Assembly tools.
 - Expanded Sketcher typed coverage for geometry, geometry method cataloging, arc actual-geometry reporting, profiles, constraints, transforms, diagnostics, and auto-constraints.
 - Loop-based Sketcher profile builder/validator for pad-ready traced profiles, endpoint drift rejection, curve-preservation contracts, native geometry type/intent reporting, curve fit analysis, Part face validation, and no-cheat topology checks.
-- PartDesign Body/plane attachment plus Pad, Pocket, Hole, Revolution, and Groove creation for Sketcher profiles that need the same Body + origin plane workflow FreeCAD GUI prompts for.
+- PartDesign Body/datum/support attachment plus Datum Plane, Pad, Pocket, Hole, Revolution, and Groove creation for Sketcher profiles that need the same Body + plane/support workflow FreeCAD GUI prompts for.
 - Persistent `freecadcmd-worker` sessions with document/object/Part/Sketcher/mesh/Assembly operations and crash cleanup.
 - GUI attach bridge tools for active document, active view, selection/preselection, selection set, and view fit.
 - Opt-in live GUI smoke that validates GUI selection records and Assembly connector references.
@@ -43,7 +43,7 @@ There are no unblocked roadmap items left in the current scope.
 - Extend FreeCAD console reading beyond the current persistent-worker console tool to process-per-call, GUI bridge, and Workbench-hosted bridge modes.
 - Expand GUI bridge into full live FreeCAD access for observing live drawing, GUI command boundaries, transaction/dirty state, console forwarding, and safe GUI-side mutations.
 - Deepen image-to-sketch guidance beyond the current `freecad_curve_fit_analyze` decision report so ambiguous traces can drive prompt/resource flows for B-spline vs arc vs line/polyline decisions.
-- Research Sketcher and PartDesign workbenches from FreeCAD docs and the local source checkout, then add safe typed and GUI/workbench-backed MCP wrappers with fixtures and smoke tests.
+- Research Sketcher and PartDesign workbenches from FreeCAD docs and the local source checkout, then add safe typed and GUI/workbench-backed MCP wrappers with fixtures and smoke tests. Next PartDesign deepening should use the implemented datum/support attachment foundation for multi-sketch Loft/Pipe workflows.
 - TechDraw SVG/PDF export should go through GUI attach or Workbench validation because those APIs live behind `TechDrawGui`.
 - CAM job/toolbit/postprocessor workflows need machine/post fixture contracts before default typed mutation tools are safe.
 - FEM mesh generation, solver execution, and result import need solver availability and fixture contracts before default typed mutation tools are safe.
