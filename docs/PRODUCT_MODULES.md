@@ -21,7 +21,7 @@ $env:FREECAD_MCP_MODULES = "core,headless,gui,sketcher,partdesign"
 | `core` | FreeCAD command inventory and runtime status/discovery. |
 | `headless` | FreeCADCmd document/object/import-export/Part primitives and operations. |
 | `worker` | Persistent FreeCADCmd worker sessions and in-memory document workflows. |
-| `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, first live primitive creation, user-visible label updates, live Sketcher/PartDesign state inspection, Sketcher edit mode, PartDesign Body activation, and feature-task state. |
+| `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, active viewport snapshots, first live primitive creation, user-visible label updates, live Sketcher/PartDesign state inspection, Sketcher edit mode, PartDesign Body activation, and feature-task state. |
 | `sketcher` | Sketcher creation, geometry, constraints, profile validation, transforms, and curve-fit guidance. |
 | `partdesign` | PartDesign Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe, Fillet/Chamfer/Thickness/Draft dress-up, and LinearPattern/PolarPattern/Mirrored transform typed tools, including multisection and auxiliary-spine Pipe options. |
 | `mesh` | Mesh import/export/evaluate/repair/boolean tools. |
@@ -53,9 +53,9 @@ Current generated counts:
 | Bundle | Profile | Tool Count | Notes |
 | --- | --- | ---: | --- |
 | Free | `free` | 23 | File-based FreeCADCmd document/object/Part operations. |
-| Pro | `pro` | 82 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| Studio | `studio` | 157 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
-| Team | `team` | 160 | Adds source-intelligence tools. |
+| Pro | `pro` | 83 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| Studio | `studio` | 158 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
+| Team | `team` | 161 | Adds source-intelligence tools. |
 | Source add-on | `source` | 5 | Command/source intelligence only. |
 | Local developer | `developer` / `dev` / `local-dev` | Full surface | Same as `all`; not a sellable restricted package. |
 | Unsafe add-on | `unsafe` | 1 | Only `freecad_python_exec`; never included in paid tiers by default. |

@@ -17,6 +17,7 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 
 ## Screenshot Budget Rules
 
+- Prefer `freecad_gui_view_snapshot` for the active FreeCAD viewport over full-screen capture when a live GUI bridge is attached.
 - Prefer viewport crop over full-screen capture.
 - Prefer low detail unless the task depends on small geometry, constraint markers, labels, selected edges/faces, or curve shape.
 - Prefer event-based snapshots over periodic streaming.
@@ -34,9 +35,9 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 
 ## Programmatic GUI Plus Screenshot Checks
 
-For repeatable GUI validation, prefer programmatic GUI actions first and screenshot/vision checks second. For example, enter Sketcher edit mode with `freecad_gui_sketch_enter`, assert `freecad_gui_sketch_state.edit.in_edit=true` and the expected sketch name, then capture the FreeCAD window as visual evidence.
+For repeatable GUI validation, prefer programmatic GUI actions first and screenshot/vision checks second. For example, enter Sketcher edit mode with `freecad_gui_sketch_enter`, assert `freecad_gui_sketch_state.edit.in_edit=true` and the expected sketch name, then call `freecad_gui_view_snapshot` for local viewport evidence.
 
-Agent-side Windows control such as Computer Use is appropriate for this visual verification layer because it can capture the actual FreeCAD window without adding a runtime dependency to this repository. Do not make repo tests depend on Codex-only UI automation. Keep it as an opt-in agent validation path for live GUI sessions.
+Agent-side Windows control such as Computer Use is still appropriate when the task needs the actual FreeCAD window chrome, task panels, modal dialogs, or a non-viewport crop. Do not make repo tests depend on Codex-only UI automation. Keep it as an opt-in agent validation path for live GUI sessions.
 
 Use screenshots to verify coarse UI facts: active workbench cues, visible task panels, modal dialogs, selected/highlighted objects, and whether the viewport visibly changed after a programmatic action. Use structured FreeCAD state for exact facts: active edit object, selected subelements, Sketcher DoF, open vertices, topology counts, Body Tip, and export paths.
 
@@ -45,7 +46,7 @@ Use screenshots to verify coarse UI facts: active workbench cues, visible task p
 1. Collect structured state with MCP tools.
 2. Mutate GUI state only through narrow tools such as `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_body_activate`, or selection/view tools.
 3. Re-read structured state and assert the expected edit/selection/body/task state.
-4. Capture a local screenshot only if visual confirmation is useful or structured state is insufficient.
+4. Capture a local viewport snapshot with `freecad_gui_view_snapshot`, or use a window screenshot only if the task needs GUI chrome/task panels or structured state is insufficient.
 5. Send a low-detail viewport crop to the minimum reliable vision model.
 6. If uncertain, send a high-detail crop of only the relevant region.
 7. If CAD intent is still ambiguous, ask the user a direct question before mutating the model.

@@ -96,6 +96,30 @@ class GuiToolService:
                 "view_fit",
             ),
             self._gui_tool(
+                "freecad_gui_view_snapshot",
+                "Save GUI View Snapshot",
+                "Save the active FreeCAD GUI viewport to a local raster image for visual verification.",
+                {
+                    "output_path": {
+                        "type": "string",
+                        "description": "Absolute local image path. Existing files require overwrite=true.",
+                    },
+                    "width": {"type": "integer", "minimum": 64, "maximum": 8192, "default": 1280},
+                    "height": {"type": "integer", "minimum": 64, "maximum": 8192, "default": 720},
+                    "format": {"type": "string", "enum": ["png", "jpg", "jpeg", "bmp"], "default": "png"},
+                    "background": {
+                        "type": "string",
+                        "enum": ["Current", "Transparent", "White", "Black"],
+                        "default": "Current",
+                    },
+                    "fit_view": {"type": "boolean"},
+                    "selection_only": {"type": "boolean"},
+                    "overwrite": {"type": "boolean"},
+                },
+                ["output_path"],
+                "view_snapshot",
+            ),
+            self._gui_tool(
                 "freecad_gui_primitive_create",
                 "Create GUI Primitive",
                 "Create a typed primitive in the active FreeCAD GUI document.",

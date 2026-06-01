@@ -75,7 +75,7 @@ Command count is not the same as product value. For mechanical 3D engineering, p
 | PartDesign flow | `freecad_gui_partdesign_state`, `freecad_gui_body_activate`, `freecad_gui_feature_task_state` | Focus on Body/plane/sketch/feature Tip and task-panel state before adding more mutation. |
 | TechDraw flow | `freecad_gui_techdraw_page_export`, `freecad_gui_techdraw_dimension_create`, `freecad_gui_techdraw_projection_create` | Prioritize SVG/PDF export and selected-view/dimension workflows. |
 | Assembly flow | `freecad_gui_assembly_state`, `freecad_gui_assembly_joint_from_selection`, `freecad_gui_assembly_bom_export` | Use normalized selection records; avoid blind broad command execution. |
-| Visual assist | `freecad_gui_measure_get`, `freecad_gui_clipping_state`, `freecad_gui_reference_image_state`, `freecad_gui_screenshot` | Useful for AI observation, tutorial following, and repair guidance. |
+| Visual assist | `freecad_gui_view_snapshot`, `freecad_gui_measure_get`, `freecad_gui_clipping_state`, `freecad_gui_reference_image_state` | Viewport snapshot is implemented; measure, clipping, and reference-image state remain useful for AI observation, tutorial following, and repair guidance. |
 
 ## Example Workflows To Support
 
@@ -110,7 +110,7 @@ Command count is not the same as product value. For mechanical 3D engineering, p
 ## Agent Rules
 
 - Read this file before expanding GUI, Sketcher, PartDesign, Assembly, TechDraw, CAM, or FEM behavior.
-- Current first slices implemented from this plan: `freecad_gui_sketch_state`, `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_partdesign_state`, `freecad_gui_body_activate`, and `freecad_gui_feature_task_state`.
+- Current first slices implemented from this plan: `freecad_gui_view_snapshot`, `freecad_gui_sketch_state`, `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_partdesign_state`, `freecad_gui_body_activate`, and `freecad_gui_feature_task_state`.
 - Prefer typed tools for deterministic model mutation.
 - Use GUI attach for observing live user state, selection-driven commands, TechDraw GUI exporters, task panels, and visual helpers.
 - Do not add broad GUI command execution as the happy path. If command execution is needed, gate it behind an allowlist, structured preconditions, transactions, recompute, and smoke tests.

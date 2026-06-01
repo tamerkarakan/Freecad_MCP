@@ -88,6 +88,7 @@ def main() -> int:
     ready_path = run_dir / "ready.json"
     stop_path = run_dir / "stop.txt"
     report_path = run_dir / f"gui-smoke-report-{run_id}.json"
+    snapshot_path = run_dir / "active-view.png"
     document_path = run_dir / "gui-assembly-connectors.FCStd"
     macro_path = run_dir / "freecad_gui_smoke_macro.py"
     bridge_path = ROOT / "scripts" / "freecad_gui_bridge_server.py"
@@ -277,6 +278,20 @@ except Exception as exc:
         )
         if body_activate["gui"]["activated"]["name"] != str(ready["body_name"]):
             raise RuntimeError(f"body did not activate: {body_activate}")
+        view_snapshot = tools["freecad_gui_view_snapshot"].handler(
+            {
+                "session_id": session_id,
+                "output_path": str(snapshot_path),
+                "width": 1024,
+                "height": 768,
+                "format": "png",
+                "background": "Current",
+                "fit_view": True,
+                "overwrite": True,
+            }
+        )
+        if not snapshot_path.exists() or snapshot_path.stat().st_size <= 0:
+            raise RuntimeError(f"view snapshot was not written: {view_snapshot}")
         restored_selection = tools["freecad_gui_selection_set"].handler(
             {"session_id": session_id, "records": records, "clear": True}
         )
@@ -325,6 +340,7 @@ except Exception as exc:
             "sketch_leave_result": sketch_leave,
             "partdesign_state_result": partdesign_state,
             "body_activate_result": body_activate,
+            "view_snapshot_result": view_snapshot,
             "restored_selection_result": restored_selection,
             "fit_result": fit,
             "assembly_joint_result": joint,

@@ -109,6 +109,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_gui_preselection_get",
             "freecad_gui_selection_set",
             "freecad_gui_view_fit",
+            "freecad_gui_view_snapshot",
             "freecad_gui_primitive_create",
             "freecad_gui_object_label_set",
             "freecad_gui_sketch_state",

@@ -82,6 +82,7 @@ Available GUI attach tools:
 - `freecad_gui_preselection_get`
 - `freecad_gui_selection_set`
 - `freecad_gui_view_fit`
+- `freecad_gui_view_snapshot`
 - `freecad_gui_primitive_create`
 
 GUI attach is opt-in. Start `scripts/freecad_gui_bridge_server.py` inside a running FreeCAD GUI Python console, then call `freecad_gui_attach` with the local bridge URL and optional token. This mode is for live active document/view/selection state; typed CAD tools remain the primary way to mutate geometry.

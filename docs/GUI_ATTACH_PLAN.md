@@ -16,6 +16,7 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 | Preselection record | `src/Gui/Selection/Selection.cpp:2527` and `src/Gui/Selection/Selection.cpp:3048` expose `Gui.Selection.getPreselection()` as a `SelectionObject`. |
 | Selection object fields | `src/Gui/Selection/SelectionObjectPyImp.cpp:75` through `:165` expose object name, document name, subelement names, resolved subobjects, and picked points. |
 | Assembly connector selection shape | `src/Mod/Assembly/CommandCreateJoint.py:454` and `src/Mod/Assembly/JointObject.py:1751` use `Gui.Selection.getSelectionEx("*", 0)` and iterate `SubElementNames`. |
+| Viewport raster snapshot | `src/Gui/View3DPy.cpp:1029` and `src/Gui/FreeCADGui._View3DInventor.pyi:137` expose `activeView().saveImage(filename, width, height, color, ...)`. |
 
 ## Implemented Lifecycle
 
@@ -42,6 +43,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_preselection_get` | Return current hover/preselection object and subelement when available. | No |
 | `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
+| `freecad_gui_view_snapshot` | Save the active FreeCAD viewport to a local raster image using `activeView().saveImage(...)`. | File write only |
 | `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
 | `freecad_gui_object_label_set` | Set a user-visible object Label while keeping the internal FreeCAD Name stable. | Yes |
 | `freecad_gui_sketch_state` | Inspect active or selected Sketcher state, edit mode, DoF, geometry/constraint counts, diagnostics, selected records, and optional bounded geometry/constraint summaries. | No by default; optional diagnostics refresh can run solver/missing-constraint reads. |
@@ -79,7 +81,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Policy
 
 - GUI attach tools must be read-only by default.
-- Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
+- Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, viewport snapshots, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
 - Object `Name` is treated as the stable technical identifier; user-facing rename flows set `Label` and should keep labels unique by default.
 - Selection and view reads must not call broad Python execution.
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
@@ -90,9 +92,9 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert Sketcher and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge.
+- Unit tests assert viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge.
 - Static MCP smoke confirms GUI attach schemas are listed.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, and activates a PartDesign Body.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, and writes a viewport snapshot.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals

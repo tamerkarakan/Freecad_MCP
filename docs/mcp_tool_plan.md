@@ -24,7 +24,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_worker_object_list/get/set_properties/rename_label/delete` | Inspect and mutate in-memory worker document objects, including user-visible Labels. | FreeCAD process |
 | `freecad_gui_attach/list/detach/status` | Attach to a running FreeCAD GUI loopback bridge and manage GUI bridge sessions. | FreeCAD GUI bridge |
 | `freecad_gui_active_document_get/active_view_get` | Read the active GUI document and active view/camera snapshot. | FreeCADGui API |
-| `freecad_gui_selection_get/preselection_get/selection_set/view_fit` | Read or set GUI selection/preselection records and fit the active view. | FreeCADGui Selection/View API |
+| `freecad_gui_selection_get/preselection_get/selection_set/view_fit/view_snapshot` | Read or set GUI selection/preselection records, fit the active view, and save viewport snapshots for local visual evidence. | FreeCADGui Selection/View API |
 | `freecad_python_exec` | Execute controlled Python snippets for diagnostics, with optional compact execution metadata. | FreeCAD process |
 | `freecad_document_new` | Create a new FreeCAD document. | FreeCAD API |
 | `freecad_document_open` | Open `.FCStd` or importable CAD file. | FreeCAD API |

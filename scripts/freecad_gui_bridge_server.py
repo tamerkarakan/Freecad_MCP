@@ -16,6 +16,7 @@ import json
 import queue
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from typing import Any
 
 
@@ -899,6 +900,70 @@ def rpc_view_fit(params: dict[str, Any]) -> dict[str, Any]:
     return {"fit": mode}
 
 
+def rpc_view_snapshot(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    raw_path = str(params.get("output_path") or "").strip()
+    if not raw_path:
+        raise ValueError("output_path is required")
+    path = Path(raw_path).expanduser()
+    if not path.is_absolute():
+        raise ValueError("output_path must be absolute")
+
+    image_format = str(params.get("format") or path.suffix.lstrip(".") or "png").lower()
+    if image_format == "jpeg":
+        image_format = "jpg"
+    if image_format not in {"png", "jpg", "bmp"}:
+        raise ValueError("unsupported image format: " + image_format)
+    if not path.suffix:
+        path = path.with_suffix("." + image_format)
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix == "jpeg":
+        suffix = "jpg"
+    if suffix not in {"png", "jpg", "bmp"}:
+        raise ValueError("unsupported output_path image extension: " + path.suffix)
+    if suffix != image_format:
+        raise ValueError("format does not match output_path extension")
+    if not path.parent.exists():
+        raise ValueError("Directory where to save image doesn't exist")
+    existed = path.exists()
+    if existed and not bool(params.get("overwrite", False)):
+        raise ValueError("output_path already exists; pass overwrite=true")
+
+    gui_doc = Gui.activeDocument()
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+    view = gui_doc.activeView()
+    if view is None:
+        raise ValueError("no active GUI view")
+
+    width = clamped_int(params, "width", 1280, 64, 8192)
+    height = clamped_int(params, "height", 720, 64, 8192)
+    background = str(params.get("background") or "Current")
+    if background not in {"Current", "Transparent", "White", "Black"}:
+        raise ValueError("unsupported background: " + background)
+
+    fit = fit_view_if_requested(gui_doc, bool(params.get("fit_view", False)), bool(params.get("selection_only", False)))
+    view.saveImage(str(path), width, height, background)
+    if not path.exists():
+        raise RuntimeError("FreeCAD did not create snapshot: " + str(path))
+    stat = path.stat()
+    return {
+        "snapshot": {
+            "path": str(path),
+            "width": width,
+            "height": height,
+            "format": image_format,
+            "background": background,
+            "bytes": int(stat.st_size),
+            "overwritten": existed,
+        },
+        "fit": fit,
+        "document": active_document_summary(),
+        "active_view": active_view_summary(),
+    }
+
+
 def rpc_primitive_create(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
     import FreeCADGui as Gui
@@ -1180,6 +1245,7 @@ RPC_METHODS = {
     "preselection_get": rpc_preselection_get,
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
+    "view_snapshot": rpc_view_snapshot,
     "primitive_create": rpc_primitive_create,
     "object_label_set": rpc_object_label_set,
     "sketch_state": rpc_sketch_state,

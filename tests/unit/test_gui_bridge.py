@@ -55,6 +55,18 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             result = {"control": {"has_active_dialog": True}, "params": payload.get("params") or {}}
         elif method == "object_label_set":
             result = {"object": {"name": "Box", "label": payload.get("params", {}).get("label")}, "params": payload.get("params") or {}}
+        elif method == "view_snapshot":
+            params = payload.get("params") or {}
+            result = {
+                "snapshot": {
+                    "path": params.get("output_path"),
+                    "width": params.get("width", 1280),
+                    "height": params.get("height", 720),
+                    "format": params.get("format", "png"),
+                    "bytes": 1234,
+                },
+                "params": params,
+            }
         else:
             result = {"method": method, "params": payload.get("params") or {}}
         self.send_payload({"ok": True, "result": result})
@@ -123,6 +135,7 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(status["gui"]["bridge"], "ok")
         self.assertIn("freecad_gui_selection_get", tools)
+        self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_object_label_set", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
@@ -152,6 +165,29 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(created["gui"]["method"], "primitive_create")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "GuiCylinder")
+
+    def test_gui_view_snapshot_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        snapshot = tools["freecad_gui_view_snapshot"].handler(
+            {
+                "session_id": session_id,
+                "output_path": "C:/tmp/freecad-view.png",
+                "width": 1024,
+                "height": 768,
+                "format": "png",
+                "background": "Current",
+                "fit_view": True,
+                "overwrite": True,
+            }
+        )
+
+        self.assertEqual(snapshot["gui"]["snapshot"]["path"], "C:/tmp/freecad-view.png")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "view_snapshot")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["width"], 1024)
 
     def test_gui_object_label_set_delegates_to_bridge(self) -> None:
         service = GuiToolService()

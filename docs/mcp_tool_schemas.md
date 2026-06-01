@@ -10309,6 +10309,76 @@ Fit all or selected objects in the active GUI view.
 }
 ```
 
+## `freecad_gui_view_snapshot`
+
+Save the active FreeCAD GUI viewport to a local raster image for visual verification.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "output_path": {
+      "type": "string",
+      "description": "Absolute local image path. Existing files require overwrite=true."
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 64,
+      "maximum": 8192,
+      "default": 1280
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 64,
+      "maximum": 8192,
+      "default": 720
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "png",
+        "jpg",
+        "jpeg",
+        "bmp"
+      ],
+      "default": "png"
+    },
+    "background": {
+      "type": "string",
+      "enum": [
+        "Current",
+        "Transparent",
+        "White",
+        "Black"
+      ],
+      "default": "Current"
+    },
+    "fit_view": {
+      "type": "boolean"
+    },
+    "selection_only": {
+      "type": "boolean"
+    },
+    "overwrite": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id",
+    "output_path"
+  ]
+}
+```
+
 ## `freecad_gui_primitive_create`
 
 Create a typed primitive in the active FreeCAD GUI document.

@@ -70,6 +70,7 @@ class BuildServerTests(unittest.TestCase):
 
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
+        self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_object_label_set", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
         self.assertIn("freecad_gui_sketch_enter", tools)

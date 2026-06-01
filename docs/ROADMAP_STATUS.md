@@ -10,8 +10,8 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-06-0
 - Loop-based Sketcher profile builder/validator for pad-ready traced profiles, endpoint drift rejection, curve-preservation contracts, native geometry type/intent reporting, curve fit analysis, Part face validation, and no-cheat topology checks.
 - PartDesign Body/datum/support attachment plus Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe, Fillet/Chamfer/Thickness/Draft dress-up, and LinearPattern/PolarPattern/Mirrored transform creation for Sketcher profiles, selected Body subelements, and selected Body features that need the same Body + plane/support workflow FreeCAD GUI prompts for. Pipe coverage includes guarded multisection section scaling and auxiliary-spine orientation paths.
 - Persistent `freecadcmd-worker` sessions with document/object/Part/Sketcher/mesh/Assembly operations and crash cleanup.
-- GUI attach bridge tools for active document, active view, selection/preselection, selection set, and view fit.
-- Opt-in live GUI smoke that validates GUI selection records and Assembly connector references.
+- GUI attach bridge tools for active document, active view, selection/preselection, selection set, view fit, and active viewport snapshots.
+- Opt-in live GUI smoke that validates GUI selection records, viewport snapshot writing, and Assembly connector references.
 - Workbench-hosted bridge module under `freecad_workbench/FreeCADMCP`.
 - Local Workbench module zip artifact descriptor and smoke path for embedding the GUI bridge beside `InitGui.py`.
 - TechDraw typed slice for page/template creation, part views, inspection, and headless DXF export.
@@ -41,7 +41,7 @@ There are no unblocked roadmap items left in the current scope.
 - Add remote MCP transport support for HTTP/SSE and Streamable HTTP while preserving stdio as the local default.
 - Deepen structured logs beyond the current opt-in JSON logger with crash bundles, FreeCAD subprocess lifecycle rollups, request/response size summaries, timing, and tool-level performance.
 - Extend FreeCAD console reading beyond the current persistent-worker console tool to process-per-call, GUI bridge, and Workbench-hosted bridge modes.
-- Expand GUI bridge into full live FreeCAD access for observing live drawing, GUI command boundaries, transaction/dirty state, console forwarding, and safe GUI-side mutations.
+- Expand GUI bridge into fuller live FreeCAD access beyond viewport snapshots: GUI command boundaries, transaction/dirty state, console forwarding, and safe GUI-side mutations.
 - Deepen image-to-sketch guidance beyond the current `freecad_curve_fit_analyze` decision report so ambiguous traces can drive prompt/resource flows for B-spline vs arc vs line/polyline decisions.
 - Research Sketcher and PartDesign workbenches from FreeCAD docs and the local source checkout, then add safe typed and GUI/workbench-backed MCP wrappers with fixtures and smoke tests. Next PartDesign deepening should cover MultiTransform/Scaled/Boolean only after fixture-backed contracts are clear, plus deeper combined Pipe orientation/scaling fixtures.
 - TechDraw SVG/PDF export should go through GUI attach or Workbench validation because those APIs live behind `TechDrawGui`.
