@@ -9,7 +9,7 @@
 - Phase 2 runtime bridge commit exists: `558b4b0 feat: add FreeCADCmd runtime bridge`.
 - Typed FreeCAD MCP surface commit exists: `3dcc942 feat: complete typed FreeCAD MCP tool surface`.
 - Remote repository is configured as `origin`: `https://github.com/tamerkarakan/Freecad_MCP.git`.
-- First GitHub push completed to `origin/main`; repository was created private.
+- GitHub remote is public at `origin` after the user changed repository visibility from the GitHub web UI.
 - FreeCAD upstream source is checked out under ignored `upstream/FreeCAD`.
 - Static inventory currently scans 1112 GUI command registrations from FreeCAD commit `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 - MCP plan favors typed document/object/Part/Sketch tools plus lower-level command and Python escape hatches.
