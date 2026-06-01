@@ -50,6 +50,61 @@ def require_report(payload: dict, index: int, label: str) -> dict:
     return report
 
 
+def create_partdesign_rect_pad(
+    service: CadToolService,
+    document: Path,
+    *,
+    document_name: str,
+    body_name: str,
+    sketch_name: str,
+    pad_name: str,
+) -> dict:
+    profile = assert_ok(
+        service.definition_map()["freecad_sketch_profile_create"].handler(
+            {
+                "document_name": document_name,
+                "sketch_name": sketch_name,
+                "body_name": body_name,
+                "attachment_plane": "XY",
+                "loops": [
+                    {
+                        "segments": [
+                            {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                            {"type": "line", "start": [10, 0, 0], "end": [10, 10, 0]},
+                            {"type": "line", "start": [10, 10, 0], "end": [0, 10, 0]},
+                            {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
+                        ],
+                    }
+                ],
+                "lock_mode": "block",
+                "require_fully_constrained": True,
+                "output_path": str(document),
+                "overwrite": True,
+            }
+        ),
+        f"{document_name} base profile",
+    )
+    if not profile["attachment"]["attached"]:
+        raise RuntimeError(f"{document_name} base profile was not attached: {profile}")
+    pad = assert_ok(
+        service.definition_map()["freecad_partdesign_pad"].handler(
+            {
+                "document_path": str(document),
+                "body_name": body_name,
+                "sketch_name": sketch_name,
+                "pad_name": pad_name,
+                "length": 10,
+                "output_path": str(document),
+                "overwrite": True,
+            }
+        ),
+        f"{document_name} base pad",
+    )
+    if pad["pad"]["shape"]["solids"] != 1 or pad["body"]["partdesign"]["tip"] != pad_name:
+        raise RuntimeError(f"{document_name} base pad did not produce a body solid: {pad}")
+    return pad
+
+
 def main() -> int:
     if not os.environ.get("FREECAD_MCP_FREECAD_HOME") and not os.environ.get("FREECAD_MCP_FREECAD_CMD"):
         message = "typed CAD smoke SKIPPED: FreeCAD runtime env not configured"
@@ -1222,6 +1277,10 @@ def main() -> int:
         additive_pipe_doc = temp / "partdesign_additive_pipe.FCStd"
         auxiliary_pipe_doc = temp / "partdesign_auxiliary_pipe.FCStd"
         subtractive_pipe_doc = temp / "partdesign_subtractive_pipe.FCStd"
+        fillet_doc = temp / "partdesign_fillet.FCStd"
+        chamfer_doc = temp / "partdesign_chamfer.FCStd"
+        thickness_doc = temp / "partdesign_thickness.FCStd"
+        draft_doc = temp / "partdesign_draft.FCStd"
         additive_pipe_profile_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {
@@ -1610,6 +1669,118 @@ def main() -> int:
         )
         if subtractive_pipe["pipe"]["shape"]["solids"] != 1 or subtractive_pipe["body"]["partdesign"]["tip"] != "SubtractivePipe":
             raise RuntimeError(f"partdesign subtractive pipe did not preserve a body solid: {subtractive_pipe}")
+        create_partdesign_rect_pad(
+            service,
+            fillet_doc,
+            document_name="FilletSmoke",
+            body_name="FilletBody",
+            sketch_name="FilletBaseSketch",
+            pad_name="FilletBasePad",
+        )
+        fillet = assert_ok(
+            service.definition_map()["freecad_partdesign_fillet"].handler(
+                {
+                    "document_path": str(fillet_doc),
+                    "body_name": "FilletBody",
+                    "base_feature_name": "FilletBasePad",
+                    "use_all_edges": True,
+                    "radius": 0.5,
+                    "fillet_name": "Fillet",
+                    "output_path": str(fillet_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign fillet",
+        )
+        if fillet["dressup"]["shape"]["solids"] != 1 or fillet["body"]["partdesign"]["tip"] != "Fillet":
+            raise RuntimeError(f"partdesign fillet did not produce a body solid: {fillet}")
+        if not fillet["dressup"]["partdesign"]["use_all_edges"]:
+            raise RuntimeError(f"partdesign fillet did not keep UseAllEdges: {fillet}")
+        create_partdesign_rect_pad(
+            service,
+            chamfer_doc,
+            document_name="ChamferSmoke",
+            body_name="ChamferBody",
+            sketch_name="ChamferBaseSketch",
+            pad_name="ChamferBasePad",
+        )
+        chamfer = assert_ok(
+            service.definition_map()["freecad_partdesign_chamfer"].handler(
+                {
+                    "document_path": str(chamfer_doc),
+                    "body_name": "ChamferBody",
+                    "base_feature_name": "ChamferBasePad",
+                    "use_all_edges": True,
+                    "distance": 0.5,
+                    "chamfer_name": "Chamfer",
+                    "output_path": str(chamfer_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign chamfer",
+        )
+        if chamfer["dressup"]["shape"]["solids"] != 1 or chamfer["body"]["partdesign"]["tip"] != "Chamfer":
+            raise RuntimeError(f"partdesign chamfer did not produce a body solid: {chamfer}")
+        if not chamfer["dressup"]["partdesign"]["use_all_edges"]:
+            raise RuntimeError(f"partdesign chamfer did not keep UseAllEdges: {chamfer}")
+        create_partdesign_rect_pad(
+            service,
+            thickness_doc,
+            document_name="ThicknessSmoke",
+            body_name="ThicknessBody",
+            sketch_name="ThicknessBaseSketch",
+            pad_name="ThicknessBasePad",
+        )
+        thickness = assert_ok(
+            service.definition_map()["freecad_partdesign_thickness"].handler(
+                {
+                    "document_path": str(thickness_doc),
+                    "body_name": "ThicknessBody",
+                    "base_feature_name": "ThicknessBasePad",
+                    "face_name": "Face1",
+                    "thickness": 0.5,
+                    "reversed": True,
+                    "thickness_name": "Thickness",
+                    "output_path": str(thickness_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign thickness",
+        )
+        if thickness["dressup"]["shape"]["solids"] != 1 or thickness["body"]["partdesign"]["tip"] != "Thickness":
+            raise RuntimeError(f"partdesign thickness did not produce a body solid: {thickness}")
+        if not thickness["dressup"]["partdesign"]["reversed"]:
+            raise RuntimeError(f"partdesign thickness did not keep reversed flag: {thickness}")
+        create_partdesign_rect_pad(
+            service,
+            draft_doc,
+            document_name="DraftSmoke",
+            body_name="DraftBody",
+            sketch_name="DraftBaseSketch",
+            pad_name="DraftBasePad",
+        )
+        draft = assert_ok(
+            service.definition_map()["freecad_partdesign_draft"].handler(
+                {
+                    "document_path": str(draft_doc),
+                    "body_name": "DraftBody",
+                    "base_feature_name": "DraftBasePad",
+                    "face_name": "Face6",
+                    "neutral_plane_name": "YZ_Plane",
+                    "pull_direction_name": "X_Axis",
+                    "angle": 5,
+                    "reversed": False,
+                    "draft_name": "Draft",
+                    "output_path": str(draft_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign draft",
+        )
+        if draft["dressup"]["shape"]["solids"] != 1 or draft["body"]["partdesign"]["tip"] != "Draft":
+            raise RuntimeError(f"partdesign draft did not produce a body solid: {draft}")
+        if draft["dressup"]["partdesign"]["neutral_plane"]["object"] != "YZ_Plane":
+            raise RuntimeError(f"partdesign draft did not keep neutral plane: {draft}")
         groove_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

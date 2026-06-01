@@ -74,6 +74,75 @@ PIPE_WORKER_PROPS: JsonObject = {
     **SAVE_PROPS,
 }
 
+DRESSUP_BASE_WORKER_PROPS: JsonObject = {
+    "document_id": {"type": "string"},
+    "body_name": {"type": "string"},
+    "base_feature_name": {"type": "string"},
+    "base_name": {"type": "string"},
+    "source_object": {"type": "string"},
+    "feature_name": {"type": "string"},
+    "base_subname": {"type": "string"},
+    "base_subnames": {"type": "array", "items": {"type": "string"}},
+    "subname": {"type": "string"},
+    "subnames": {"type": "array", "items": {"type": "string"}},
+    "edge_name": {"type": "string"},
+    "edge_names": {"type": "array", "items": {"type": "string"}},
+    "edge_indices": {"type": "array", "items": {"type": "integer"}},
+    "face_name": {"type": "string"},
+    "face_names": {"type": "array", "items": {"type": "string"}},
+    "face_indices": {"type": "array", "items": {"type": "integer"}},
+    "dressup_name": {"type": "string"},
+    "result_name": {"type": "string"},
+    "support_transform": {"type": "boolean"},
+    "require_solid": {"type": "boolean"},
+    **SAVE_PROPS,
+}
+
+FILLET_WORKER_PROPS: JsonObject = {
+    **DRESSUP_BASE_WORKER_PROPS,
+    "radius": {"type": "number"},
+    "use_all_edges": {"type": "boolean"},
+    "fillet_name": {"type": "string"},
+}
+
+CHAMFER_WORKER_PROPS: JsonObject = {
+    **DRESSUP_BASE_WORKER_PROPS,
+    "distance": {"type": "number"},
+    "size": {"type": "number"},
+    "size2": {"type": "number"},
+    "angle": {"type": "number"},
+    "chamfer_type": {"type": "string", "enum": ["equal_distance", "two_distances", "distance_and_angle"]},
+    "flip_direction": {"type": "boolean"},
+    "use_all_edges": {"type": "boolean"},
+    "chamfer_name": {"type": "string"},
+}
+
+THICKNESS_WORKER_PROPS: JsonObject = {
+    **DRESSUP_BASE_WORKER_PROPS,
+    "thickness": {"type": "number"},
+    "value": {"type": "number"},
+    "mode": {"type": "string", "enum": ["skin", "pipe", "recto_verso"]},
+    "join": {"type": "string", "enum": ["arc", "intersection"]},
+    "reversed": {"type": "boolean"},
+    "intersection": {"type": "boolean"},
+    "thickness_name": {"type": "string"},
+}
+
+DRAFT_WORKER_PROPS: JsonObject = {
+    **DRESSUP_BASE_WORKER_PROPS,
+    "neutral_plane_name": {"type": "string"},
+    "neutral_plane_object": {"type": "string"},
+    "neutral_plane": {"type": "string"},
+    "neutral_plane_subname": {"type": "string"},
+    "pull_direction_name": {"type": "string"},
+    "pull_direction_object": {"type": "string"},
+    "pull_direction": {"type": "string"},
+    "pull_direction_subname": {"type": "string"},
+    "angle": {"type": "number"},
+    "reversed": {"type": "boolean"},
+    "draft_name": {"type": "string"},
+}
+
 
 class PersistentToolService:
     """Stateful FreeCADCmd worker tools.
@@ -491,6 +560,38 @@ class PersistentToolService:
                 dict(PIPE_WORKER_PROPS),
                 ["document_id"],
                 "partdesign_subtractive_pipe",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_fillet",
+                "Worker Create PartDesign Fillet",
+                "Create a PartDesign Fillet dress-up in an in-memory worker document.",
+                dict(FILLET_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_fillet",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_chamfer",
+                "Worker Create PartDesign Chamfer",
+                "Create a PartDesign Chamfer dress-up in an in-memory worker document.",
+                dict(CHAMFER_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_chamfer",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_thickness",
+                "Worker Create PartDesign Thickness",
+                "Create a PartDesign Thickness dress-up in an in-memory worker document.",
+                dict(THICKNESS_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_thickness",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_draft",
+                "Worker Create PartDesign Draft",
+                "Create a PartDesign Draft dress-up in an in-memory worker document.",
+                dict(DRAFT_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_draft",
             ),
             self._worker_tool(
                 "freecad_worker_part_revolve",

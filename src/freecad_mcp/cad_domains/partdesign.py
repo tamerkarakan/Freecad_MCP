@@ -51,6 +51,77 @@ PIPE_PROPS = {
     "save": {"type": "boolean"},
 }
 
+DRESSUP_BASE_PROPS = {
+    "document_path": {"type": "string"},
+    "body_name": {"type": "string"},
+    "base_feature_name": {"type": "string"},
+    "base_name": {"type": "string"},
+    "source_object": {"type": "string"},
+    "feature_name": {"type": "string"},
+    "base_subname": {"type": "string"},
+    "base_subnames": {"type": "array", "items": {"type": "string"}},
+    "subname": {"type": "string"},
+    "subnames": {"type": "array", "items": {"type": "string"}},
+    "edge_name": {"type": "string"},
+    "edge_names": {"type": "array", "items": {"type": "string"}},
+    "edge_indices": {"type": "array", "items": {"type": "integer"}},
+    "face_name": {"type": "string"},
+    "face_names": {"type": "array", "items": {"type": "string"}},
+    "face_indices": {"type": "array", "items": {"type": "integer"}},
+    "dressup_name": {"type": "string"},
+    "result_name": {"type": "string"},
+    "support_transform": {"type": "boolean"},
+    "require_solid": {"type": "boolean"},
+    "output_path": {"type": "string"},
+    "overwrite": {"type": "boolean"},
+    "save": {"type": "boolean"},
+}
+
+FILLET_PROPS = {
+    **DRESSUP_BASE_PROPS,
+    "radius": {"type": "number"},
+    "use_all_edges": {"type": "boolean"},
+    "fillet_name": {"type": "string"},
+}
+
+CHAMFER_PROPS = {
+    **DRESSUP_BASE_PROPS,
+    "distance": {"type": "number"},
+    "size": {"type": "number"},
+    "size2": {"type": "number"},
+    "angle": {"type": "number"},
+    "chamfer_type": {"type": "string", "enum": ["equal_distance", "two_distances", "distance_and_angle"]},
+    "flip_direction": {"type": "boolean"},
+    "use_all_edges": {"type": "boolean"},
+    "chamfer_name": {"type": "string"},
+}
+
+THICKNESS_PROPS = {
+    **DRESSUP_BASE_PROPS,
+    "thickness": {"type": "number"},
+    "value": {"type": "number"},
+    "mode": {"type": "string", "enum": ["skin", "pipe", "recto_verso"]},
+    "join": {"type": "string", "enum": ["arc", "intersection"]},
+    "reversed": {"type": "boolean"},
+    "intersection": {"type": "boolean"},
+    "thickness_name": {"type": "string"},
+}
+
+DRAFT_PROPS = {
+    **DRESSUP_BASE_PROPS,
+    "neutral_plane_name": {"type": "string"},
+    "neutral_plane_object": {"type": "string"},
+    "neutral_plane": {"type": "string"},
+    "neutral_plane_subname": {"type": "string"},
+    "pull_direction_name": {"type": "string"},
+    "pull_direction_object": {"type": "string"},
+    "pull_direction": {"type": "string"},
+    "pull_direction_subname": {"type": "string"},
+    "angle": {"type": "number"},
+    "reversed": {"type": "boolean"},
+    "draft_name": {"type": "string"},
+}
+
 
 class PartDesignCadToolService(CadDomainToolService):
     domain = "partdesign"
@@ -68,4 +139,8 @@ class PartDesignCadToolService(CadDomainToolService):
             CadToolSpec("freecad_partdesign_subtractive_loft", "Create PartDesign Subtractive Loft", "Create a subtractive PartDesign Loft that removes material from an existing Body solid using a profile sketch and one or more section sketches.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "profile_name": {"type": "string"}, "profile_sketch": {"type": "string"}, "sketch_name": {"type": "string"}, "profile_subname": {"type": "string"}, "profile_subnames": {"type": "array", "items": {"type": "string"}}, "sections": {"type": "array", "items": {"type": ["string", "object"]}}, "section_names": {"type": "array", "items": {"type": "string"}}, "loft_name": {"type": "string"}, "result_name": {"type": "string"}, "ruled": {"type": "boolean"}, "closed": {"type": "boolean"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "partdesign_subtractive_loft"),
             CadToolSpec("freecad_partdesign_additive_pipe", "Create PartDesign Additive Pipe", "Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch inside a Body.", dict(PIPE_PROPS), ["document_path"], "partdesign_additive_pipe"),
             CadToolSpec("freecad_partdesign_subtractive_pipe", "Create PartDesign Subtractive Pipe", "Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch to remove material from an existing Body solid.", dict(PIPE_PROPS), ["document_path"], "partdesign_subtractive_pipe"),
+            CadToolSpec("freecad_partdesign_fillet", "Create PartDesign Fillet", "Create a PartDesign Fillet dress-up on selected base edges/faces or all edges of an existing Body solid.", dict(FILLET_PROPS), ["document_path"], "partdesign_fillet"),
+            CadToolSpec("freecad_partdesign_chamfer", "Create PartDesign Chamfer", "Create a PartDesign Chamfer dress-up on selected base edges/faces or all edges of an existing Body solid.", dict(CHAMFER_PROPS), ["document_path"], "partdesign_chamfer"),
+            CadToolSpec("freecad_partdesign_thickness", "Create PartDesign Thickness", "Create a PartDesign Thickness dress-up from selected base faces of an existing Body solid.", dict(THICKNESS_PROPS), ["document_path"], "partdesign_thickness"),
+            CadToolSpec("freecad_partdesign_draft", "Create PartDesign Draft", "Create a PartDesign Draft dress-up from selected base faces plus neutral-plane and pull-direction references.", dict(DRAFT_PROPS), ["document_path"], "partdesign_draft"),
         ]

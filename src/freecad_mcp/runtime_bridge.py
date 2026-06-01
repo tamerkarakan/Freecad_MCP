@@ -284,10 +284,11 @@ def clean_path(value: str) -> Path:
 
 
 def parse_prefixed_json(text: str) -> dict[str, Any] | None:
+    decoder = json.JSONDecoder()
     for line in text.splitlines():
         if line.startswith(FREECAD_JSON_PREFIX):
             try:
-                parsed = json.loads(line[len(FREECAD_JSON_PREFIX) :])
+                parsed, _ = decoder.raw_decode(line[len(FREECAD_JSON_PREFIX) :])
             except json.JSONDecodeError:
                 return None
             return parsed if isinstance(parsed, dict) else None

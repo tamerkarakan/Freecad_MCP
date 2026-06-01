@@ -55,6 +55,10 @@ class BuildServerTests(unittest.TestCase):
             "freecad_partdesign_subtractive_loft",
             "freecad_partdesign_additive_pipe",
             "freecad_partdesign_subtractive_pipe",
+            "freecad_partdesign_fillet",
+            "freecad_partdesign_chamfer",
+            "freecad_partdesign_thickness",
+            "freecad_partdesign_draft",
         ):
             self.assertIn(name, tools)
 
@@ -90,6 +94,10 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_partdesign_subtractive_loft", tools)
         self.assertIn("freecad_partdesign_additive_pipe", tools)
         self.assertIn("freecad_partdesign_subtractive_pipe", tools)
+        self.assertIn("freecad_partdesign_fillet", tools)
+        self.assertIn("freecad_partdesign_chamfer", tools)
+        self.assertIn("freecad_partdesign_thickness", tools)
+        self.assertIn("freecad_partdesign_draft", tools)
         self.assertIn("freecad_object_rename_label", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
         self.assertNotIn("freecad_cam_path_create", tools)

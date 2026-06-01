@@ -555,6 +555,34 @@ def partdesign_summary(obj):
             summary["transition"] = str(obj.Transition)
         if hasattr(obj, "Transformation"):
             summary["transformation"] = str(obj.Transformation)
+    elif (
+        type_id.startswith("PartDesign::Fillet")
+        or type_id.startswith("PartDesign::Chamfer")
+        or type_id.startswith("PartDesign::Thickness")
+        or type_id.startswith("PartDesign::Draft")
+    ):
+        summary["base"] = link_item_summary(getattr(obj, "Base", None))
+        if hasattr(obj, "SupportTransform"):
+            summary["support_transform"] = bool(obj.SupportTransform)
+        if hasattr(obj, "UseAllEdges"):
+            summary["use_all_edges"] = bool(obj.UseAllEdges)
+        if hasattr(obj, "Radius"):
+            summary["radius"] = quantity_summary(obj.Radius)
+        if hasattr(obj, "ChamferType"):
+            summary["chamfer_type"] = str(obj.ChamferType)
+        for prop in ("Size", "Size2", "Value", "Angle"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = quantity_summary(getattr(obj, prop))
+        for prop in ("FlipDirection", "Reversed", "Intersection"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = bool(getattr(obj, prop))
+        for prop in ("Mode", "Join"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = str(getattr(obj, prop))
+        if hasattr(obj, "NeutralPlane"):
+            summary["neutral_plane"] = link_item_summary(getattr(obj, "NeutralPlane", None))
+        if hasattr(obj, "PullDirection"):
+            summary["pull_direction"] = link_item_summary(getattr(obj, "PullDirection", None))
     elif type_id in {"PartDesign::Plane", "PartDesign::Line", "PartDesign::Point", "PartDesign::CoordinateSystem"}:
         summary["attachment"] = attachment_summary(obj)
     return summary
@@ -881,6 +909,18 @@ def link_target_object(value):
     return value[0] if isinstance(value, (list, tuple)) else value
 
 
+def object_or_doc_attr(doc, name):
+    obj = doc.getObject(str(name))
+    if obj is not None:
+        return obj
+    if hasattr(doc, str(name)):
+        return getattr(doc, str(name))
+    for candidate in doc.Objects:
+        if candidate.Label == name:
+            return candidate
+    raise ValueError("object not found: " + str(name))
+
+
 def resolve_partdesign_profile_link(doc, args):
     profile_name = args.get("profile_name") or args.get("profile_sketch") or args.get("sketch_name")
     if profile_name:
@@ -893,6 +933,58 @@ def resolve_partdesign_profile_link(doc, args):
         obj = get_object(doc, str(profile_name))
         return (obj, [str(sub) for sub in subnames if sub]) if subnames else obj
     return partdesign_link_sub_value(doc, args.get("profile"))
+
+
+def subnames_from_args(args, *, default_empty=False):
+    for key in ("base_subnames", "subnames", "edge_names", "face_names"):
+        value = args.get(key)
+        if value is not None:
+            if isinstance(value, str):
+                return [value] if value else []
+            return [str(item) for item in value if item]
+    if args.get("edge_indices") is not None:
+        return ["Edge" + str(int(index) + 1) for index in args.get("edge_indices") or []]
+    if args.get("face_indices") is not None:
+        return ["Face" + str(int(index) + 1) for index in args.get("face_indices") or []]
+    for key in ("base_subname", "subname", "edge_name", "face_name"):
+        value = args.get(key)
+        if value:
+            return [str(value)]
+    return [""] if default_empty else []
+
+
+def resolve_partdesign_base_link(doc, args, *, body=None, require_subnames=True, default_empty=False):
+    base_name = args.get("base_feature_name") or args.get("base_name") or args.get("source_object") or args.get("feature_name")
+    base_obj = object_or_doc_attr(doc, base_name) if base_name else None
+    if body is None and base_obj is not None:
+        body = find_body_for_object(base_obj)
+    if body is None:
+        body = find_single_partdesign_body(doc)
+    if base_obj is None and body is not None:
+        base_obj = find_body_solid_tip(body)
+    if base_obj is None:
+        raise ValueError("base_feature_name/base_name or a Body with a solid Tip is required")
+    subnames = subnames_from_args(args, default_empty=default_empty)
+    if require_subnames and not subnames:
+        raise ValueError("base_subnames/edge_names/face_names, edge_indices/face_indices, or use_all_edges is required")
+    return ((base_obj, subnames) if subnames else base_obj), base_obj, body
+
+
+def resolve_doc_link(doc, args, *, keys, subname_keys=()):
+    name = None
+    for key in keys:
+        if args.get(key):
+            name = args.get(key)
+            break
+    if name is None:
+        raise ValueError(keys[0] + " is required")
+    obj = object_or_doc_attr(doc, name)
+    subname = ""
+    for key in subname_keys:
+        if args.get(key):
+            subname = str(args.get(key))
+            break
+    return (obj, [subname] if subname else [""])
 
 
 def resolve_partdesign_section_links(doc, args):
@@ -1039,6 +1131,15 @@ def find_body_for_object(obj):
     for parent in getattr(obj, "InList", []) or []:
         if getattr(parent, "TypeId", "") == "PartDesign::Body":
             return parent
+    return None
+
+
+def find_single_partdesign_body(doc):
+    bodies = [obj for obj in doc.Objects if getattr(obj, "TypeId", "") == "PartDesign::Body"]
+    if len(bodies) == 1:
+        return bodies[0]
+    if len(bodies) > 1:
+        raise ValueError("body_name is required when the document has multiple PartDesign Bodies")
     return None
 
 
@@ -1907,6 +2008,189 @@ def action_partdesign_subtractive_pipe(args):
         default_name="SubtractivePipe",
         transaction_name="MCP create PartDesign subtractive pipe",
         require_base_solid=True,
+    )
+
+
+def chamfer_type_index(value):
+    return enum_index(
+        value,
+        {
+            "equal_distance": 0,
+            "equal": 0,
+            "distance": 0,
+            "two_distances": 1,
+            "two_distance": 1,
+            "distance_distance": 1,
+            "distance_and_angle": 2,
+            "distance_angle": 2,
+            "angle": 2,
+        },
+        "equal_distance",
+        "chamfer_type",
+    )
+
+
+def thickness_mode_index(value):
+    return enum_index(value, {"skin": 0, "pipe": 1, "recto_verso": 2, "rectoverso": 2}, "skin", "mode")
+
+
+def thickness_join_index(value):
+    return enum_index(value, {"arc": 0, "intersection": 1}, "arc", "join")
+
+
+def action_partdesign_dressup(doc, args, *, feature_type, default_name, transaction_name, apply_parameters, use_all_edges=False, require_subnames=True):
+    body = find_partdesign_body(doc, args.get("body_name")) if args.get("body_name") else None
+    base_link, base_obj, body = resolve_partdesign_base_link(
+        doc,
+        args,
+        body=body,
+        require_subnames=require_subnames and not use_all_edges,
+        default_empty=use_all_edges,
+    )
+    if body is None:
+        raise ValueError("PartDesign Body not found for base feature")
+    doc.openTransaction(transaction_name)
+    try:
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError(f"{default_name} requires an existing Body solid")
+        body.Tip = solid_tip
+        feature = doc.addObject(feature_type, args.get("dressup_name") or args.get("result_name") or args.get(default_name.lower() + "_name") or default_name)
+        feature.Base = base_link
+        apply_parameters(feature, args)
+        body.addObject(feature)
+        body.Tip = feature
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(args.get("require_solid", True)):
+        shape = getattr(feature, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError(f"{default_name} did not produce a solid")
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "base": object_summary(base_obj),
+        "dressup": object_summary(feature),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_fillet(args):
+    doc = App.openDocument(args["document_path"])
+
+    def apply(feature, params):
+        if hasattr(feature, "Radius"):
+            feature.Radius = float(params.get("radius", 1.0))
+        if hasattr(feature, "UseAllEdges"):
+            feature.UseAllEdges = bool(params.get("use_all_edges", False))
+        if params.get("support_transform") is not None and hasattr(feature, "SupportTransform"):
+            feature.SupportTransform = bool(params["support_transform"])
+
+    return action_partdesign_dressup(
+        doc,
+        args,
+        feature_type="PartDesign::Fillet",
+        default_name="Fillet",
+        transaction_name="MCP create PartDesign fillet",
+        apply_parameters=apply,
+        use_all_edges=bool(args.get("use_all_edges", False)),
+    )
+
+
+def action_partdesign_chamfer(args):
+    doc = App.openDocument(args["document_path"])
+
+    def apply(feature, params):
+        if hasattr(feature, "ChamferType"):
+            feature.ChamferType = chamfer_type_index(params.get("chamfer_type"))
+        if hasattr(feature, "Size"):
+            feature.Size = float(params.get("size", params.get("distance", 1.0)))
+        if params.get("size2") is not None and hasattr(feature, "Size2"):
+            feature.Size2 = float(params["size2"])
+        if params.get("angle") is not None and hasattr(feature, "Angle"):
+            feature.Angle = float(params["angle"])
+        if params.get("flip_direction") is not None and hasattr(feature, "FlipDirection"):
+            feature.FlipDirection = bool(params["flip_direction"])
+        if hasattr(feature, "UseAllEdges"):
+            feature.UseAllEdges = bool(params.get("use_all_edges", False))
+        if params.get("support_transform") is not None and hasattr(feature, "SupportTransform"):
+            feature.SupportTransform = bool(params["support_transform"])
+
+    return action_partdesign_dressup(
+        doc,
+        args,
+        feature_type="PartDesign::Chamfer",
+        default_name="Chamfer",
+        transaction_name="MCP create PartDesign chamfer",
+        apply_parameters=apply,
+        use_all_edges=bool(args.get("use_all_edges", False)),
+    )
+
+
+def action_partdesign_thickness(args):
+    doc = App.openDocument(args["document_path"])
+
+    def apply(feature, params):
+        if hasattr(feature, "Value"):
+            feature.Value = float(params.get("value", params.get("thickness", 1.0)))
+        if hasattr(feature, "Mode"):
+            feature.Mode = thickness_mode_index(params.get("mode"))
+        if hasattr(feature, "Join"):
+            feature.Join = thickness_join_index(params.get("join"))
+        if params.get("reversed") is not None and hasattr(feature, "Reversed"):
+            feature.Reversed = bool(params["reversed"])
+        if params.get("intersection") is not None and hasattr(feature, "Intersection"):
+            feature.Intersection = bool(params["intersection"])
+        if params.get("support_transform") is not None and hasattr(feature, "SupportTransform"):
+            feature.SupportTransform = bool(params["support_transform"])
+
+    return action_partdesign_dressup(
+        doc,
+        args,
+        feature_type="PartDesign::Thickness",
+        default_name="Thickness",
+        transaction_name="MCP create PartDesign thickness",
+        apply_parameters=apply,
+    )
+
+
+def action_partdesign_draft(args):
+    doc = App.openDocument(args["document_path"])
+
+    def apply(feature, params):
+        if hasattr(feature, "NeutralPlane"):
+            feature.NeutralPlane = resolve_doc_link(
+                doc,
+                params,
+                keys=("neutral_plane_name", "neutral_plane_object", "neutral_plane"),
+                subname_keys=("neutral_plane_subname",),
+            )
+        if hasattr(feature, "PullDirection"):
+            feature.PullDirection = resolve_doc_link(
+                doc,
+                params,
+                keys=("pull_direction_name", "pull_direction_object", "pull_direction"),
+                subname_keys=("pull_direction_subname",),
+            )
+        if hasattr(feature, "Angle"):
+            feature.Angle = float(params.get("angle", 5.0))
+        if params.get("reversed") is not None and hasattr(feature, "Reversed"):
+            feature.Reversed = bool(params["reversed"])
+        if params.get("support_transform") is not None and hasattr(feature, "SupportTransform"):
+            feature.SupportTransform = bool(params["support_transform"])
+
+    return action_partdesign_dressup(
+        doc,
+        args,
+        feature_type="PartDesign::Draft",
+        default_name="Draft",
+        transaction_name="MCP create PartDesign draft",
+        apply_parameters=apply,
     )
 
 
@@ -4046,6 +4330,10 @@ DISPATCH = {
     "partdesign_subtractive_loft": action_partdesign_subtractive_loft,
     "partdesign_additive_pipe": action_partdesign_additive_pipe,
     "partdesign_subtractive_pipe": action_partdesign_subtractive_pipe,
+    "partdesign_fillet": action_partdesign_fillet,
+    "partdesign_chamfer": action_partdesign_chamfer,
+    "partdesign_thickness": action_partdesign_thickness,
+    "partdesign_draft": action_partdesign_draft,
     "part_revolve": action_part_revolve,
     "part_fillet": action_part_fillet,
     "part_chamfer": action_part_chamfer,

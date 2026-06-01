@@ -42,6 +42,69 @@ endsolid freecad_mcp_worker_fixture
     )
 
 
+def create_worker_rect_pad(
+    service: PersistentToolService,
+    *,
+    session_id: str,
+    document_name: str,
+    body_name: str,
+    sketch_name: str,
+    pad_name: str,
+) -> str:
+    document = worker_result(
+        service.definition_map()["freecad_worker_document_new"].handler(
+            {"session_id": session_id, "document_name": document_name, "timeout_sec": 90}
+        ),
+        f"{document_name}_document_new",
+    )
+    document_id = document["document"]["document_id"]
+    profile = worker_result(
+        service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+            {
+                "session_id": session_id,
+                "document_id": document_id,
+                "sketch_name": sketch_name,
+                "body_name": body_name,
+                "attachment_plane": "XY",
+                "loops": [
+                    {
+                        "segments": [
+                            {"type": "line", "start": [-5, -5, 0], "end": [5, -5, 0]},
+                            {"type": "line", "start": [5, -5, 0], "end": [5, 5, 0]},
+                            {"type": "line", "start": [5, 5, 0], "end": [-5, 5, 0]},
+                            {"type": "line", "start": [-5, 5, 0], "end": [-5, -5, 0]},
+                        ],
+                    }
+                ],
+                "lock_mode": "block",
+                "require_fully_constrained": True,
+                "timeout_sec": 90,
+            }
+        ),
+        f"{document_name}_profile_create",
+    )
+    if not profile["attachment"]["attached"]:
+        raise RuntimeError(f"worker dress-up profile did not attach to PartDesign body: {profile}")
+    pad = worker_result(
+        service.definition_map()["freecad_worker_partdesign_pad"].handler(
+            {
+                "session_id": session_id,
+                "document_id": document_id,
+                "body_name": body_name,
+                "sketch_name": sketch_name,
+                "attachment_plane": "XY",
+                "pad_name": pad_name,
+                "length": 10,
+                "timeout_sec": 90,
+            }
+        ),
+        f"{document_name}_partdesign_pad",
+    )
+    if pad["pad"]["shape"]["solids"] != 1 or pad["body"]["partdesign"]["tip"] != pad_name:
+        raise RuntimeError(f"worker dress-up base Pad did not produce a body solid: {pad}")
+    return document_id
+
+
 def main() -> int:
     if not os.environ.get("FREECAD_MCP_FREECAD_HOME") and not os.environ.get("FREECAD_MCP_FREECAD_CMD"):
         message = "persistent worker smoke SKIPPED: FreeCAD runtime env not configured"
@@ -437,6 +500,161 @@ def main() -> int:
             )
             if closed_initial_doc["document_count"] != 0:
                 raise RuntimeError(f"worker initial sketch document close failed: {closed_initial_doc}")
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
+            restarted_dressup = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_dressup["session"]["session_id"]
+            if not restarted_dressup["session"]["running"]:
+                raise RuntimeError(f"dress-up worker did not start: {restarted_dressup}")
+
+            fillet_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerFilletSmoke",
+                body_name="WorkerFilletBody",
+                sketch_name="WorkerFilletBaseSketch",
+                pad_name="WorkerFilletBasePad",
+            )
+            worker_fillet = worker_result(
+                service.definition_map()["freecad_worker_partdesign_fillet"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": fillet_document_id,
+                        "body_name": "WorkerFilletBody",
+                        "base_feature_name": "WorkerFilletBasePad",
+                        "use_all_edges": True,
+                        "radius": 0.5,
+                        "fillet_name": "WorkerFillet",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_fillet",
+            )
+            if worker_fillet["dressup"]["shape"]["solids"] != 1 or worker_fillet["body"]["partdesign"]["tip"] != "WorkerFillet":
+                raise RuntimeError(f"worker PartDesign Fillet did not produce a body solid: {worker_fillet}")
+            if not worker_fillet["dressup"]["partdesign"]["use_all_edges"]:
+                raise RuntimeError(f"worker PartDesign Fillet did not keep UseAllEdges: {worker_fillet}")
+            closed_fillet_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": fillet_document_id}
+                ),
+                "worker_partdesign_fillet_document_close",
+            )
+            if closed_fillet_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign Fillet document close failed: {closed_fillet_doc}")
+
+            chamfer_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerChamferSmoke",
+                body_name="WorkerChamferBody",
+                sketch_name="WorkerChamferBaseSketch",
+                pad_name="WorkerChamferBasePad",
+            )
+            worker_chamfer = worker_result(
+                service.definition_map()["freecad_worker_partdesign_chamfer"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": chamfer_document_id,
+                        "body_name": "WorkerChamferBody",
+                        "base_feature_name": "WorkerChamferBasePad",
+                        "use_all_edges": True,
+                        "distance": 0.5,
+                        "chamfer_name": "WorkerChamfer",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_chamfer",
+            )
+            if worker_chamfer["dressup"]["shape"]["solids"] != 1 or worker_chamfer["body"]["partdesign"]["tip"] != "WorkerChamfer":
+                raise RuntimeError(f"worker PartDesign Chamfer did not produce a body solid: {worker_chamfer}")
+            if not worker_chamfer["dressup"]["partdesign"]["use_all_edges"]:
+                raise RuntimeError(f"worker PartDesign Chamfer did not keep UseAllEdges: {worker_chamfer}")
+            closed_chamfer_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": chamfer_document_id}
+                ),
+                "worker_partdesign_chamfer_document_close",
+            )
+            if closed_chamfer_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign Chamfer document close failed: {closed_chamfer_doc}")
+
+            thickness_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerThicknessSmoke",
+                body_name="WorkerThicknessBody",
+                sketch_name="WorkerThicknessBaseSketch",
+                pad_name="WorkerThicknessBasePad",
+            )
+            worker_thickness = worker_result(
+                service.definition_map()["freecad_worker_partdesign_thickness"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": thickness_document_id,
+                        "body_name": "WorkerThicknessBody",
+                        "base_feature_name": "WorkerThicknessBasePad",
+                        "face_name": "Face1",
+                        "thickness": 0.5,
+                        "reversed": True,
+                        "thickness_name": "WorkerThickness",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_thickness",
+            )
+            if worker_thickness["dressup"]["shape"]["solids"] != 1 or worker_thickness["body"]["partdesign"]["tip"] != "WorkerThickness":
+                raise RuntimeError(f"worker PartDesign Thickness did not produce a body solid: {worker_thickness}")
+            if not worker_thickness["dressup"]["partdesign"]["reversed"]:
+                raise RuntimeError(f"worker PartDesign Thickness did not keep reversed flag: {worker_thickness}")
+            closed_thickness_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": thickness_document_id}
+                ),
+                "worker_partdesign_thickness_document_close",
+            )
+            if closed_thickness_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign Thickness document close failed: {closed_thickness_doc}")
+
+            draft_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerDraftSmoke",
+                body_name="WorkerDraftBody",
+                sketch_name="WorkerDraftBaseSketch",
+                pad_name="WorkerDraftBasePad",
+            )
+            worker_draft = worker_result(
+                service.definition_map()["freecad_worker_partdesign_draft"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": draft_document_id,
+                        "body_name": "WorkerDraftBody",
+                        "base_feature_name": "WorkerDraftBasePad",
+                        "face_name": "Face6",
+                        "neutral_plane_name": "YZ_Plane",
+                        "pull_direction_name": "X_Axis",
+                        "angle": 5,
+                        "reversed": False,
+                        "draft_name": "WorkerDraft",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_draft",
+            )
+            if worker_draft["dressup"]["shape"]["solids"] != 1 or worker_draft["body"]["partdesign"]["tip"] != "WorkerDraft":
+                raise RuntimeError(f"worker PartDesign Draft did not produce a body solid: {worker_draft}")
+            if worker_draft["dressup"]["partdesign"]["neutral_plane"]["object"] != "YZ_Plane":
+                raise RuntimeError(f"worker PartDesign Draft did not keep neutral plane: {worker_draft}")
+            closed_draft_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": draft_document_id}
+                ),
+                "worker_partdesign_draft_document_close",
+            )
+            if closed_draft_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign Draft document close failed: {closed_draft_doc}")
+
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
             session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})

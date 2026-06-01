@@ -67,6 +67,7 @@ Available persistent worker tools:
 - `freecad_worker_session_start/list/status/close`
 - `freecad_worker_document_new/open/save/recompute/close/export`
 - `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry`
+- `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe/fillet/chamfer/thickness/draft`
 - `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/edit_geometry/edit_constraints/transform/auto_constrain/validate`
 - `freecad_worker_mesh_import/export/evaluate/repair/boolean`
 - `freecad_worker_assembly_create/insert/create_joint/solve/bom`
@@ -123,7 +124,7 @@ Typed CAD tool groups are also available:
 - document: new/open/save/recompute/export
 - object: list/get/set properties/delete
 - Part: primitives, boolean, direct/parametric extrude, revolve, fillet, chamfer, geometry check
-- PartDesign: Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe with multisection and auxiliary-spine options
+- PartDesign: Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe with multisection and auxiliary-spine options, and Fillet/Chamfer/Thickness/Draft dress-up features
 - Sketcher: create, advanced geometry/profile creation, constraint create/update, geometry/constraint edit, transform, auto-constrain, validate
 - import/export and mesh tools
 - Assembly: create/insert/link native JointObject proxies/recompute/BOM

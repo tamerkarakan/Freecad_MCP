@@ -40,10 +40,10 @@ Current bundle profiles:
 
 | Profile | Tool Count | Use |
 | --- | ---: | --- |
-| `free` | 22 | File-based document/object/Part operations. |
-| `pro` | 59 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| `studio` | 117 | Adds worker sessions plus TechDraw, CAM, and FEM. |
-| `team` | 120 | Adds source-intelligence tools. |
+| `free` | 23 | File-based document/object/Part operations. |
+| `pro` | 79 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| `studio` | 151 | Adds worker sessions plus TechDraw, CAM, and FEM. |
+| `team` | 154 | Adds source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Only `freecad_python_exec`; opt-in add-on. |
 

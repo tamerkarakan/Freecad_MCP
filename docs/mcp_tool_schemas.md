@@ -2098,6 +2098,571 @@ Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a
 }
 ```
 
+## `freecad_worker_partdesign_fillet`
+
+Create a PartDesign Fillet dress-up in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "radius": {
+      "type": "number"
+    },
+    "use_all_edges": {
+      "type": "boolean"
+    },
+    "fillet_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_chamfer`
+
+Create a PartDesign Chamfer dress-up in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "distance": {
+      "type": "number"
+    },
+    "size": {
+      "type": "number"
+    },
+    "size2": {
+      "type": "number"
+    },
+    "angle": {
+      "type": "number"
+    },
+    "chamfer_type": {
+      "type": "string",
+      "enum": [
+        "equal_distance",
+        "two_distances",
+        "distance_and_angle"
+      ]
+    },
+    "flip_direction": {
+      "type": "boolean"
+    },
+    "use_all_edges": {
+      "type": "boolean"
+    },
+    "chamfer_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_thickness`
+
+Create a PartDesign Thickness dress-up in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "thickness": {
+      "type": "number"
+    },
+    "value": {
+      "type": "number"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "skin",
+        "pipe",
+        "recto_verso"
+      ]
+    },
+    "join": {
+      "type": "string",
+      "enum": [
+        "arc",
+        "intersection"
+      ]
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "intersection": {
+      "type": "boolean"
+    },
+    "thickness_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_draft`
+
+Create a PartDesign Draft dress-up in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "neutral_plane_name": {
+      "type": "string"
+    },
+    "neutral_plane_object": {
+      "type": "string"
+    },
+    "neutral_plane": {
+      "type": "string"
+    },
+    "neutral_plane_subname": {
+      "type": "string"
+    },
+    "pull_direction_name": {
+      "type": "string"
+    },
+    "pull_direction_object": {
+      "type": "string"
+    },
+    "pull_direction": {
+      "type": "string"
+    },
+    "pull_direction_subname": {
+      "type": "string"
+    },
+    "angle": {
+      "type": "number"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "draft_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.
@@ -5851,6 +6416,599 @@ Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/
     },
     "save": {
       "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_fillet`
+
+Create a PartDesign Fillet dress-up on selected base edges/faces or all edges of an existing Body solid.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "radius": {
+      "type": "number"
+    },
+    "use_all_edges": {
+      "type": "boolean"
+    },
+    "fillet_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_chamfer`
+
+Create a PartDesign Chamfer dress-up on selected base edges/faces or all edges of an existing Body solid.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "distance": {
+      "type": "number"
+    },
+    "size": {
+      "type": "number"
+    },
+    "size2": {
+      "type": "number"
+    },
+    "angle": {
+      "type": "number"
+    },
+    "chamfer_type": {
+      "type": "string",
+      "enum": [
+        "equal_distance",
+        "two_distances",
+        "distance_and_angle"
+      ]
+    },
+    "flip_direction": {
+      "type": "boolean"
+    },
+    "use_all_edges": {
+      "type": "boolean"
+    },
+    "chamfer_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_thickness`
+
+Create a PartDesign Thickness dress-up from selected base faces of an existing Body solid.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "thickness": {
+      "type": "number"
+    },
+    "value": {
+      "type": "number"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "skin",
+        "pipe",
+        "recto_verso"
+      ]
+    },
+    "join": {
+      "type": "string",
+      "enum": [
+        "arc",
+        "intersection"
+      ]
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "intersection": {
+      "type": "boolean"
+    },
+    "thickness_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_draft`
+
+Create a PartDesign Draft dress-up from selected base faces plus neutral-plane and pull-direction references.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "base_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "base_subname": {
+      "type": "string"
+    },
+    "base_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "subname": {
+      "type": "string"
+    },
+    "subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_name": {
+      "type": "string"
+    },
+    "edge_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "face_name": {
+      "type": "string"
+    },
+    "face_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "face_indices": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "dressup_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "support_transform": {
+      "type": "boolean"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "neutral_plane_name": {
+      "type": "string"
+    },
+    "neutral_plane_object": {
+      "type": "string"
+    },
+    "neutral_plane": {
+      "type": "string"
+    },
+    "neutral_plane_subname": {
+      "type": "string"
+    },
+    "pull_direction_name": {
+      "type": "string"
+    },
+    "pull_direction_object": {
+      "type": "string"
+    },
+    "pull_direction": {
+      "type": "string"
+    },
+    "pull_direction_subname": {
+      "type": "string"
+    },
+    "angle": {
+      "type": "number"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "draft_name": {
+      "type": "string"
     },
     "executable": {
       "type": "string",

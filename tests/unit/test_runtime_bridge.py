@@ -134,6 +134,11 @@ class RuntimeBridgeTests(unittest.TestCase):
 
         self.assertEqual(parsed, {"version": ["1"]})
 
+    def test_parse_prefixed_json_ignores_same_line_progress_after_payload(self) -> None:
+        parsed = parse_prefixed_json('__FREECAD_MCP_JSON__{"ok": true}Recompute......\n')
+
+        self.assertEqual(parsed, {"ok": True})
+
     def test_parse_prefixed_json_handles_malformed_payload(self) -> None:
         parsed = parse_prefixed_json("noise\n__FREECAD_MCP_JSON__{bad json}\n")
 

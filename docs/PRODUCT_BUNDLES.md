@@ -5,9 +5,9 @@ Generated sellable bundle manifest for the current MCP tool surface.
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
 | FreeCAD MCP Free | `free` | base | 23 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part operations. |
-| FreeCAD MCP Pro | `pro` | paid | 75 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign datum/feature, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 143 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 146 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Pro | `pro` | paid | 79 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign datum/feature, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 151 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 154 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -54,7 +54,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `75`
+- Tool count: `79`
 - Upgrade path: `studio`
 
 Tools:
@@ -90,6 +90,10 @@ Tools:
 - `freecad_partdesign_subtractive_loft`
 - `freecad_partdesign_additive_pipe`
 - `freecad_partdesign_subtractive_pipe`
+- `freecad_partdesign_fillet`
+- `freecad_partdesign_chamfer`
+- `freecad_partdesign_thickness`
+- `freecad_partdesign_draft`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`
@@ -141,7 +145,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `143`
+- Tool count: `151`
 - Upgrade path: `team`
 
 Tools:
@@ -178,6 +182,10 @@ Tools:
 - `freecad_worker_partdesign_subtractive_loft`
 - `freecad_worker_partdesign_additive_pipe`
 - `freecad_worker_partdesign_subtractive_pipe`
+- `freecad_worker_partdesign_fillet`
+- `freecad_worker_partdesign_chamfer`
+- `freecad_worker_partdesign_thickness`
+- `freecad_worker_partdesign_draft`
 - `freecad_worker_part_revolve`
 - `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
@@ -234,6 +242,10 @@ Tools:
 - `freecad_partdesign_subtractive_loft`
 - `freecad_partdesign_additive_pipe`
 - `freecad_partdesign_subtractive_pipe`
+- `freecad_partdesign_fillet`
+- `freecad_partdesign_chamfer`
+- `freecad_partdesign_thickness`
+- `freecad_partdesign_draft`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`
@@ -296,7 +308,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `146`
+- Tool count: `154`
 
 Tools:
 
@@ -335,6 +347,10 @@ Tools:
 - `freecad_worker_partdesign_subtractive_loft`
 - `freecad_worker_partdesign_additive_pipe`
 - `freecad_worker_partdesign_subtractive_pipe`
+- `freecad_worker_partdesign_fillet`
+- `freecad_worker_partdesign_chamfer`
+- `freecad_worker_partdesign_thickness`
+- `freecad_worker_partdesign_draft`
 - `freecad_worker_part_revolve`
 - `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
@@ -391,6 +407,10 @@ Tools:
 - `freecad_partdesign_subtractive_loft`
 - `freecad_partdesign_additive_pipe`
 - `freecad_partdesign_subtractive_pipe`
+- `freecad_partdesign_fillet`
+- `freecad_partdesign_chamfer`
+- `freecad_partdesign_thickness`
+- `freecad_partdesign_draft`
 - `freecad_sketch_create`
 - `freecad_sketch_add_geometry`
 - `freecad_sketch_add_constraint`

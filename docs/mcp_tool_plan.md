@@ -17,7 +17,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
 | `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
-| `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe` | Create Body-based datum, additive, subtractive, multi-sketch, and sweep PartDesign features in persistent worker documents. | PartDesign App API |
+| `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe/fillet/chamfer/thickness/draft` | Create Body-based datum, additive, subtractive, multi-sketch, sweep, and dress-up PartDesign features in persistent worker documents. | PartDesign App API |
 | `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
 | `freecad_worker_assembly_create/insert/create_joint/solve/bom` | Create Assembly containers, links, native joint proxies, recompute, and BOM rows in persistent worker documents. | Assembly module |
@@ -58,6 +58,10 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_subtractive_loft` | Create a subtractive PartDesign Loft from a profile sketch and one or more section sketches in an existing Body solid. | PartDesign App API |
 | `freecad_partdesign_additive_pipe` | Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in a Body, with guarded multisection and auxiliary-spine options. | PartDesign App API |
 | `freecad_partdesign_subtractive_pipe` | Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in an existing Body solid, with the same guarded Pipe options. | PartDesign App API |
+| `freecad_partdesign_fillet` | Create a PartDesign Fillet dress-up from selected base edges/faces or all edges of an existing Body solid. | PartDesign App API |
+| `freecad_partdesign_chamfer` | Create a PartDesign Chamfer dress-up from selected base edges/faces or all edges of an existing Body solid. | PartDesign App API |
+| `freecad_partdesign_thickness` | Create a PartDesign Thickness dress-up from selected base faces of an existing Body solid. | PartDesign App API |
+| `freecad_partdesign_draft` | Create a PartDesign Draft dress-up from selected base faces plus neutral-plane and pull-direction references. | PartDesign App API |
 | `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |

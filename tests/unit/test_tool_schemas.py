@@ -63,6 +63,10 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_subtractive_loft",
             "freecad_worker_partdesign_additive_pipe",
             "freecad_worker_partdesign_subtractive_pipe",
+            "freecad_worker_partdesign_fillet",
+            "freecad_worker_partdesign_chamfer",
+            "freecad_worker_partdesign_thickness",
+            "freecad_worker_partdesign_draft",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -153,6 +157,10 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_subtractive_loft",
             "freecad_partdesign_additive_pipe",
             "freecad_partdesign_subtractive_pipe",
+            "freecad_partdesign_fillet",
+            "freecad_partdesign_chamfer",
+            "freecad_partdesign_thickness",
+            "freecad_partdesign_draft",
         ]:
             self.assertIn(name, tools)
         loft_props = tools["freecad_partdesign_additive_loft"].to_mcp()["inputSchema"]["properties"]
@@ -175,6 +183,15 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("auxiliary_spine_name", worker_pipe_props)
         self.assertIn("orientation_mode", worker_pipe_props)
         self.assertIn("scaling_mode", worker_pipe_props)
+        fillet_props = tools["freecad_partdesign_fillet"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("use_all_edges", fillet_props)
+        self.assertIn("base_subnames", fillet_props)
+        chamfer_props = tools["freecad_partdesign_chamfer"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("chamfer_type", chamfer_props)
+        thickness_props = tools["freecad_partdesign_thickness"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("face_names", thickness_props)
+        draft_props = tools["freecad_partdesign_draft"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("neutral_plane_name", draft_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
