@@ -657,6 +657,122 @@ def main() -> int:
 
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
             session_id = None
+            restarted_transform = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+            session_id = restarted_transform["session"]["session_id"]
+            if not restarted_transform["session"]["running"]:
+                raise RuntimeError(f"transform worker did not start: {restarted_transform}")
+
+            linear_pattern_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerLinearPatternSmoke",
+                body_name="WorkerLinearPatternBody",
+                sketch_name="WorkerLinearPatternBaseSketch",
+                pad_name="WorkerLinearPatternBasePad",
+            )
+            worker_linear_pattern = worker_result(
+                service.definition_map()["freecad_worker_partdesign_linear_pattern"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": linear_pattern_document_id,
+                        "body_name": "WorkerLinearPatternBody",
+                        "original_feature_name": "WorkerLinearPatternBasePad",
+                        "direction_axis": "x_axis",
+                        "length": 2,
+                        "occurrences": 2,
+                        "linear_pattern_name": "WorkerLinearPattern",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_linear_pattern",
+            )
+            if worker_linear_pattern["transform"]["shape"]["solids"] != 1 or worker_linear_pattern["body"]["partdesign"]["tip"] != "WorkerLinearPattern":
+                raise RuntimeError(f"worker PartDesign LinearPattern did not produce a body solid: {worker_linear_pattern}")
+            if worker_linear_pattern["transform"]["partdesign"]["direction"]["object"] != "X_Axis":
+                raise RuntimeError(f"worker PartDesign LinearPattern did not keep X direction: {worker_linear_pattern}")
+            closed_linear_pattern_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": linear_pattern_document_id}
+                ),
+                "worker_partdesign_linear_pattern_document_close",
+            )
+            if closed_linear_pattern_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign LinearPattern document close failed: {closed_linear_pattern_doc}")
+
+            polar_pattern_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerPolarPatternSmoke",
+                body_name="WorkerPolarPatternBody",
+                sketch_name="WorkerPolarPatternBaseSketch",
+                pad_name="WorkerPolarPatternBasePad",
+            )
+            worker_polar_pattern = worker_result(
+                service.definition_map()["freecad_worker_partdesign_polar_pattern"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": polar_pattern_document_id,
+                        "body_name": "WorkerPolarPatternBody",
+                        "original_feature_name": "WorkerPolarPatternBasePad",
+                        "axis": "z_axis",
+                        "angle": 30,
+                        "occurrences": 2,
+                        "polar_pattern_name": "WorkerPolarPattern",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_polar_pattern",
+            )
+            if worker_polar_pattern["transform"]["shape"]["solids"] != 1 or worker_polar_pattern["body"]["partdesign"]["tip"] != "WorkerPolarPattern":
+                raise RuntimeError(f"worker PartDesign PolarPattern did not produce a body solid: {worker_polar_pattern}")
+            if worker_polar_pattern["transform"]["partdesign"]["axis"]["object"] != "Z_Axis":
+                raise RuntimeError(f"worker PartDesign PolarPattern did not keep Z axis: {worker_polar_pattern}")
+            closed_polar_pattern_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": polar_pattern_document_id}
+                ),
+                "worker_partdesign_polar_pattern_document_close",
+            )
+            if closed_polar_pattern_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign PolarPattern document close failed: {closed_polar_pattern_doc}")
+
+            mirrored_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerMirroredSmoke",
+                body_name="WorkerMirroredBody",
+                sketch_name="WorkerMirroredBaseSketch",
+                pad_name="WorkerMirroredBasePad",
+            )
+            worker_mirrored = worker_result(
+                service.definition_map()["freecad_worker_partdesign_mirrored"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": mirrored_document_id,
+                        "body_name": "WorkerMirroredBody",
+                        "original_feature_name": "WorkerMirroredBasePad",
+                        "mirror_plane": "xy_plane",
+                        "mirrored_name": "WorkerMirrored",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_mirrored",
+            )
+            if worker_mirrored["transform"]["shape"]["solids"] != 1 or worker_mirrored["body"]["partdesign"]["tip"] != "WorkerMirrored":
+                raise RuntimeError(f"worker PartDesign Mirrored did not produce a body solid: {worker_mirrored}")
+            if worker_mirrored["transform"]["partdesign"]["mirror_plane"]["object"] != "XY_Plane":
+                raise RuntimeError(f"worker PartDesign Mirrored did not keep mirror plane: {worker_mirrored}")
+            closed_mirrored_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": mirrored_document_id}
+                ),
+                "worker_partdesign_mirrored_document_close",
+            )
+            if closed_mirrored_doc["document_count"] != 0:
+                raise RuntimeError(f"worker PartDesign Mirrored document close failed: {closed_mirrored_doc}")
+
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_sketch["session"]["session_id"]
             if not restarted_sketch["session"]["running"]:

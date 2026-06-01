@@ -143,6 +143,72 @@ DRAFT_WORKER_PROPS: JsonObject = {
     "draft_name": {"type": "string"},
 }
 
+TRANSFORM_BASE_WORKER_PROPS: JsonObject = {
+    "document_id": {"type": "string"},
+    "body_name": {"type": "string"},
+    "original_feature_name": {"type": "string"},
+    "original_names": {"type": "array", "items": {"type": "string"}},
+    "feature_name": {"type": "string"},
+    "feature_names": {"type": "array", "items": {"type": "string"}},
+    "base_feature_name": {"type": "string"},
+    "source_object": {"type": "string"},
+    "whole_shape": {"type": "boolean"},
+    "transform_mode": {"type": "string", "enum": ["features", "whole_shape"]},
+    "transform_name": {"type": "string"},
+    "result_name": {"type": "string"},
+    "require_solid": {"type": "boolean"},
+    **SAVE_PROPS,
+}
+
+LINEAR_PATTERN_WORKER_PROPS: JsonObject = {
+    **TRANSFORM_BASE_WORKER_PROPS,
+    "direction_axis": {"type": "string", "enum": ["x_axis", "y_axis", "z_axis"]},
+    "direction_name": {"type": "string"},
+    "direction_object": {"type": "string"},
+    "direction_subname": {"type": "string"},
+    "reversed": {"type": "boolean"},
+    "mode": {"type": "string", "enum": ["extent", "spacing"]},
+    "length": {"type": "number"},
+    "offset": {"type": "number"},
+    "occurrences": {"type": "integer", "minimum": 1},
+    "direction2_axis": {"type": "string", "enum": ["x_axis", "y_axis", "z_axis"]},
+    "direction2_name": {"type": "string"},
+    "direction2_object": {"type": "string"},
+    "direction2_subname": {"type": "string"},
+    "reversed2": {"type": "boolean"},
+    "mode2": {"type": "string", "enum": ["extent", "spacing"]},
+    "length2": {"type": "number"},
+    "offset2": {"type": "number"},
+    "occurrences2": {"type": "integer", "minimum": 1},
+    "linear_pattern_name": {"type": "string"},
+    "pattern_name": {"type": "string"},
+}
+
+POLAR_PATTERN_WORKER_PROPS: JsonObject = {
+    **TRANSFORM_BASE_WORKER_PROPS,
+    "axis": {"type": "string"},
+    "axis_name": {"type": "string"},
+    "axis_object": {"type": "string"},
+    "axis_subname": {"type": "string"},
+    "reversed": {"type": "boolean"},
+    "mode": {"type": "string", "enum": ["extent", "spacing"]},
+    "angle": {"type": "number"},
+    "offset": {"type": "number"},
+    "occurrences": {"type": "integer", "minimum": 1},
+    "polar_pattern_name": {"type": "string"},
+    "pattern_name": {"type": "string"},
+}
+
+MIRRORED_WORKER_PROPS: JsonObject = {
+    **TRANSFORM_BASE_WORKER_PROPS,
+    "mirror_plane": {"type": "string"},
+    "mirror_plane_name": {"type": "string"},
+    "mirror_plane_object": {"type": "string"},
+    "mirror_plane_subname": {"type": "string"},
+    "mirrored_name": {"type": "string"},
+    "mirror_name": {"type": "string"},
+}
+
 
 class PersistentToolService:
     """Stateful FreeCADCmd worker tools.
@@ -592,6 +658,30 @@ class PersistentToolService:
                 dict(DRAFT_WORKER_PROPS),
                 ["document_id"],
                 "partdesign_draft",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_linear_pattern",
+                "Worker Create PartDesign Linear Pattern",
+                "Create a PartDesign LinearPattern transform in an in-memory worker document.",
+                dict(LINEAR_PATTERN_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_linear_pattern",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_polar_pattern",
+                "Worker Create PartDesign Polar Pattern",
+                "Create a PartDesign PolarPattern transform in an in-memory worker document.",
+                dict(POLAR_PATTERN_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_polar_pattern",
+            ),
+            self._worker_tool(
+                "freecad_worker_partdesign_mirrored",
+                "Worker Create PartDesign Mirrored",
+                "Create a PartDesign Mirrored transform in an in-memory worker document.",
+                dict(MIRRORED_WORKER_PROPS),
+                ["document_id"],
+                "partdesign_mirrored",
             ),
             self._worker_tool(
                 "freecad_worker_part_revolve",

@@ -2663,6 +2663,403 @@ Create a PartDesign Draft dress-up in an in-memory worker document.
 }
 ```
 
+## `freecad_worker_partdesign_linear_pattern`
+
+Create a PartDesign LinearPattern transform in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "direction_axis": {
+      "type": "string",
+      "enum": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "direction_name": {
+      "type": "string"
+    },
+    "direction_object": {
+      "type": "string"
+    },
+    "direction_subname": {
+      "type": "string"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "length": {
+      "type": "number"
+    },
+    "offset": {
+      "type": "number"
+    },
+    "occurrences": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "direction2_axis": {
+      "type": "string",
+      "enum": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "direction2_name": {
+      "type": "string"
+    },
+    "direction2_object": {
+      "type": "string"
+    },
+    "direction2_subname": {
+      "type": "string"
+    },
+    "reversed2": {
+      "type": "boolean"
+    },
+    "mode2": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "length2": {
+      "type": "number"
+    },
+    "offset2": {
+      "type": "number"
+    },
+    "occurrences2": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "linear_pattern_name": {
+      "type": "string"
+    },
+    "pattern_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_polar_pattern`
+
+Create a PartDesign PolarPattern transform in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "axis": {
+      "type": "string"
+    },
+    "axis_name": {
+      "type": "string"
+    },
+    "axis_object": {
+      "type": "string"
+    },
+    "axis_subname": {
+      "type": "string"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "offset": {
+      "type": "number"
+    },
+    "occurrences": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "polar_pattern_name": {
+      "type": "string"
+    },
+    "pattern_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
+## `freecad_worker_partdesign_mirrored`
+
+Create a PartDesign Mirrored transform in an in-memory worker document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "mirror_plane": {
+      "type": "string"
+    },
+    "mirror_plane_name": {
+      "type": "string"
+    },
+    "mirror_plane_object": {
+      "type": "string"
+    },
+    "mirror_plane_subname": {
+      "type": "string"
+    },
+    "mirrored_name": {
+      "type": "string"
+    },
+    "mirror_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
 ## `freecad_worker_part_revolve`
 
 Revolve a source shape inside an in-memory worker document.
@@ -7008,6 +7405,424 @@ Create a PartDesign Draft dress-up from selected base faces plus neutral-plane a
       "type": "boolean"
     },
     "draft_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_linear_pattern`
+
+Create a PartDesign LinearPattern transform from selected Body features or the whole Body shape.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "direction_axis": {
+      "type": "string",
+      "enum": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "direction_name": {
+      "type": "string"
+    },
+    "direction_object": {
+      "type": "string"
+    },
+    "direction_subname": {
+      "type": "string"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "length": {
+      "type": "number"
+    },
+    "offset": {
+      "type": "number"
+    },
+    "occurrences": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "direction2_axis": {
+      "type": "string",
+      "enum": [
+        "x_axis",
+        "y_axis",
+        "z_axis"
+      ]
+    },
+    "direction2_name": {
+      "type": "string"
+    },
+    "direction2_object": {
+      "type": "string"
+    },
+    "direction2_subname": {
+      "type": "string"
+    },
+    "reversed2": {
+      "type": "boolean"
+    },
+    "mode2": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "length2": {
+      "type": "number"
+    },
+    "offset2": {
+      "type": "number"
+    },
+    "occurrences2": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "linear_pattern_name": {
+      "type": "string"
+    },
+    "pattern_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_polar_pattern`
+
+Create a PartDesign PolarPattern transform from selected Body features or the whole Body shape.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "axis": {
+      "type": "string"
+    },
+    "axis_name": {
+      "type": "string"
+    },
+    "axis_object": {
+      "type": "string"
+    },
+    "axis_subname": {
+      "type": "string"
+    },
+    "reversed": {
+      "type": "boolean"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "extent",
+        "spacing"
+      ]
+    },
+    "angle": {
+      "type": "number"
+    },
+    "offset": {
+      "type": "number"
+    },
+    "occurrences": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "polar_pattern_name": {
+      "type": "string"
+    },
+    "pattern_name": {
+      "type": "string"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_partdesign_mirrored`
+
+Create a PartDesign Mirrored transform from selected Body features or the whole Body shape.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "body_name": {
+      "type": "string"
+    },
+    "original_feature_name": {
+      "type": "string"
+    },
+    "original_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feature_name": {
+      "type": "string"
+    },
+    "feature_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "base_feature_name": {
+      "type": "string"
+    },
+    "source_object": {
+      "type": "string"
+    },
+    "whole_shape": {
+      "type": "boolean"
+    },
+    "transform_mode": {
+      "type": "string",
+      "enum": [
+        "features",
+        "whole_shape"
+      ]
+    },
+    "transform_name": {
+      "type": "string"
+    },
+    "result_name": {
+      "type": "string"
+    },
+    "require_solid": {
+      "type": "boolean"
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "mirror_plane": {
+      "type": "string"
+    },
+    "mirror_plane_name": {
+      "type": "string"
+    },
+    "mirror_plane_object": {
+      "type": "string"
+    },
+    "mirror_plane_subname": {
+      "type": "string"
+    },
+    "mirrored_name": {
+      "type": "string"
+    },
+    "mirror_name": {
       "type": "string"
     },
     "executable": {

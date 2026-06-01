@@ -122,6 +122,74 @@ DRAFT_PROPS = {
     "draft_name": {"type": "string"},
 }
 
+TRANSFORM_BASE_PROPS = {
+    "document_path": {"type": "string"},
+    "body_name": {"type": "string"},
+    "original_feature_name": {"type": "string"},
+    "original_names": {"type": "array", "items": {"type": "string"}},
+    "feature_name": {"type": "string"},
+    "feature_names": {"type": "array", "items": {"type": "string"}},
+    "base_feature_name": {"type": "string"},
+    "source_object": {"type": "string"},
+    "whole_shape": {"type": "boolean"},
+    "transform_mode": {"type": "string", "enum": ["features", "whole_shape"]},
+    "transform_name": {"type": "string"},
+    "result_name": {"type": "string"},
+    "require_solid": {"type": "boolean"},
+    "output_path": {"type": "string"},
+    "overwrite": {"type": "boolean"},
+    "save": {"type": "boolean"},
+}
+
+LINEAR_PATTERN_PROPS = {
+    **TRANSFORM_BASE_PROPS,
+    "direction_axis": {"type": "string", "enum": ["x_axis", "y_axis", "z_axis"]},
+    "direction_name": {"type": "string"},
+    "direction_object": {"type": "string"},
+    "direction_subname": {"type": "string"},
+    "reversed": {"type": "boolean"},
+    "mode": {"type": "string", "enum": ["extent", "spacing"]},
+    "length": {"type": "number"},
+    "offset": {"type": "number"},
+    "occurrences": {"type": "integer", "minimum": 1},
+    "direction2_axis": {"type": "string", "enum": ["x_axis", "y_axis", "z_axis"]},
+    "direction2_name": {"type": "string"},
+    "direction2_object": {"type": "string"},
+    "direction2_subname": {"type": "string"},
+    "reversed2": {"type": "boolean"},
+    "mode2": {"type": "string", "enum": ["extent", "spacing"]},
+    "length2": {"type": "number"},
+    "offset2": {"type": "number"},
+    "occurrences2": {"type": "integer", "minimum": 1},
+    "linear_pattern_name": {"type": "string"},
+    "pattern_name": {"type": "string"},
+}
+
+POLAR_PATTERN_PROPS = {
+    **TRANSFORM_BASE_PROPS,
+    "axis": {"type": "string"},
+    "axis_name": {"type": "string"},
+    "axis_object": {"type": "string"},
+    "axis_subname": {"type": "string"},
+    "reversed": {"type": "boolean"},
+    "mode": {"type": "string", "enum": ["extent", "spacing"]},
+    "angle": {"type": "number"},
+    "offset": {"type": "number"},
+    "occurrences": {"type": "integer", "minimum": 1},
+    "polar_pattern_name": {"type": "string"},
+    "pattern_name": {"type": "string"},
+}
+
+MIRRORED_PROPS = {
+    **TRANSFORM_BASE_PROPS,
+    "mirror_plane": {"type": "string"},
+    "mirror_plane_name": {"type": "string"},
+    "mirror_plane_object": {"type": "string"},
+    "mirror_plane_subname": {"type": "string"},
+    "mirrored_name": {"type": "string"},
+    "mirror_name": {"type": "string"},
+}
+
 
 class PartDesignCadToolService(CadDomainToolService):
     domain = "partdesign"
@@ -143,4 +211,7 @@ class PartDesignCadToolService(CadDomainToolService):
             CadToolSpec("freecad_partdesign_chamfer", "Create PartDesign Chamfer", "Create a PartDesign Chamfer dress-up on selected base edges/faces or all edges of an existing Body solid.", dict(CHAMFER_PROPS), ["document_path"], "partdesign_chamfer"),
             CadToolSpec("freecad_partdesign_thickness", "Create PartDesign Thickness", "Create a PartDesign Thickness dress-up from selected base faces of an existing Body solid.", dict(THICKNESS_PROPS), ["document_path"], "partdesign_thickness"),
             CadToolSpec("freecad_partdesign_draft", "Create PartDesign Draft", "Create a PartDesign Draft dress-up from selected base faces plus neutral-plane and pull-direction references.", dict(DRAFT_PROPS), ["document_path"], "partdesign_draft"),
+            CadToolSpec("freecad_partdesign_linear_pattern", "Create PartDesign Linear Pattern", "Create a PartDesign LinearPattern transform from selected Body features or the whole Body shape.", dict(LINEAR_PATTERN_PROPS), ["document_path"], "partdesign_linear_pattern"),
+            CadToolSpec("freecad_partdesign_polar_pattern", "Create PartDesign Polar Pattern", "Create a PartDesign PolarPattern transform from selected Body features or the whole Body shape.", dict(POLAR_PATTERN_PROPS), ["document_path"], "partdesign_polar_pattern"),
+            CadToolSpec("freecad_partdesign_mirrored", "Create PartDesign Mirrored", "Create a PartDesign Mirrored transform from selected Body features or the whole Body shape.", dict(MIRRORED_PROPS), ["document_path"], "partdesign_mirrored"),
         ]

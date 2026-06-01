@@ -385,6 +385,32 @@ def partdesign_summary(obj):
         if hasattr(obj, "Transformation"):
             summary["transformation"] = str(obj.Transformation)
     elif (
+        type_id.startswith("PartDesign::LinearPattern")
+        or type_id.startswith("PartDesign::PolarPattern")
+        or type_id.startswith("PartDesign::Mirrored")
+    ):
+        summary["originals"] = link_list_summary(getattr(obj, "Originals", []))
+        if hasattr(obj, "TransformMode"):
+            summary["transform_mode"] = str(obj.TransformMode)
+        if hasattr(obj, "Direction"):
+            summary["direction"] = link_item_summary(getattr(obj, "Direction", None))
+        if hasattr(obj, "Direction2"):
+            summary["direction2"] = link_item_summary(getattr(obj, "Direction2", None))
+        if hasattr(obj, "Axis"):
+            summary["axis"] = link_item_summary(getattr(obj, "Axis", None))
+        if hasattr(obj, "MirrorPlane"):
+            summary["mirror_plane"] = link_item_summary(getattr(obj, "MirrorPlane", None))
+        for prop in ("Length", "Offset", "Length2", "Offset2", "Angle"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = quantity_summary(getattr(obj, prop))
+        for prop in ("Occurrences", "Occurrences2", "Mode", "Mode2"):
+            if hasattr(obj, prop):
+                value = getattr(obj, prop)
+                summary[prop[0].lower() + prop[1:]] = value if isinstance(value, (str, int, float, bool)) else str(value)
+        for prop in ("Reversed", "Reversed2"):
+            if hasattr(obj, prop):
+                summary[prop[0].lower() + prop[1:]] = bool(getattr(obj, prop))
+    elif (
         type_id.startswith("PartDesign::Fillet")
         or type_id.startswith("PartDesign::Chamfer")
         or type_id.startswith("PartDesign::Thickness")
@@ -2096,6 +2122,239 @@ def action_partdesign_draft(params):
     )
 
 
+def first_present(params, *keys):
+    for key in keys:
+        value = params.get(key)
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def list_arg(value):
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value else []
+    return [str(item) for item in value if item]
+
+
+def transform_original_names(params):
+    for key in ("original_names", "feature_names", "features", "originals"):
+        values = list_arg(params.get(key))
+        if values:
+            return values
+    name = first_present(params, "original_feature_name", "feature_name", "base_feature_name", "source_object")
+    return [str(name)] if name else []
+
+
+def canonical_reference_name(name, default_name):
+    raw_value = name if name is not None and name != "" else default_name
+    raw = str(raw_value).strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "x": "X_Axis",
+        "x_axis": "X_Axis",
+        "global_x": "X_Axis",
+        "y": "Y_Axis",
+        "y_axis": "Y_Axis",
+        "global_y": "Y_Axis",
+        "z": "Z_Axis",
+        "z_axis": "Z_Axis",
+        "global_z": "Z_Axis",
+        "xy": "XY_Plane",
+        "xy_plane": "XY_Plane",
+        "xz": "XZ_Plane",
+        "xz_plane": "XZ_Plane",
+        "yz": "YZ_Plane",
+        "yz_plane": "YZ_Plane",
+    }
+    return aliases.get(raw, str(raw_value))
+
+
+def resolve_transform_link(doc, params, *, keys, subname_keys=(), default_name=None, default_subname=""):
+    name = first_present(params, *keys)
+    if name is None:
+        if default_name is None:
+            return None
+        name = default_name
+    name = canonical_reference_name(name, default_name or name)
+    obj = object_or_doc_attr(doc, name)
+    subname = first_present(params, *subname_keys) or default_subname
+    return (obj, [str(subname)] if subname else [""])
+
+
+def pattern_mode_index(value):
+    return enum_index(value, {"extent": 0, "overall_length": 0, "length": 0, "spacing": 1, "offset": 1}, "extent", "mode")
+
+
+def action_partdesign_transform(doc, params, *, feature_type, default_name, transaction_name, apply_parameters, name_keys):
+    whole_shape = bool(params.get("whole_shape", False) or str(params.get("transform_mode", "")).strip().lower().replace("-", "_").replace(" ", "_") in {"whole_shape", "whole"})
+    body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else None
+    originals = []
+    if not whole_shape:
+        original_names = transform_original_names(params)
+        originals = [object_or_doc_attr(doc, name) for name in original_names]
+        if body is None and originals:
+            body = find_body_for_object(originals[0])
+    if body is None:
+        body = find_single_partdesign_body(doc)
+    if body is None:
+        raise ValueError("PartDesign Body not found")
+    if not whole_shape and not originals:
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError(f"{default_name} requires original_names or an existing Body solid Tip")
+        originals = [solid_tip]
+    doc.openTransaction(transaction_name)
+    try:
+        solid_tip = find_body_solid_tip(body)
+        if solid_tip is None:
+            raise ValueError(f"{default_name} requires an existing Body solid")
+        body.Tip = solid_tip
+        transform = doc.addObject(feature_type, first_present(params, *name_keys, "result_name") or default_name)
+        body.addObject(transform)
+        if whole_shape:
+            if hasattr(transform, "TransformMode"):
+                transform.TransformMode = "Whole shape"
+            if hasattr(transform, "Originals"):
+                transform.Originals = []
+        else:
+            if hasattr(transform, "TransformMode"):
+                transform.TransformMode = "Features"
+            transform.Originals = originals
+        apply_parameters(transform, params)
+        body.Tip = transform
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    if bool(params.get("require_solid", True)):
+        shape = getattr(transform, "Shape", None)
+        solid_count = len(shape.Solids) if shape is not None and not shape.isNull() else 0
+        if solid_count < 1:
+            raise ValueError(f"{default_name} did not produce a solid")
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "body": object_summary(body),
+        "originals": [object_summary(item) for item in originals],
+        "transform": object_summary(transform),
+        "document": document_summary(doc),
+    }
+
+
+def action_partdesign_linear_pattern(params):
+    doc = get_doc(params)
+
+    def apply(feature, values):
+        if hasattr(feature, "Direction"):
+            feature.Direction = resolve_transform_link(
+                doc,
+                values,
+                keys=("direction_name", "direction_object", "direction_axis"),
+                subname_keys=("direction_subname",),
+                default_name="X_Axis",
+            )
+        if hasattr(feature, "Reversed") and values.get("reversed") is not None:
+            feature.Reversed = bool(values["reversed"])
+        if hasattr(feature, "Mode"):
+            feature.Mode = pattern_mode_index(values.get("mode"))
+        if hasattr(feature, "Length"):
+            feature.Length = float(values.get("length", 10.0))
+        if values.get("offset") is not None and hasattr(feature, "Offset"):
+            feature.Offset = float(values["offset"])
+        if hasattr(feature, "Occurrences"):
+            feature.Occurrences = int(values.get("occurrences", 2))
+        occurrences2 = int(values.get("occurrences2", 1))
+        second_direction = resolve_transform_link(
+            doc,
+            values,
+            keys=("direction2_name", "direction2_object", "direction2_axis", "second_direction_name", "second_direction_object", "second_direction_axis"),
+            subname_keys=("direction2_subname", "second_direction_subname"),
+            default_name="Y_Axis" if occurrences2 > 1 else None,
+        )
+        if second_direction is not None and hasattr(feature, "Direction2"):
+            feature.Direction2 = second_direction
+        if hasattr(feature, "Reversed2") and values.get("reversed2") is not None:
+            feature.Reversed2 = bool(values["reversed2"])
+        if hasattr(feature, "Mode2"):
+            feature.Mode2 = pattern_mode_index(values.get("mode2"))
+        if hasattr(feature, "Length2"):
+            feature.Length2 = float(values.get("length2", 10.0))
+        if values.get("offset2") is not None and hasattr(feature, "Offset2"):
+            feature.Offset2 = float(values["offset2"])
+        if hasattr(feature, "Occurrences2"):
+            feature.Occurrences2 = occurrences2
+
+    return action_partdesign_transform(
+        doc,
+        params,
+        feature_type="PartDesign::LinearPattern",
+        default_name="LinearPattern",
+        transaction_name="MCP worker create PartDesign linear pattern",
+        apply_parameters=apply,
+        name_keys=("linear_pattern_name", "pattern_name", "transform_name"),
+    )
+
+
+def action_partdesign_polar_pattern(params):
+    doc = get_doc(params)
+
+    def apply(feature, values):
+        if hasattr(feature, "Axis"):
+            feature.Axis = resolve_transform_link(
+                doc,
+                values,
+                keys=("axis_name", "axis_object", "axis"),
+                subname_keys=("axis_subname",),
+                default_name="Z_Axis",
+            )
+        if hasattr(feature, "Reversed") and values.get("reversed") is not None:
+            feature.Reversed = bool(values["reversed"])
+        if hasattr(feature, "Mode"):
+            feature.Mode = pattern_mode_index(values.get("mode"))
+        if hasattr(feature, "Angle"):
+            feature.Angle = float(values.get("angle", 360.0))
+        if values.get("offset") is not None and hasattr(feature, "Offset"):
+            feature.Offset = float(values["offset"])
+        if hasattr(feature, "Occurrences"):
+            feature.Occurrences = int(values.get("occurrences", 3))
+
+    return action_partdesign_transform(
+        doc,
+        params,
+        feature_type="PartDesign::PolarPattern",
+        default_name="PolarPattern",
+        transaction_name="MCP worker create PartDesign polar pattern",
+        apply_parameters=apply,
+        name_keys=("polar_pattern_name", "pattern_name", "transform_name"),
+    )
+
+
+def action_partdesign_mirrored(params):
+    doc = get_doc(params)
+
+    def apply(feature, values):
+        if hasattr(feature, "MirrorPlane"):
+            feature.MirrorPlane = resolve_transform_link(
+                doc,
+                values,
+                keys=("mirror_plane_name", "mirror_plane_object", "mirror_plane"),
+                subname_keys=("mirror_plane_subname",),
+                default_name="XY_Plane",
+            )
+
+    return action_partdesign_transform(
+        doc,
+        params,
+        feature_type="PartDesign::Mirrored",
+        default_name="Mirrored",
+        transaction_name="MCP worker create PartDesign mirrored",
+        apply_parameters=apply,
+        name_keys=("mirrored_name", "mirror_name", "transform_name"),
+    )
+
+
 def action_part_revolve(params):
     doc = get_doc(params)
     source = get_object(doc, params.get("source_object") or "")
@@ -3621,6 +3880,9 @@ ACTIONS = {
     "partdesign_chamfer": action_partdesign_chamfer,
     "partdesign_thickness": action_partdesign_thickness,
     "partdesign_draft": action_partdesign_draft,
+    "partdesign_linear_pattern": action_partdesign_linear_pattern,
+    "partdesign_polar_pattern": action_partdesign_polar_pattern,
+    "partdesign_mirrored": action_partdesign_mirrored,
     "part_revolve": action_part_revolve,
     "part_check_geometry": action_part_check_geometry,
     "sketch_create": action_sketch_create,

@@ -142,6 +142,9 @@ def main() -> int:
     assert "freecad_partdesign_chamfer" in tool_names
     assert "freecad_partdesign_thickness" in tool_names
     assert "freecad_partdesign_draft" in tool_names
+    assert "freecad_partdesign_linear_pattern" in tool_names
+    assert "freecad_partdesign_polar_pattern" in tool_names
+    assert "freecad_partdesign_mirrored" in tool_names
     assert "freecad_worker_partdesign_datum_plane_create" in tool_names
     assert "freecad_worker_partdesign_pocket" in tool_names
     assert "freecad_worker_partdesign_hole" in tool_names
@@ -155,6 +158,9 @@ def main() -> int:
     assert "freecad_worker_partdesign_chamfer" in tool_names
     assert "freecad_worker_partdesign_thickness" in tool_names
     assert "freecad_worker_partdesign_draft" in tool_names
+    assert "freecad_worker_partdesign_linear_pattern" in tool_names
+    assert "freecad_worker_partdesign_polar_pattern" in tool_names
+    assert "freecad_worker_partdesign_mirrored" in tool_names
     assert "freecad_object_rename_label" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names

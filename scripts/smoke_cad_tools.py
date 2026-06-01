@@ -1281,6 +1281,9 @@ def main() -> int:
         chamfer_doc = temp / "partdesign_chamfer.FCStd"
         thickness_doc = temp / "partdesign_thickness.FCStd"
         draft_doc = temp / "partdesign_draft.FCStd"
+        linear_pattern_doc = temp / "partdesign_linear_pattern.FCStd"
+        polar_pattern_doc = temp / "partdesign_polar_pattern.FCStd"
+        mirrored_doc = temp / "partdesign_mirrored.FCStd"
         additive_pipe_profile_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {
@@ -1781,6 +1784,92 @@ def main() -> int:
             raise RuntimeError(f"partdesign draft did not produce a body solid: {draft}")
         if draft["dressup"]["partdesign"]["neutral_plane"]["object"] != "YZ_Plane":
             raise RuntimeError(f"partdesign draft did not keep neutral plane: {draft}")
+        create_partdesign_rect_pad(
+            service,
+            linear_pattern_doc,
+            document_name="LinearPatternSmoke",
+            body_name="LinearPatternBody",
+            sketch_name="LinearPatternBaseSketch",
+            pad_name="LinearPatternBasePad",
+        )
+        linear_pattern = assert_ok(
+            service.definition_map()["freecad_partdesign_linear_pattern"].handler(
+                {
+                    "document_path": str(linear_pattern_doc),
+                    "body_name": "LinearPatternBody",
+                    "original_feature_name": "LinearPatternBasePad",
+                    "direction_axis": "x_axis",
+                    "length": 2,
+                    "occurrences": 2,
+                    "linear_pattern_name": "LinearPattern",
+                    "output_path": str(linear_pattern_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign linear pattern",
+        )
+        if linear_pattern["transform"]["shape"]["solids"] != 1 or linear_pattern["body"]["partdesign"]["tip"] != "LinearPattern":
+            raise RuntimeError(f"partdesign linear pattern did not produce a body solid: {linear_pattern}")
+        if linear_pattern["transform"]["partdesign"]["direction"]["object"] != "X_Axis":
+            raise RuntimeError(f"partdesign linear pattern did not keep X direction: {linear_pattern}")
+        if linear_pattern["transform"]["partdesign"]["occurrences"] != 2:
+            raise RuntimeError(f"partdesign linear pattern did not keep occurrences: {linear_pattern}")
+        create_partdesign_rect_pad(
+            service,
+            polar_pattern_doc,
+            document_name="PolarPatternSmoke",
+            body_name="PolarPatternBody",
+            sketch_name="PolarPatternBaseSketch",
+            pad_name="PolarPatternBasePad",
+        )
+        polar_pattern = assert_ok(
+            service.definition_map()["freecad_partdesign_polar_pattern"].handler(
+                {
+                    "document_path": str(polar_pattern_doc),
+                    "body_name": "PolarPatternBody",
+                    "original_feature_name": "PolarPatternBasePad",
+                    "axis": "z_axis",
+                    "angle": 30,
+                    "occurrences": 2,
+                    "polar_pattern_name": "PolarPattern",
+                    "output_path": str(polar_pattern_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign polar pattern",
+        )
+        if polar_pattern["transform"]["shape"]["solids"] != 1 or polar_pattern["body"]["partdesign"]["tip"] != "PolarPattern":
+            raise RuntimeError(f"partdesign polar pattern did not produce a body solid: {polar_pattern}")
+        if polar_pattern["transform"]["partdesign"]["axis"]["object"] != "Z_Axis":
+            raise RuntimeError(f"partdesign polar pattern did not keep Z axis: {polar_pattern}")
+        if polar_pattern["transform"]["partdesign"]["occurrences"] != 2:
+            raise RuntimeError(f"partdesign polar pattern did not keep occurrences: {polar_pattern}")
+        create_partdesign_rect_pad(
+            service,
+            mirrored_doc,
+            document_name="MirroredSmoke",
+            body_name="MirroredBody",
+            sketch_name="MirroredBaseSketch",
+            pad_name="MirroredBasePad",
+        )
+        mirrored = assert_ok(
+            service.definition_map()["freecad_partdesign_mirrored"].handler(
+                {
+                    "document_path": str(mirrored_doc),
+                    "body_name": "MirroredBody",
+                    "original_feature_name": "MirroredBasePad",
+                    "mirror_plane": "xy_plane",
+                    "mirrored_name": "Mirrored",
+                    "output_path": str(mirrored_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign mirrored",
+        )
+        if mirrored["transform"]["shape"]["solids"] != 1 or mirrored["body"]["partdesign"]["tip"] != "Mirrored":
+            raise RuntimeError(f"partdesign mirrored did not produce a body solid: {mirrored}")
+        if mirrored["transform"]["partdesign"]["mirror_plane"]["object"] != "XY_Plane":
+            raise RuntimeError(f"partdesign mirrored did not keep mirror plane: {mirrored}")
         groove_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

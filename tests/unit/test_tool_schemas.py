@@ -67,6 +67,9 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_chamfer",
             "freecad_worker_partdesign_thickness",
             "freecad_worker_partdesign_draft",
+            "freecad_worker_partdesign_linear_pattern",
+            "freecad_worker_partdesign_polar_pattern",
+            "freecad_worker_partdesign_mirrored",
             "freecad_worker_part_check_geometry",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
@@ -161,6 +164,9 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_chamfer",
             "freecad_partdesign_thickness",
             "freecad_partdesign_draft",
+            "freecad_partdesign_linear_pattern",
+            "freecad_partdesign_polar_pattern",
+            "freecad_partdesign_mirrored",
         ]:
             self.assertIn(name, tools)
         loft_props = tools["freecad_partdesign_additive_loft"].to_mcp()["inputSchema"]["properties"]
@@ -192,6 +198,16 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("face_names", thickness_props)
         draft_props = tools["freecad_partdesign_draft"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("neutral_plane_name", draft_props)
+        linear_pattern_props = tools["freecad_partdesign_linear_pattern"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("direction_axis", linear_pattern_props)
+        self.assertIn("occurrences", linear_pattern_props)
+        polar_pattern_props = tools["freecad_partdesign_polar_pattern"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("axis_name", polar_pattern_props)
+        self.assertIn("angle", polar_pattern_props)
+        mirrored_props = tools["freecad_partdesign_mirrored"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("mirror_plane_name", mirrored_props)
+        worker_linear_pattern_props = PersistentToolService().definition_map()["freecad_worker_partdesign_linear_pattern"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("direction_axis", worker_linear_pattern_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
