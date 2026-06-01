@@ -23,7 +23,7 @@ $env:FREECAD_MCP_MODULES = "core,headless,gui,sketcher,partdesign"
 | `worker` | Persistent FreeCADCmd worker sessions and in-memory document workflows. |
 | `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, first live primitive creation, user-visible label updates, live Sketcher/PartDesign state inspection, Sketcher edit mode, PartDesign Body activation, and feature-task state. |
 | `sketcher` | Sketcher creation, geometry, constraints, profile validation, transforms, and curve-fit guidance. |
-| `partdesign` | PartDesign Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, and Additive/Subtractive Pipe typed tools. |
+| `partdesign` | PartDesign Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, and Additive/Subtractive Pipe typed tools, including multisection and auxiliary-spine Pipe options. |
 | `mesh` | Mesh import/export/evaluate/repair/boolean tools. |
 | `assembly` | Assembly create/insert/native joint/solve/BOM tools. |
 | `techdraw` | TechDraw page/template/view/inspect and headless DXF export. |

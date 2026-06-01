@@ -164,9 +164,17 @@ class ToolSchemaTests(unittest.TestCase):
         pipe_props = tools["freecad_partdesign_additive_pipe"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("spine_name", pipe_props)
         self.assertIn("profile_name", pipe_props)
+        self.assertIn("auxiliary_spine_name", pipe_props)
+        self.assertIn("orientation_mode", pipe_props)
+        self.assertIn("scaling_mode", pipe_props)
         subtractive_pipe_props = tools["freecad_partdesign_subtractive_pipe"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("spine_name", subtractive_pipe_props)
         self.assertIn("profile_name", subtractive_pipe_props)
+        self.assertIn("auxiliary_spine_name", subtractive_pipe_props)
+        worker_pipe_props = PersistentToolService().definition_map()["freecad_worker_partdesign_additive_pipe"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("auxiliary_spine_name", worker_pipe_props)
+        self.assertIn("orientation_mode", worker_pipe_props)
+        self.assertIn("scaling_mode", worker_pipe_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)

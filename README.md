@@ -123,7 +123,7 @@ Typed CAD tool groups are also available:
 - document: new/open/save/recompute/export
 - object: list/get/set properties/delete
 - Part: primitives, boolean, direct/parametric extrude, revolve, fillet, chamfer, geometry check
-- PartDesign: Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe
+- PartDesign: Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe with multisection and auxiliary-spine options
 - Sketcher: create, advanced geometry/profile creation, constraint create/update, geometry/constraint edit, transform, auto-constrain, validate
 - import/export and mesh tools
 - Assembly: create/insert/link native JointObject proxies/recompute/BOM

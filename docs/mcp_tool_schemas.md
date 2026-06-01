@@ -1760,6 +1760,42 @@ Create an additive PartDesign Pipe by sweeping a worker profile sketch along a s
     "spine_tangent": {
       "type": "boolean"
     },
+    "auxiliary_spine_name": {
+      "type": "string"
+    },
+    "auxiliary_spine_sketch": {
+      "type": "string"
+    },
+    "aux_spine_name": {
+      "type": "string"
+    },
+    "aux_spine_sketch": {
+      "type": "string"
+    },
+    "auxiliary_spine_subname": {
+      "type": "string"
+    },
+    "auxiliary_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aux_spine_subname": {
+      "type": "string"
+    },
+    "aux_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "auxiliary_spine_tangent": {
+      "type": "boolean"
+    },
+    "auxiliary_curvilinear": {
+      "type": "boolean"
+    },
     "sections": {
       "type": "array",
       "items": {
@@ -1785,6 +1821,16 @@ Create an additive PartDesign Pipe by sweeping a worker profile sketch along a s
         "binormal"
       ]
     },
+    "orientation_mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "fixed",
+        "frenet",
+        "auxiliary",
+        "binormal"
+      ]
+    },
     "transition": {
       "type": "string",
       "enum": [
@@ -1794,6 +1840,16 @@ Create an additive PartDesign Pipe by sweeping a worker profile sketch along a s
       ]
     },
     "transformation": {
+      "type": "string",
+      "enum": [
+        "constant",
+        "multisection",
+        "linear",
+        "s_shape",
+        "interpolation"
+      ]
+    },
+    "scaling_mode": {
       "type": "string",
       "enum": [
         "constant",
@@ -1907,6 +1963,42 @@ Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a
     "spine_tangent": {
       "type": "boolean"
     },
+    "auxiliary_spine_name": {
+      "type": "string"
+    },
+    "auxiliary_spine_sketch": {
+      "type": "string"
+    },
+    "aux_spine_name": {
+      "type": "string"
+    },
+    "aux_spine_sketch": {
+      "type": "string"
+    },
+    "auxiliary_spine_subname": {
+      "type": "string"
+    },
+    "auxiliary_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aux_spine_subname": {
+      "type": "string"
+    },
+    "aux_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "auxiliary_spine_tangent": {
+      "type": "boolean"
+    },
+    "auxiliary_curvilinear": {
+      "type": "boolean"
+    },
     "sections": {
       "type": "array",
       "items": {
@@ -1932,6 +2024,16 @@ Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a
         "binormal"
       ]
     },
+    "orientation_mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "fixed",
+        "frenet",
+        "auxiliary",
+        "binormal"
+      ]
+    },
     "transition": {
       "type": "string",
       "enum": [
@@ -1941,6 +2043,16 @@ Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a
       ]
     },
     "transformation": {
+      "type": "string",
+      "enum": [
+        "constant",
+        "multisection",
+        "linear",
+        "s_shape",
+        "interpolation"
+      ]
+    },
+    "scaling_mode": {
       "type": "string",
       "enum": [
         "constant",
@@ -5407,6 +5519,42 @@ Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/pa
     "spine_tangent": {
       "type": "boolean"
     },
+    "auxiliary_spine_name": {
+      "type": "string"
+    },
+    "auxiliary_spine_sketch": {
+      "type": "string"
+    },
+    "aux_spine_name": {
+      "type": "string"
+    },
+    "aux_spine_sketch": {
+      "type": "string"
+    },
+    "auxiliary_spine_subname": {
+      "type": "string"
+    },
+    "auxiliary_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aux_spine_subname": {
+      "type": "string"
+    },
+    "aux_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "auxiliary_spine_tangent": {
+      "type": "boolean"
+    },
+    "auxiliary_curvilinear": {
+      "type": "boolean"
+    },
     "sections": {
       "type": "array",
       "items": {
@@ -5432,6 +5580,16 @@ Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/pa
         "binormal"
       ]
     },
+    "orientation_mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "fixed",
+        "frenet",
+        "auxiliary",
+        "binormal"
+      ]
+    },
     "transition": {
       "type": "string",
       "enum": [
@@ -5441,6 +5599,16 @@ Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/pa
       ]
     },
     "transformation": {
+      "type": "string",
+      "enum": [
+        "constant",
+        "multisection",
+        "linear",
+        "s_shape",
+        "interpolation"
+      ]
+    },
+    "scaling_mode": {
       "type": "string",
       "enum": [
         "constant",
@@ -5561,6 +5729,42 @@ Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/
     "spine_tangent": {
       "type": "boolean"
     },
+    "auxiliary_spine_name": {
+      "type": "string"
+    },
+    "auxiliary_spine_sketch": {
+      "type": "string"
+    },
+    "aux_spine_name": {
+      "type": "string"
+    },
+    "aux_spine_sketch": {
+      "type": "string"
+    },
+    "auxiliary_spine_subname": {
+      "type": "string"
+    },
+    "auxiliary_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aux_spine_subname": {
+      "type": "string"
+    },
+    "aux_spine_subnames": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "auxiliary_spine_tangent": {
+      "type": "boolean"
+    },
+    "auxiliary_curvilinear": {
+      "type": "boolean"
+    },
     "sections": {
       "type": "array",
       "items": {
@@ -5586,6 +5790,16 @@ Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/
         "binormal"
       ]
     },
+    "orientation_mode": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "fixed",
+        "frenet",
+        "auxiliary",
+        "binormal"
+      ]
+    },
     "transition": {
       "type": "string",
       "enum": [
@@ -5595,6 +5809,16 @@ Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/
       ]
     },
     "transformation": {
+      "type": "string",
+      "enum": [
+        "constant",
+        "multisection",
+        "linear",
+        "s_shape",
+        "interpolation"
+      ]
+    },
+    "scaling_mode": {
       "type": "string",
       "enum": [
         "constant",

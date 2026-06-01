@@ -1691,6 +1691,42 @@
           "spine_tangent": {
             "type": "boolean"
           },
+          "auxiliary_spine_name": {
+            "type": "string"
+          },
+          "auxiliary_spine_sketch": {
+            "type": "string"
+          },
+          "aux_spine_name": {
+            "type": "string"
+          },
+          "aux_spine_sketch": {
+            "type": "string"
+          },
+          "auxiliary_spine_subname": {
+            "type": "string"
+          },
+          "auxiliary_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aux_spine_subname": {
+            "type": "string"
+          },
+          "aux_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auxiliary_spine_tangent": {
+            "type": "boolean"
+          },
+          "auxiliary_curvilinear": {
+            "type": "boolean"
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -1716,6 +1752,16 @@
               "binormal"
             ]
           },
+          "orientation_mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
           "transition": {
             "type": "string",
             "enum": [
@@ -1725,6 +1771,16 @@
             ]
           },
           "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "scaling_mode": {
             "type": "string",
             "enum": [
               "constant",
@@ -1836,6 +1892,42 @@
           "spine_tangent": {
             "type": "boolean"
           },
+          "auxiliary_spine_name": {
+            "type": "string"
+          },
+          "auxiliary_spine_sketch": {
+            "type": "string"
+          },
+          "aux_spine_name": {
+            "type": "string"
+          },
+          "aux_spine_sketch": {
+            "type": "string"
+          },
+          "auxiliary_spine_subname": {
+            "type": "string"
+          },
+          "auxiliary_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aux_spine_subname": {
+            "type": "string"
+          },
+          "aux_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auxiliary_spine_tangent": {
+            "type": "boolean"
+          },
+          "auxiliary_curvilinear": {
+            "type": "boolean"
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -1861,6 +1953,16 @@
               "binormal"
             ]
           },
+          "orientation_mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
           "transition": {
             "type": "string",
             "enum": [
@@ -1870,6 +1972,16 @@
             ]
           },
           "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "scaling_mode": {
             "type": "string",
             "enum": [
               "constant",
@@ -5226,6 +5338,42 @@
           "spine_tangent": {
             "type": "boolean"
           },
+          "auxiliary_spine_name": {
+            "type": "string"
+          },
+          "auxiliary_spine_sketch": {
+            "type": "string"
+          },
+          "aux_spine_name": {
+            "type": "string"
+          },
+          "aux_spine_sketch": {
+            "type": "string"
+          },
+          "auxiliary_spine_subname": {
+            "type": "string"
+          },
+          "auxiliary_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aux_spine_subname": {
+            "type": "string"
+          },
+          "aux_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auxiliary_spine_tangent": {
+            "type": "boolean"
+          },
+          "auxiliary_curvilinear": {
+            "type": "boolean"
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -5251,6 +5399,16 @@
               "binormal"
             ]
           },
+          "orientation_mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
           "transition": {
             "type": "string",
             "enum": [
@@ -5260,6 +5418,16 @@
             ]
           },
           "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "scaling_mode": {
             "type": "string",
             "enum": [
               "constant",
@@ -5378,6 +5546,42 @@
           "spine_tangent": {
             "type": "boolean"
           },
+          "auxiliary_spine_name": {
+            "type": "string"
+          },
+          "auxiliary_spine_sketch": {
+            "type": "string"
+          },
+          "aux_spine_name": {
+            "type": "string"
+          },
+          "aux_spine_sketch": {
+            "type": "string"
+          },
+          "auxiliary_spine_subname": {
+            "type": "string"
+          },
+          "auxiliary_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "aux_spine_subname": {
+            "type": "string"
+          },
+          "aux_spine_subnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "auxiliary_spine_tangent": {
+            "type": "boolean"
+          },
+          "auxiliary_curvilinear": {
+            "type": "boolean"
+          },
           "sections": {
             "type": "array",
             "items": {
@@ -5403,6 +5607,16 @@
               "binormal"
             ]
           },
+          "orientation_mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
           "transition": {
             "type": "string",
             "enum": [
@@ -5412,6 +5626,16 @@
             ]
           },
           "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "scaling_mode": {
             "type": "string",
             "enum": [
               "constant",

@@ -368,11 +368,18 @@ def partdesign_summary(obj):
     elif type_id.startswith("PartDesign::AdditivePipe") or type_id.startswith("PartDesign::SubtractivePipe"):
         summary["profile"] = link_item_summary(getattr(obj, "Profile", None))
         summary["spine"] = link_item_summary(getattr(obj, "Spine", None))
+        summary["auxiliary_spine"] = link_item_summary(getattr(obj, "AuxiliarySpine", None))
         summary["sections"] = link_list_summary(getattr(obj, "Sections", []))
         if hasattr(obj, "SpineTangent"):
             summary["spine_tangent"] = bool(obj.SpineTangent)
+        if hasattr(obj, "AuxiliarySpineTangent"):
+            summary["auxiliary_spine_tangent"] = bool(obj.AuxiliarySpineTangent)
+        if hasattr(obj, "AuxiliaryCurvilinear"):
+            summary["auxiliary_curvilinear"] = bool(obj.AuxiliaryCurvilinear)
         if hasattr(obj, "Mode"):
             summary["mode"] = str(obj.Mode)
+        if hasattr(obj, "Binormal"):
+            summary["binormal"] = point_list(obj.Binormal)
         if hasattr(obj, "Transition"):
             summary["transition"] = str(obj.Transition)
         if hasattr(obj, "Transformation"):
@@ -822,6 +829,30 @@ def resolve_partdesign_spine_link(doc, params):
     return partdesign_link_sub_value(doc, spine)
 
 
+def resolve_partdesign_auxiliary_spine_link(doc, params):
+    spine_name = (
+        params.get("auxiliary_spine_name")
+        or params.get("auxiliary_spine_sketch")
+        or params.get("aux_spine_name")
+        or params.get("aux_spine_sketch")
+        or params.get("auxiliary_path_name")
+        or params.get("auxiliary_path_sketch")
+    )
+    if spine_name:
+        subnames = params.get("auxiliary_spine_subnames") or params.get("aux_spine_subnames")
+        if subnames is None:
+            subname = params.get("auxiliary_spine_subname") or params.get("aux_spine_subname") or params.get("auxiliary_path_subname")
+            subnames = [subname] if subname else []
+        if isinstance(subnames, str):
+            subnames = [subnames] if subnames else []
+        obj = get_object(doc, str(spine_name))
+        return (obj, [str(sub) for sub in subnames if sub]) if subnames else obj
+    spine = params.get("auxiliary_spine") or params.get("auxiliary_path")
+    if spine is None:
+        return None
+    return partdesign_link_sub_value(doc, spine)
+
+
 def ensure_partdesign_body_member(body, obj):
     previous_tip = getattr(body, "Tip", None)
     if obj not in getattr(body, "Group", []):
@@ -834,16 +865,37 @@ def partdesign_pipe_enum(value, mapping, default_key, field_name):
     return enum_index(value, mapping, default_key, field_name)
 
 
-def apply_pipe_parameters(pipe, params):
+def pipe_arg(params, primary, *aliases):
+    for key in (primary, *aliases):
+        if params.get(key) is not None:
+            return params.get(key)
+    return None
+
+
+def apply_pipe_parameters(pipe, params, *, has_auxiliary_spine=False, section_count=0):
     if params.get("spine_tangent") is not None and hasattr(pipe, "SpineTangent"):
         pipe.SpineTangent = bool(params["spine_tangent"])
-    if params.get("mode") is not None and hasattr(pipe, "Mode"):
-        pipe.Mode = partdesign_pipe_enum(
-            params.get("mode"),
+    if pipe_arg(params, "auxiliary_spine_tangent", "aux_spine_tangent") is not None and hasattr(pipe, "AuxiliarySpineTangent"):
+        pipe.AuxiliarySpineTangent = bool(pipe_arg(params, "auxiliary_spine_tangent", "aux_spine_tangent"))
+    if pipe_arg(params, "auxiliary_curvilinear", "aux_curvilinear") is not None and hasattr(pipe, "AuxiliaryCurvilinear"):
+        pipe.AuxiliaryCurvilinear = bool(pipe_arg(params, "auxiliary_curvilinear", "aux_curvilinear"))
+    mode_value = pipe_arg(params, "mode", "orientation_mode")
+    if has_auxiliary_spine and mode_value is None:
+        mode_value = "auxiliary"
+    mode_index = None
+    if mode_value is not None:
+        mode_index = partdesign_pipe_enum(
+            mode_value,
             {"standard": 0, "fixed": 1, "frenet": 2, "auxiliary": 3, "binormal": 4},
             "standard",
-            "mode",
+            "mode/orientation_mode",
         )
+    if has_auxiliary_spine and mode_index != 3:
+        raise ValueError("auxiliary_spine requires mode/orientation_mode='auxiliary'")
+    if mode_index == 3 and not has_auxiliary_spine:
+        raise ValueError("mode/orientation_mode='auxiliary' requires auxiliary_spine_name or auxiliary_spine")
+    if mode_index is not None and hasattr(pipe, "Mode"):
+        pipe.Mode = mode_index
     if params.get("transition") is not None and hasattr(pipe, "Transition"):
         pipe.Transition = partdesign_pipe_enum(
             params.get("transition"),
@@ -851,13 +903,21 @@ def apply_pipe_parameters(pipe, params):
             "transformed",
             "transition",
         )
-    if params.get("transformation") is not None and hasattr(pipe, "Transformation"):
-        pipe.Transformation = partdesign_pipe_enum(
-            params.get("transformation"),
+    transformation_value = pipe_arg(params, "transformation", "scaling_mode")
+    if section_count and transformation_value is None:
+        transformation_value = "multisection"
+    transformation_index = None
+    if transformation_value is not None:
+        transformation_index = partdesign_pipe_enum(
+            transformation_value,
             {"constant": 0, "multisection": 1, "multi_section": 1, "linear": 2, "s_shape": 3, "interpolation": 4},
             "constant",
-            "transformation",
+            "transformation/scaling_mode",
         )
+    if section_count and transformation_index != 1:
+        raise ValueError("sections require transformation/scaling_mode='multisection'")
+    if transformation_index is not None and hasattr(pipe, "Transformation"):
+        pipe.Transformation = transformation_index
     if params.get("binormal") is not None and hasattr(pipe, "Binormal"):
         pipe.Binormal = vector(params["binormal"])
 
@@ -1673,9 +1733,11 @@ def action_partdesign_subtractive_loft(params):
 def action_partdesign_pipe(doc, params, *, feature_type, default_name, transaction_name, require_base_solid=False):
     profile_link = resolve_partdesign_profile_link(doc, params)
     spine_link = resolve_partdesign_spine_link(doc, params)
+    auxiliary_spine_link = resolve_partdesign_auxiliary_spine_link(doc, params)
     section_links = resolve_partdesign_optional_section_links(doc, params)
     profile_obj = link_target_object(profile_link)
     spine_obj = link_target_object(spine_link)
+    auxiliary_spine_obj = link_target_object(auxiliary_spine_link) if auxiliary_spine_link is not None else None
     body = find_partdesign_body(doc, params.get("body_name")) if params.get("body_name") else find_body_for_object(profile_obj)
     doc.openTransaction(transaction_name)
     try:
@@ -1685,6 +1747,8 @@ def action_partdesign_pipe(doc, params, *, feature_type, default_name, transacti
             body, _ = get_or_create_partdesign_body(doc, params)
         ensure_partdesign_body_member(body, profile_obj)
         ensure_partdesign_body_member(body, spine_obj)
+        if auxiliary_spine_obj is not None:
+            ensure_partdesign_body_member(body, auxiliary_spine_obj)
         for section_link in section_links:
             ensure_partdesign_body_member(body, link_target_object(section_link))
         if require_base_solid:
@@ -1696,9 +1760,11 @@ def action_partdesign_pipe(doc, params, *, feature_type, default_name, transacti
         body.addObject(pipe)
         pipe.Profile = profile_link
         pipe.Spine = spine_link
+        if auxiliary_spine_link is not None:
+            pipe.AuxiliarySpine = auxiliary_spine_link
         if section_links:
             pipe.Sections = section_links
-        apply_pipe_parameters(pipe, params)
+        apply_pipe_parameters(pipe, params, has_auxiliary_spine=auxiliary_spine_link is not None, section_count=len(section_links))
         body.Tip = pipe
         doc.commitTransaction()
     except Exception:
@@ -1716,6 +1782,7 @@ def action_partdesign_pipe(doc, params, *, feature_type, default_name, transacti
         "body": object_summary(body),
         "profile": object_summary(profile_obj),
         "spine": object_summary(spine_obj),
+        "auxiliary_spine": object_summary(auxiliary_spine_obj) if auxiliary_spine_obj is not None else None,
         "sections": [object_summary(link_target_object(item)) for item in section_links],
         "pipe": object_summary(pipe),
         "document": document_summary(doc),

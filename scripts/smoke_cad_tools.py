@@ -1220,6 +1220,7 @@ def main() -> int:
         if subtractive_loft["loft"]["shape"]["solids"] != 1 or subtractive_loft["body"]["partdesign"]["tip"] != "SubtractiveLoft":
             raise RuntimeError(f"partdesign subtractive loft did not preserve a body solid: {subtractive_loft}")
         additive_pipe_doc = temp / "partdesign_additive_pipe.FCStd"
+        auxiliary_pipe_doc = temp / "partdesign_auxiliary_pipe.FCStd"
         subtractive_pipe_doc = temp / "partdesign_subtractive_pipe.FCStd"
         additive_pipe_profile_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
@@ -1250,6 +1251,36 @@ def main() -> int:
         )
         if additive_pipe_profile["profile_type"] != "circle":
             raise RuntimeError(f"partdesign additive pipe profile was not a circle: {additive_pipe_profile}")
+        additive_pipe_section_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeSectionSketch",
+                    "body_name": "AdditivePipeBody",
+                    "attachment_plane": "XY",
+                    "attachment_offset_vector": [0, 0, 2],
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe section sketch",
+        )
+        if not additive_pipe_section_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign additive pipe section sketch was not attached: {additive_pipe_section_sketch}")
+        additive_pipe_section = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(additive_pipe_doc),
+                    "sketch_name": "AdditivePipeSectionSketch",
+                    "profile": {"type": "circle", "center": [0, 0, 0], "radius": 0.5},
+                    "output_path": str(additive_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign additive pipe section circle",
+        )
+        if additive_pipe_section["profile_type"] != "circle":
+            raise RuntimeError(f"partdesign additive pipe section was not a circle: {additive_pipe_section}")
         additive_pipe_spine_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {
@@ -1304,6 +1335,7 @@ def main() -> int:
                     "body_name": "AdditivePipeBody",
                     "profile_name": "AdditivePipeProfileSketch",
                     "spine_name": "AdditivePipeSpineSketch",
+                    "sections": ["AdditivePipeSectionSketch"],
                     "pipe_name": "AdditivePipe",
                     "output_path": str(additive_pipe_doc),
                     "overwrite": True,
@@ -1313,6 +1345,135 @@ def main() -> int:
         )
         if additive_pipe["pipe"]["shape"]["solids"] != 1 or additive_pipe["body"]["partdesign"]["tip"] != "AdditivePipe":
             raise RuntimeError(f"partdesign additive pipe did not produce a body solid: {additive_pipe}")
+        additive_pipe_partdesign = additive_pipe["pipe"]["partdesign"]
+        if additive_pipe_partdesign["transformation"] != "Multisection" or len(additive_pipe_partdesign["sections"]) != 1:
+            raise RuntimeError(f"partdesign additive pipe did not keep multisection scaling: {additive_pipe}")
+        auxiliary_pipe_profile_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "AuxiliaryPipeSmoke",
+                    "sketch_name": "AuxiliaryPipeProfileSketch",
+                    "body_name": "AuxiliaryPipeBody",
+                    "attachment_plane": "XY",
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe profile sketch",
+        )
+        if not auxiliary_pipe_profile_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign auxiliary pipe profile sketch was not attached: {auxiliary_pipe_profile_sketch}")
+        auxiliary_pipe_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeProfileSketch",
+                    "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe circle profile",
+        )
+        if auxiliary_pipe_profile["profile_type"] != "circle":
+            raise RuntimeError(f"partdesign auxiliary pipe profile was not a circle: {auxiliary_pipe_profile}")
+        auxiliary_pipe_spine_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeSpineSketch",
+                    "body_name": "AuxiliaryPipeBody",
+                    "attachment_plane": "XZ",
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe spine sketch",
+        )
+        if not auxiliary_pipe_spine_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign auxiliary pipe spine sketch was not attached: {auxiliary_pipe_spine_sketch}")
+        auxiliary_pipe_spine = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeSpineSketch",
+                    "geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 2, 0]}],
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe spine line",
+        )
+        if len(auxiliary_pipe_spine["added_indices"]) != 1:
+            raise RuntimeError(f"partdesign auxiliary pipe spine line was not added: {auxiliary_pipe_spine}")
+        auxiliary_pipe_spine_constraints = assert_ok(
+            service.definition_map()["freecad_sketch_add_constraint"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeSpineSketch",
+                    "constraints": [
+                        {"type": "Coincident", "values": [0, 1, -1, 1]},
+                        {"type": "PointOnObject", "values": [0, 2, -2]},
+                        {"type": "DistanceY", "values": [0, 1, 0, 2, 2]},
+                    ],
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe spine constraints",
+        )
+        if len(auxiliary_pipe_spine_constraints["added_indices"]) != 3:
+            raise RuntimeError(f"partdesign auxiliary pipe spine constraints were not added: {auxiliary_pipe_spine_constraints}")
+        auxiliary_pipe_aux_spine_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeAuxSpineSketch",
+                    "body_name": "AuxiliaryPipeBody",
+                    "attachment_plane": "XZ",
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe auxiliary spine sketch",
+        )
+        if not auxiliary_pipe_aux_spine_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"partdesign auxiliary pipe auxiliary spine sketch was not attached: {auxiliary_pipe_aux_spine_sketch}")
+        auxiliary_pipe_aux_spine = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "sketch_name": "AuxiliaryPipeAuxSpineSketch",
+                    "geometry": [{"type": "line", "start": [1, 0, 0], "end": [1, 2, 0]}],
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe auxiliary spine line",
+        )
+        if len(auxiliary_pipe_aux_spine["added_indices"]) != 1:
+            raise RuntimeError(f"partdesign auxiliary pipe auxiliary spine line was not added: {auxiliary_pipe_aux_spine}")
+        auxiliary_pipe = assert_ok(
+            service.definition_map()["freecad_partdesign_additive_pipe"].handler(
+                {
+                    "document_path": str(auxiliary_pipe_doc),
+                    "body_name": "AuxiliaryPipeBody",
+                    "profile_name": "AuxiliaryPipeProfileSketch",
+                    "spine_name": "AuxiliaryPipeSpineSketch",
+                    "auxiliary_spine_name": "AuxiliaryPipeAuxSpineSketch",
+                    "auxiliary_curvilinear": True,
+                    "pipe_name": "AuxiliaryPipe",
+                    "output_path": str(auxiliary_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign auxiliary pipe",
+        )
+        if auxiliary_pipe["pipe"]["shape"]["solids"] != 1 or auxiliary_pipe["body"]["partdesign"]["tip"] != "AuxiliaryPipe":
+            raise RuntimeError(f"partdesign auxiliary pipe did not produce a body solid: {auxiliary_pipe}")
+        auxiliary_pipe_partdesign = auxiliary_pipe["pipe"]["partdesign"]
+        if auxiliary_pipe_partdesign["mode"] != "Auxiliary" or auxiliary_pipe_partdesign["auxiliary_spine"]["object"] != "AuxiliaryPipeAuxSpineSketch":
+            raise RuntimeError(f"partdesign auxiliary pipe did not keep auxiliary orientation: {auxiliary_pipe}")
         subtractive_pipe_base_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {

@@ -56,8 +56,8 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_groove` | Create a subtractive PartDesign Groove from a Sketcher profile around a sketch or document axis. | PartDesign App API |
 | `freecad_partdesign_additive_loft` | Create an additive PartDesign Loft from a profile sketch and one or more section sketches in a Body. | PartDesign App API |
 | `freecad_partdesign_subtractive_loft` | Create a subtractive PartDesign Loft from a profile sketch and one or more section sketches in an existing Body solid. | PartDesign App API |
-| `freecad_partdesign_additive_pipe` | Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in a Body. | PartDesign App API |
-| `freecad_partdesign_subtractive_pipe` | Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in an existing Body solid. | PartDesign App API |
+| `freecad_partdesign_additive_pipe` | Create an additive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in a Body, with guarded multisection and auxiliary-spine options. | PartDesign App API |
+| `freecad_partdesign_subtractive_pipe` | Create a subtractive PartDesign Pipe by sweeping a profile sketch along a spine/path sketch in an existing Body solid, with the same guarded Pipe options. | PartDesign App API |
 | `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |
 | `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
 | `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |

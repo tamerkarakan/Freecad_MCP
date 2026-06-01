@@ -950,6 +950,35 @@ def main() -> int:
             )
             if len(worker_additive_pipe_spine_constraints["added_indices"]) != 3:
                 raise RuntimeError(f"worker additive pipe spine constraints were not added: {worker_additive_pipe_spine_constraints}")
+            worker_additive_pipe_aux_spine_sketch = worker_result(
+                service.definition_map()["freecad_worker_sketch_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeAuxSpineSketch",
+                        "body_name": "WorkerAdditivePipeBody",
+                        "attachment_plane": "XZ",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_aux_spine_sketch",
+            )
+            if not worker_additive_pipe_aux_spine_sketch["attachment"]["attached"]:
+                raise RuntimeError(f"worker additive pipe auxiliary spine sketch did not attach: {worker_additive_pipe_aux_spine_sketch}")
+            worker_additive_pipe_aux_spine = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": additive_pipe_document_id,
+                        "sketch_name": "WorkerAdditivePipeAuxSpineSketch",
+                        "geometry": [{"type": "line", "start": [1, 0, 0], "end": [1, 2, 0]}],
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_additive_pipe_aux_spine",
+            )
+            if len(worker_additive_pipe_aux_spine["added_indices"]) != 1:
+                raise RuntimeError(f"worker additive pipe auxiliary spine line was not added: {worker_additive_pipe_aux_spine}")
             worker_additive_pipe = worker_result(
                 service.definition_map()["freecad_worker_partdesign_additive_pipe"].handler(
                     {
@@ -958,6 +987,7 @@ def main() -> int:
                         "body_name": "WorkerAdditivePipeBody",
                         "profile_name": "WorkerAdditivePipeProfileSketch",
                         "spine_name": "WorkerAdditivePipeSpineSketch",
+                        "auxiliary_spine_name": "WorkerAdditivePipeAuxSpineSketch",
                         "pipe_name": "WorkerAdditivePipe",
                         "timeout_sec": 90,
                     }
@@ -966,6 +996,9 @@ def main() -> int:
             )
             if worker_additive_pipe["pipe"]["shape"]["solids"] != 1 or worker_additive_pipe["body"]["partdesign"]["tip"] != "WorkerAdditivePipe":
                 raise RuntimeError(f"worker PartDesign Additive Pipe did not produce a body solid: {worker_additive_pipe}")
+            worker_additive_pipe_partdesign = worker_additive_pipe["pipe"]["partdesign"]
+            if worker_additive_pipe_partdesign["mode"] != "Auxiliary" or worker_additive_pipe_partdesign["auxiliary_spine"]["object"] != "WorkerAdditivePipeAuxSpineSketch":
+                raise RuntimeError(f"worker PartDesign Additive Pipe did not keep auxiliary orientation: {worker_additive_pipe}")
             closed_additive_pipe_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": additive_pipe_document_id}
