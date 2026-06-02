@@ -40,7 +40,7 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
                 "bridge": {
                     "running": True,
                     "api_version": 3,
-                    "methods": ["active_document_get", "document_open", "status", "visibility_ensure"],
+                    "methods": ["active_document_get", "document_open", "status", "view_orientation_set", "visibility_ensure"],
                 },
                 "active_document": {"name": "Doc"},
             }
@@ -90,6 +90,14 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
                     "target_count": 2,
                     "visible_count": 2,
                 },
+                "params": params,
+            }
+        elif method == "view_orientation_set":
+            params = payload.get("params") or {}
+            result = {
+                "orientation": params.get("orientation", "isometric"),
+                "view_method": "viewIsometric",
+                "fit": {"requested": params.get("fit_view", True), "fit": "all"},
                 "params": params,
             }
         elif method == "view_snapshot":
@@ -181,6 +189,7 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
+        self.assertIn("freecad_gui_view_orientation_set", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_object_label_set", tools)
         self.assertIn("freecad_gui_sketch_state", tools)
@@ -254,6 +263,25 @@ class GuiBridgeTests(unittest.TestCase):
         self.assertEqual(visibility["gui"]["visibility"]["visible_count"], 2)
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "visibility_ensure")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "Body")
+
+    def test_gui_view_orientation_set_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        oriented = tools["freecad_gui_view_orientation_set"].handler(
+            {
+                "session_id": session_id,
+                "orientation": "isometric",
+                "fit_view": True,
+                "selection_only": False,
+            }
+        )
+
+        self.assertEqual(oriented["gui"]["orientation"], "isometric")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "view_orientation_set")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["orientation"], "isometric")
 
     def test_gui_view_snapshot_delegates_to_bridge(self) -> None:
         service = GuiToolService()

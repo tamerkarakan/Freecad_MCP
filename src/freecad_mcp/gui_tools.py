@@ -113,6 +113,22 @@ class GuiToolService:
                 "view_fit",
             ),
             self._gui_tool(
+                "freecad_gui_view_orientation_set",
+                "Set GUI View Orientation",
+                "Set the active FreeCAD GUI view orientation before visual verification.",
+                {
+                    "orientation": {
+                        "type": "string",
+                        "enum": ["isometric", "front", "rear", "back", "top", "bottom", "left", "right"],
+                        "default": "isometric",
+                    },
+                    "fit_view": {"type": "boolean", "default": True},
+                    "selection_only": {"type": "boolean"},
+                },
+                [],
+                "view_orientation_set",
+            ),
+            self._gui_tool(
                 "freecad_gui_visibility_ensure",
                 "Ensure GUI Visibility",
                 "Turn on visibility for the final display object or selected geometry in the active FreeCAD GUI document.",

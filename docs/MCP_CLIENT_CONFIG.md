@@ -41,9 +41,9 @@ Current bundle profiles:
 | Profile | Tool Count | Use |
 | --- | ---: | --- |
 | `free` | 23 | File-based document/object/Part operations. |
-| `pro` | 87 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| `studio` | 162 | Adds worker sessions plus TechDraw, CAM, and FEM. |
-| `team` | 165 | Adds source-intelligence tools. |
+| `pro` | 88 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| `studio` | 163 | Adds worker sessions plus TechDraw, CAM, and FEM. |
+| `team` | 166 | Adds source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Only `freecad_python_exec`; opt-in add-on. |
 
@@ -166,11 +166,12 @@ Useful GUI tools after attach:
 - `freecad_gui_preselection_get`
 - `freecad_gui_selection_set`
 - `freecad_gui_view_fit`
+- `freecad_gui_view_orientation_set`
 - `freecad_gui_visibility_ensure`
 - `freecad_gui_view_snapshot`
 - `freecad_gui_primitive_create`
 
-Headless typed CAD tools remain the preferred path for model mutation. GUI attach is mainly for opening generated `.FCStd` files in the live GUI, active document/view/selection state, visibility repair when a loaded document appears hidden, and connector-style workflows. New bridge versions make `freecad_gui_document_open` ensure the final display object is visible by default.
+Headless typed CAD tools remain the preferred path for model mutation. GUI attach is mainly for opening generated `.FCStd` files in the live GUI, active document/view/selection state, visibility repair when a loaded document appears hidden, orientation-controlled snapshots, and connector-style workflows. New bridge versions make `freecad_gui_document_open` ensure the final display object is visible by default.
 
 If a GUI tool returns `unknown method: ...`, the MCP client is talking to an older bridge script already running inside FreeCAD. Stop and start the **FreeCAD MCP** bridge, or restart FreeCAD. If you use an installed Workbench zip instead of the repo `-M` path, rebuild and reinstall the zip before restarting FreeCAD.
 

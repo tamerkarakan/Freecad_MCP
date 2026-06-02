@@ -2,7 +2,7 @@
 
 ## Open
 
-- GUI attach tools now expose active document/view, explicit `.FCStd` document open, final-object visibility repair, and selection/preselection through a local bridge; opt-in live GUI smoke passes, a module-path Workbench host exists, and a generated local `freecad-mcp-workbench.zip` module artifact exists. Signed/installed FreeCAD Addon Manager packaging is still pending.
+- GUI attach tools now expose active document/view, explicit `.FCStd` document open, final-object visibility repair, view orientation, and selection/preselection through a local bridge; opt-in live GUI smoke passes, a module-path Workbench host exists, and a generated local `freecad-mcp-workbench.zip` module artifact exists. Signed/installed FreeCAD Addon Manager packaging is still pending.
 - Sketcher GUI-only command handlers, edit-mode overlays, and active-selection workflows are not covered by headless typed tools; they require GUI attach or Workbench-hosted bridge mode.
 - Sketcher `Group` and `Text` constraint constructors can terminate FreeCADCmd in this FreeCAD 1.1.1 build; typed tools now block those raw constraint types until a stable API path exists.
 - Reference-image tracing can produce visually plausible but topologically open Sketcher geometry if raw lines/arcs/B-splines are added without `Coincident` constraints. Use the connected sequence guard on `freecad_sketch_add_geometry` for ordered closed contours; the user-provided local sample `runs/reference_profile_sketch.FCStd` is an example of the bad pattern, with 24 geometry items, 0 constraints, and open vertices.

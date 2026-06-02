@@ -10833,6 +10833,51 @@ Fit all or selected objects in the active GUI view.
 }
 ```
 
+## `freecad_gui_view_orientation_set`
+
+Set the active FreeCAD GUI view orientation before visual verification.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "orientation": {
+      "type": "string",
+      "enum": [
+        "isometric",
+        "front",
+        "rear",
+        "back",
+        "top",
+        "bottom",
+        "left",
+        "right"
+      ],
+      "default": "isometric"
+    },
+    "fit_view": {
+      "type": "boolean",
+      "default": true
+    },
+    "selection_only": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
 ## `freecad_gui_visibility_ensure`
 
 Turn on visibility for the final display object or selected geometry in the active FreeCAD GUI document.

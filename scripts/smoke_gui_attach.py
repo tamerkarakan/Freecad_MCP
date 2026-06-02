@@ -292,6 +292,11 @@ except Exception as exc:
         )
         if body_activate["gui"]["activated"]["name"] != str(ready["body_name"]):
             raise RuntimeError(f"body did not activate: {body_activate}")
+        view_orientation = tools["freecad_gui_view_orientation_set"].handler(
+            {"session_id": session_id, "orientation": "isometric", "fit_view": True}
+        )
+        if view_orientation["gui"]["orientation"] != "isometric":
+            raise RuntimeError(f"view orientation did not apply: {view_orientation}")
         view_snapshot = tools["freecad_gui_view_snapshot"].handler(
             {
                 "session_id": session_id,
@@ -355,6 +360,7 @@ except Exception as exc:
             "sketch_leave_result": sketch_leave,
             "partdesign_state_result": partdesign_state,
             "body_activate_result": body_activate,
+            "view_orientation_result": view_orientation,
             "view_snapshot_result": view_snapshot,
             "restored_selection_result": restored_selection,
             "fit_result": fit,

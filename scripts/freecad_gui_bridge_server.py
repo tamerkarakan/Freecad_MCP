@@ -1149,6 +1149,50 @@ def rpc_view_fit(params: dict[str, Any]) -> dict[str, Any]:
     return {"fit": mode}
 
 
+def rpc_view_orientation_set(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    orientation = str(params.get("orientation") or "isometric").lower()
+    methods = {
+        "isometric": "viewIsometric",
+        "front": "viewFront",
+        "rear": "viewRear",
+        "back": "viewRear",
+        "top": "viewTop",
+        "bottom": "viewBottom",
+        "left": "viewLeft",
+        "right": "viewRight",
+    }
+    method_name = methods.get(orientation)
+    if method_name is None:
+        raise ValueError("unsupported view orientation: " + orientation)
+    gui_doc = Gui.activeDocument()
+    if gui_doc is None:
+        raise ValueError("no active GUI document")
+    view = gui_doc.activeView()
+    if view is None:
+        raise ValueError("no active GUI view")
+    method = getattr(view, method_name, None)
+    if not callable(method):
+        raise ValueError("active GUI view does not support " + method_name)
+    method()
+    try:
+        Gui.updateGui()
+    except Exception:
+        pass
+    fit = fit_view_if_requested(
+        gui_doc,
+        bool(params.get("fit_view", True)),
+        selection_only=bool(params.get("selection_only", False)),
+    )
+    return {
+        "orientation": orientation,
+        "view_method": method_name,
+        "fit": fit,
+        "active_view": active_view_summary(),
+    }
+
+
 def rpc_visibility_ensure(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCADGui as Gui
 
@@ -1517,6 +1561,7 @@ RPC_METHODS = {
     "preselection_get": rpc_preselection_get,
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
+    "view_orientation_set": rpc_view_orientation_set,
     "visibility_ensure": rpc_visibility_ensure,
     "view_snapshot": rpc_view_snapshot,
     "primitive_create": rpc_primitive_create,

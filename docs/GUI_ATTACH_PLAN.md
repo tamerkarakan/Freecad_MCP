@@ -13,6 +13,7 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 | Active GUI document | `src/Gui/ApplicationPy.cpp:344`, `src/Gui/ApplicationPy.cpp:592` expose `FreeCADGui.activeDocument()` and require the Python main thread. |
 | Open App document | `src/App/ApplicationPy.cpp:161`, `src/App/ApplicationPy.cpp:350`, and `src/App/Application.cpp:915` expose `FreeCAD.openDocument(...)`/`App::Application::openDocument(...)` for opening `.FCStd` documents. |
 | Active GUI view | `src/Gui/ApplicationPy.cpp:358`, `src/Gui/ApplicationPy.cpp:609` expose `FreeCADGui.activeView(typeName)` and require the Python main thread. |
+| View orientation | `src/Gui/View3DPy.cpp:83` through `:95` and `src/Gui/FreeCADGui._View3DInventor.pyi:23` through `:55` expose `viewFront()`, `viewTop()`, `viewRight()`, `viewRear()`, `viewBottom()`, `viewLeft()`, and `viewIsometric()`. |
 | Selection list with subelements | `src/Gui/Selection/Selection.cpp:2588` exposes `Gui.Selection.getSelectionEx(...)` returning `SelectionObject` records with subelement names. |
 | Preselection record | `src/Gui/Selection/Selection.cpp:2527` and `src/Gui/Selection/Selection.cpp:3048` expose `Gui.Selection.getPreselection()` as a `SelectionObject`. |
 | Selection object fields | `src/Gui/Selection/SelectionObjectPyImp.cpp:75` through `:165` expose object name, document name, subelement names, resolved subobjects, and picked points. |
@@ -46,6 +47,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_preselection_get` | Return current hover/preselection object and subelement when available. | No |
 | `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
+| `freecad_gui_view_orientation_set` | Set the active view to isometric/front/rear/top/bottom/left/right before visual verification. | View only |
 | `freecad_gui_visibility_ensure` | Turn on visibility for the final display object/Body or, when requested, all renderable geometry in an active/open GUI document. | GUI visibility state only |
 | `freecad_gui_view_snapshot` | Save the active FreeCAD viewport to a local raster image using `activeView().saveImage(...)`. | File write only |
 | `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
@@ -86,7 +88,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 
 - GUI attach tools must be read-only by default. `freecad_gui_document_open` is a narrow lifecycle exception: it reads an explicit existing `.FCStd` path and changes the active GUI document/view/visibility, but does not create or edit model geometry.
 - Visibility repair should default to `scope="final"` so the user sees the completed Body/Tip without exposing helper Origin and Sketch objects. Use `all_geometry` or `all` only when an agent explicitly needs broader visual debugging.
-- Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, viewport snapshots, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
+- Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view/orientation changes, viewport snapshots, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
 - Object `Name` is treated as the stable technical identifier; user-facing rename flows set `Label` and should keep labels unique by default.
 - Selection and view reads must not call broad Python execution.
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
@@ -98,9 +100,9 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert document open, visibility ensure, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge, and stale bridge `unknown method` errors are converted into restart guidance.
-- Static MCP smoke confirms GUI attach schemas are listed, including `freecad_gui_document_open` and `freecad_gui_visibility_ensure`.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_document_open` for the saved `.FCStd`, verifies the open call made at least one final object visible, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, and writes a viewport snapshot.
+- Unit tests assert document open, visibility ensure, view orientation, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge, and stale bridge `unknown method` errors are converted into restart guidance.
+- Static MCP smoke confirms GUI attach schemas are listed, including `freecad_gui_document_open`, `freecad_gui_view_orientation_set`, and `freecad_gui_visibility_ensure`.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_document_open` for the saved `.FCStd`, verifies the open call made at least one final object visible, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, sets an isometric view, and writes a viewport snapshot.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals
