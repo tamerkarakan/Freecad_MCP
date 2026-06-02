@@ -1,153 +1,249 @@
 # FreeCAD Hybrid MCP
 
-FreeCAD icin hibrit MCP server calismasi.
+FreeCAD Hybrid MCP is a local Model Context Protocol server for FreeCAD. It lets AI coding agents inspect the FreeCAD command/source inventory, create and modify CAD documents through typed tools, keep persistent `FreeCADCmd` sessions alive, and optionally attach to a running FreeCAD GUI for live document, view, and selection context.
 
-Bu repo iki kaynagi birlestirecek:
+The project is built around one main rule: prefer deterministic typed CAD tools over broad Python execution. Raw Python remains an explicit unsafe escape hatch, while normal modeling flows use structured tool schemas, FreeCAD transactions, recompute, validation, and JSON result reporting.
 
-- Static source tools: Git ile alinan FreeCAD kod tabaninda arama, sembol ve komut envanteri.
-- Runtime tools: Calisan FreeCAD Python oturumuna baglanip belge, obje ve geometri islemleri.
+## Current Status
 
-## Current Inventory
+- Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
+- Full current MCP surface: `164` tools with `FREECAD_MCP_MODULES=all`.
+- Product-style profiles are generated for `free`, `pro`, `studio`, `team`, `source`, and `unsafe`.
+- The repository includes generated MCP tool schemas, product bundle manifests, distribution profile skeletons, and a local FreeCAD Workbench bridge artifact.
+- The source command inventory currently scans `1112` FreeCAD GUI command registrations from the configured local FreeCAD source checkout.
 
-FreeCAD upstream checkout:
+See [docs/ROADMAP_STATUS.md](docs/ROADMAP_STATUS.md), [docs/SESSION_STATE.md](docs/SESSION_STATE.md), and [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md) for the most detailed generated status.
+
+## What It Is For
+
+Use this MCP server when you want an AI agent to:
+
+- Create FreeCAD documents and geometry from natural-language instructions.
+- Build and validate Sketcher profiles before PartDesign features are created.
+- Create Body-attached Pad, Pocket, Hole, Revolution, Groove, Loft, Pipe, dress-up, and pattern features.
+- Inspect object metadata, topology, bounding boxes, and geometry-check results.
+- Import/export FreeCAD-supported formats such as FCStd, STEP, STL, DXF, and raw G-code where implemented.
+- Read live FreeCAD GUI selection/view state when the user is already working in the GUI.
+- Research FreeCAD source commands and implementation details from a local source checkout.
+- Offer a safer alternative to "just run arbitrary FreeCAD Python" workflows.
+
+## Quick Start
+
+Install Python dependencies:
 
 ```powershell
-upstream\FreeCAD
+python -m pip install mcp
 ```
 
-Tool inventory generation:
+Point the server at FreeCAD:
 
 ```powershell
-& 'C:\Users\tamer\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' scripts\scan_freecad_tools.py --freecad-root upstream\FreeCAD
+$env:FREECAD_MCP_FREECAD_HOME = "E:\Downloads\zip\FreeCAD_1.1.1-Windows-x86_64-py311"
+$env:FREECAD_MCP_WORKSPACE_ROOT = "C:\Users\tamer\Codex_Projects\Freecad_MCP"
 ```
 
-Generated files:
-
-- `docs/freecad_tool_inventory.md`
-- `docs/freecad_tool_inventory.json`
-- `docs/mcp_tool_plan.md`
-
-## MCP Server
-
-Run the local stdio MCP server:
+Run the local stdio MCP server from the repository:
 
 ```powershell
 python server.py
 ```
 
-Example MCP client config:
+Or use the installed package entrypoint after packaging/installing:
+
+```powershell
+freecad-hybrid-mcp
+```
+
+Run the verification suite:
+
+```powershell
+scripts\verify.ps1
+```
+
+For Codex, Claude Code, Claude Desktop-style clients, and other local MCP clients, see [docs/MCP_CLIENT_CONFIG.md](docs/MCP_CLIENT_CONFIG.md).
+
+## MCP Client Config Shape
+
+Minimal JSON-style MCP client config:
 
 ```json
 {
   "mcpServers": {
     "freecad": {
       "command": "python",
-      "args": ["C:/path/to/Freecad_MCP/server.py"]
+      "args": ["C:/path/to/Freecad_MCP/server.py"],
+      "env": {
+        "FREECAD_MCP_FREECAD_HOME": "C:/path/to/FreeCAD",
+        "FREECAD_MCP_WORKSPACE_ROOT": "C:/path/to/Freecad_MCP",
+        "FREECAD_MCP_MODULES": "pro"
+      }
     }
   }
 }
 ```
 
-Available Phase 1 tools:
+`FREECAD_MCP_FREECAD_HOME` should point to a FreeCAD directory containing `FreeCADCmd.exe` and, for GUI workflows, `FreeCAD.exe`. You can also use `FREECAD_MCP_FREECAD_CMD` to point directly at `FreeCADCmd.exe`.
 
-- `freecad_command_list`
-- `freecad_command_describe`
-- `freecad_source_symbol_index`
-- `freecad_source_search`
-- `freecad_source_open`
+## Product Profiles
 
-Available Phase 2 runtime tools:
+The server can expose different tool surfaces with `FREECAD_MCP_MODULES`.
 
-- `freecad_session_status`
-- `freecad_python_exec`
+| Profile | Tools | Intended Use |
+| --- | ---: | --- |
+| `free` | 23 | Static command inventory plus file-based document/object/Part operations. |
+| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| `studio` | 160 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
+| `team` | 163 | Studio surface plus source-intelligence tools. |
+| `source` | 5 | Command/source intelligence add-on only. |
+| `unsafe` | 1 | Broad `freecad_python_exec` escape hatch only. |
+| `all` | 164 | Full local maintainer surface. |
 
-Available persistent worker tools:
+Generated profile files live under [packaging/profiles](packaging/profiles), and the generated bundle manifest is [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md).
 
-- `freecad_session_start`, `freecad_session_list`, `freecad_session_close`
-- `freecad_worker_session_start/list/status/close`
-- `freecad_worker_document_new/open/save/recompute/close/export`
-- `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry`
-- `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe/fillet/chamfer/thickness/draft`
-- `freecad_partdesign_profile_feature_create`, `freecad_partdesign_sweep_feature_create` high-level Body-attached workflow recipes
-- `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/edit_geometry/edit_constraints/transform/auto_constrain/validate`
-- `freecad_worker_mesh_import/export/evaluate/repair/boolean`
-- `freecad_worker_assembly_create/insert/create_joint/solve/bom`
-- `freecad_worker_object_list/get/set_properties/delete`
+## Supported Tool Families
 
-Available GUI attach tools:
+| Area | Current Support |
+| --- | --- |
+| Static command inventory | List and describe FreeCAD commands from the generated source inventory. |
+| Source intelligence | Search/open source files and symbol index data from a local FreeCAD checkout. |
+| Runtime status | Discover and report the configured `FreeCADCmd` runtime. |
+| Documents | Create, open, save, recompute, close, and export FreeCAD documents. |
+| Objects | List/get/set properties, rename user-visible labels, and delete objects. |
+| Part workbench | Primitives, boolean operations, direct and parametric extrude, revolve, fillet, chamfer, and geometry checks. |
+| Sketcher | Create sketches, add geometry and constraints, add profile helpers, build/validate pad-ready profile loops, edit geometry/constraints, transform, auto-constrain, validate, and analyze curve-fit intent. |
+| PartDesign | Body and Datum Plane creation, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe, Fillet, Chamfer, Thickness, Draft, LinearPattern, PolarPattern, and Mirrored. |
+| PartDesign recipes | High-level Body-attached workflow tools for profile features and sweep features, so agents do not need to guess FreeCAD's Body + Sketch + plane/support sequence. |
+| Import/export | Common file import/export entrypoints plus supported-format reporting. |
+| Mesh | Import, export, evaluate, repair, and boolean operations. |
+| Assembly | Create assemblies, insert objects, create native joint proxies, solve/recompute, and generate BOM data. |
+| Persistent worker | Long-lived `FreeCADCmd` sessions for lower startup overhead and session-aware workflows. |
+| GUI attach | Opt-in loopback bridge for active document/view, selection/preselection, selection set, view fit, viewport snapshot, primitive creation, and label updates. |
+| Workbench bridge | Local FreeCAD workbench module that can start/stop/status the GUI bridge from inside FreeCAD. |
+| TechDraw | First typed slice for page/template/view creation, page/view inspection, and headless DXF export. |
+| CAM | First typed slice for explicit raw `Path::Feature` command paths and raw G-code export. |
+| FEM | First typed slice for analysis containers, material objects, fixed/force constraints, and inspection. |
+| Resources/prompts | MCP resources for schemas, inventory, product bundles, architecture, session state, testing, GUI plans, and roadmap status. |
+| Unsafe Python | `freecad_python_exec` is intentionally separated into the `unsafe` profile/add-on. |
 
-- `freecad_gui_attach/list/detach/status`
-- `freecad_gui_active_document_get`
-- `freecad_gui_active_view_get`
-- `freecad_gui_selection_get`
-- `freecad_gui_preselection_get`
-- `freecad_gui_selection_set`
-- `freecad_gui_view_fit`
-- `freecad_gui_view_snapshot`
-- `freecad_gui_primitive_create`
+The full generated schema snapshot is [docs/mcp_tool_schemas.md](docs/mcp_tool_schemas.md).
 
-GUI attach is opt-in. Start `scripts/freecad_gui_bridge_server.py` inside a running FreeCAD GUI Python console, then call `freecad_gui_attach` with the local bridge URL and optional token. This mode is for live active document/view/selection state; typed CAD tools remain the primary way to mutate geometry.
+## Sketcher And PartDesign Focus
 
-Opt-in GUI smoke:
+The highest-value engineering path in this project is Sketcher + PartDesign. The server tries to encode the FreeCAD workflow an expert user would follow in the GUI:
+
+1. Create or reuse a PartDesign Body.
+2. Attach the sketch to an origin plane, datum plane, or support object.
+3. Build a closed, valid, pad-ready profile.
+4. Validate topology before creating the PartDesign feature.
+5. Create the feature, recompute, and report the Body Tip and shape summary.
+
+High-level recipe tools:
+
+- `freecad_partdesign_profile_feature_create`: creates and validates a Body-attached profile sketch, then creates Pad, Pocket, Revolution, or Groove.
+- `freecad_partdesign_sweep_feature_create`: creates Body-attached profile and spine sketches, then creates Additive or Subtractive Pipe.
+
+Lower-level tools remain available when the sketch, support objects, or selected subelements already exist.
+
+## GUI Attach
+
+The MCP stdio server does not launch or control the FreeCAD GUI by default. GUI access is opt-in and local.
+
+Start FreeCAD with the workbench path:
+
+```powershell
+& "E:\Downloads\zip\FreeCAD_1.1.1-Windows-x86_64-py311\FreeCAD.exe" -M "C:\Users\tamer\Codex_Projects\Freecad_MCP\freecad_workbench"
+```
+
+Then select the **FreeCAD MCP** workbench and run **Start MCP Bridge**, or configure autostart with:
+
+```powershell
+$env:FREECAD_MCP_AUTOSTART = "1"
+$env:FREECAD_MCP_GUI_TOKEN = "choose-a-local-token"
+```
+
+After that, an MCP client can call `freecad_gui_attach` against the local loopback bridge URL, normally `http://127.0.0.1:48777`.
+
+GUI attach is mainly for live active document/view/selection state and visual evidence. Headless typed tools remain the preferred path for deterministic model mutation.
+
+## Safety Model
+
+- Typed tools are the default modeling surface.
+- Broad Python execution is isolated behind the `unsafe` profile/add-on.
+- Runtime mutating tools use structured arguments, transactions where applicable, recompute, and JSON result reporting.
+- `FREECAD_MCP_WORKSPACE_ROOT` defines the normal output boundary. Absolute writes outside that root require explicit `allow_external_paths=true`.
+- GUI attach is local/loopback and can use a token.
+- Generated docs and tool schemas make the exposed tool surface reviewable before use.
+- Verification includes unit tests, static MCP smoke, package smoke, real FreeCAD runtime smoke, typed CAD smoke, fixture document smoke, and persistent worker smoke.
+
+## Verification
+
+Run the main verification script before publishing or pushing changes:
+
+```powershell
+scripts\verify.ps1
+```
+
+Optional GUI smoke:
 
 ```powershell
 $env:FREECAD_MCP_GUI_SMOKE = "1"
 scripts\verify.ps1
 ```
 
-The opt-in smoke also validates that GUI selection records can populate native Assembly `Reference1`/`Reference2` connector fields through `freecad_assembly_create_joint`.
+The GUI smoke launches/uses FreeCAD GUI paths and is intentionally opt-in.
 
-Workbench-hosted bridge:
+## Documentation Map
 
-- Add `freecad_workbench` as a FreeCAD module path (`-M`). If needed, pass the leaf `freecad_workbench\FreeCADMCP` directory directly.
-- Load the **FreeCAD MCP** workbench to start/stop/status the bridge from FreeCAD.
-- Set `FREECAD_MCP_AUTOSTART=1` and `FREECAD_MCP_GUI_TOKEN` to host automatically when the module is loaded.
-- Build the local module zip with `python scripts\build_workbench_addon.py --zip-out dist\freecad-mcp-workbench.zip`; the zip embeds the GUI bridge script beside `InitGui.py`.
+- [docs/MCP_CLIENT_CONFIG.md](docs/MCP_CLIENT_CONFIG.md): Codex, Claude, and JSON-style MCP client setup.
+- [docs/PRODUCT_MODULES.md](docs/PRODUCT_MODULES.md): module filtering rules.
+- [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md): generated bundle profile manifest.
+- [docs/DISTRIBUTION_PROFILES.md](docs/DISTRIBUTION_PROFILES.md): generated distribution profile config skeletons.
+- [docs/SKETCHER_CAPABILITIES.md](docs/SKETCHER_CAPABILITIES.md): Sketcher geometry, profile, validation, and PartDesign attachment notes.
+- [docs/GUI_ATTACH_PLAN.md](docs/GUI_ATTACH_PLAN.md): GUI bridge design.
+- [docs/WORKBENCH_BRIDGE.md](docs/WORKBENCH_BRIDGE.md): FreeCAD workbench-hosted bridge setup.
+- [docs/TECHDRAW_CAM_FEM_PLAN.md](docs/TECHDRAW_CAM_FEM_PLAN.md): guarded first-slice plans for advanced workbenches.
+- [docs/BACKLOG.md](docs/BACKLOG.md): next expansion candidates and future deepening.
+- [docs/BUGS.md](docs/BUGS.md): known behavioral boundaries and intentionally blocked flows.
+- [docs/TESTING.md](docs/TESTING.md): verification scope.
 
-Product-style module filtering:
+## Roadmap / TODO
 
-```powershell
-$env:FREECAD_MCP_MODULES = "pro"
-python server.py
-```
+Current unblocked scope is complete, but the next useful expansion areas are:
 
-Supported aliases include `free`, `pro`, `studio`, `team`, `source`, and `all`; `dev`, `developer`, and `local-dev` intentionally map to the full local `all` surface so product filtering does not shrink maintainer workflows. Explicit comma-separated module lists such as `core,headless,gui,sketcher` are also supported. Generated sellable bundle counts and tool lists are in `docs/PRODUCT_BUNDLES.md`; generated distribution profiles and MCP config skeletons are in `docs/DISTRIBUTION_PROFILES.md` and `packaging/profiles/`; module rules are in `docs/PRODUCT_MODULES.md`.
+- Add remote MCP transport support for HTTP/SSE and Streamable HTTP while keeping stdio as the stable local default.
+- Deepen structured logging with crash bundles, worker restart correlation, response-size summaries, and performance rollups.
+- Extend console reading beyond persistent worker sessions to process-per-call, GUI bridge, and Workbench bridge modes.
+- Expand GUI live bridge coverage beyond viewport snapshots into command boundaries, transaction/dirty state, console forwarding, and safer GUI-side mutation policies.
+- Deepen image-to-sketch guidance for ambiguous B-spline vs circular arc vs line/polyline decisions.
+- Continue Sketcher and PartDesign research from official docs and local FreeCAD source. Next PartDesign targets include MultiTransform, Scaled, Boolean, and deeper combined Pipe orientation/scaling fixtures.
+- Add a guarded GUI command catalog and allowlisted GUI command runner after preconditions, transaction policy, and smoke coverage are clear.
+- Enable the existing GitHub Actions workflow after credentials include the `workflow` OAuth scope.
+- Decide whether generated profiles should become separate packages, Codex plugin bundles, or commercial add-ons.
+- Add TechDraw SVG/PDF export only through GUI attach or Workbench validation.
+- Extend CAM and FEM only with fixture-backed machine, solver, and result contracts.
+- Polish the Workbench module zip toward signed/installed FreeCAD Addon Manager packaging.
+- Add a local custom-tool authoring pipeline with mandatory security analysis, sandbox smoke tests, explicit user approval, hash/audit logging, permission manifests, and safe runtime enforcement.
 
-Installed-package entrypoint shape:
+## Known Limitations
 
-```powershell
-freecad-hybrid-mcp
-```
+- This is an experimental MCP server, not a certified CAD automation product.
+- The project is developed and verified primarily on Windows with a portable FreeCAD 1.1.1 runtime.
+- GUI attach is intentionally limited and opt-in.
+- TechDraw, CAM, and FEM are first-slice typed integrations, not full workbench replacements.
+- CAM postprocessor execution, FEM solver execution, and GUI-only TechDraw PDF/SVG export are not default-safe flows yet.
+- Some Sketcher raw constraint constructors are blocked because they can terminate the current FreeCADCmd runtime.
+- AI-generated CAD should always be reviewed by a qualified human before manufacturing, safety-critical use, quoting, or release.
 
-Set `FREECAD_MCP_REPO_ROOT` when running the installed entrypoint outside this checkout but still relying on repo-local docs/inventory resources.
+## Disclaimer
 
-Typed CAD tool groups are also available:
+This project is not affiliated with, endorsed by, or sponsored by the FreeCAD project or its contributors.
 
-- document: new/open/save/recompute/export
-- object: list/get/set properties/delete
-- Part: primitives, boolean, direct/parametric extrude, revolve, fillet, chamfer, geometry check
-- PartDesign: Body, Datum Plane, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe with multisection and auxiliary-spine options, Fillet/Chamfer/Thickness/Draft dress-up features, and LinearPattern/PolarPattern/Mirrored transforms
-- Sketcher: create, advanced geometry/profile creation, constraint create/update, geometry/constraint edit, transform, auto-constrain, validate
-- import/export and mesh tools
-- Assembly: create/insert/link native JointObject proxies/recompute/BOM
-- TechDraw: create page/template, create part view, inspect pages/views, export headless DXF
-- CAM: create simple `Path::Feature` from explicit commands, inspect, and export raw G-code
-- FEM: create analysis containers, material objects, fixed/force constraints, and inspect analysis membership
+FreeCAD Hybrid MCP is provided for experimentation, automation research, and local development workflows. It is provided "as is", without warranties of any kind, including fitness for a particular purpose, merchantability, correctness, reliability, safety, or non-infringement.
 
-The server also exposes MCP resources for architecture, session state, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, Workbench artifact shape, TechDraw/CAM/FEM typed-wrapper planning, product modules, product bundles, distribution profiles, tool schemas, and inventory summary, plus workflow prompts for design tasks and phase gates.
+CAD models, generated toolpaths, FEM setups, dimensions, constraints, and exported files produced through this MCP server may be incomplete, invalid, unsafe, or misunderstood by an AI agent. You are responsible for independently checking all geometry, constraints, tolerances, manufacturing assumptions, simulation inputs, file paths, and generated outputs before using them.
 
-Sketcher details are tracked in `docs/SKETCHER_CAPABILITIES.md`.
+Do not rely on this project for safety-critical engineering, regulated design, production manufacturing, legal compliance, financial decisions, or professional certification without independent expert review. Running MCP tools can launch local FreeCAD processes and write files on your machine; review configuration, workspace boundaries, tokens, prompts, and input files before use.
 
-For runtime tools, set one of:
+## License
 
-- `FREECAD_MCP_FREECAD_HOME` to a portable FreeCAD directory
-- `FREECAD_MCP_FREECAD_CMD` to a concrete `FreeCADCmd.exe`
-- `FREECAD_MCP_WORKSPACE_ROOT` to constrain typed CAD output paths
-
-Typed CAD tools require absolute `output_path` values. Writes outside the workspace root require `allow_external_paths=true`.
-
-Smoke test:
-
-```powershell
-scripts\verify.ps1
-```
+No open-source license has been selected yet. Until a license is added, the default copyright rules apply.
