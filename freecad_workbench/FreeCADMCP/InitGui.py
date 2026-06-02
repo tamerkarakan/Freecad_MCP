@@ -67,8 +67,11 @@ else:
         return namespace["start_bridge"](**bridge_options())
 
     def stop_bridge() -> dict[str, Any]:
+        global _BRIDGE_NS
         namespace = bridge_namespace()
-        return namespace["stop_bridge"]()
+        result = namespace["stop_bridge"]()
+        _BRIDGE_NS = None
+        return result
 
     def print_message(message: str) -> None:
         App.Console.PrintMessage(message.rstrip() + "\n")

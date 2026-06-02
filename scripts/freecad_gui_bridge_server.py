@@ -22,7 +22,7 @@ from typing import Any
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 48777
-BRIDGE_API_VERSION = 2
+BRIDGE_API_VERSION = 3
 
 _SERVER: ThreadingHTTPServer | None = None
 _TOKEN: str | None = None
@@ -448,6 +448,136 @@ def body_contains(body: Any, obj: Any) -> bool:
         return obj in (getattr(body, "Group", []) or [])
     except Exception:
         return False
+
+
+def view_object_for(obj: Any) -> Any:
+    try:
+        return getattr(obj, "ViewObject", None)
+    except Exception:
+        return None
+
+
+def object_visibility(obj: Any) -> bool | None:
+    view_obj = view_object_for(obj)
+    if view_obj is None or not hasattr(view_obj, "Visibility"):
+        return None
+    try:
+        return bool(view_obj.Visibility)
+    except Exception:
+        return None
+
+
+def set_object_visibility(obj: Any, visible: bool) -> dict[str, Any]:
+    before = object_visibility(obj)
+    result = {
+        "object": object_ref(obj),
+        "before": before,
+        "after": before,
+        "changed": False,
+        "settable": False,
+    }
+    view_obj = view_object_for(obj)
+    if view_obj is None or not hasattr(view_obj, "Visibility"):
+        return result
+    result["settable"] = True
+    try:
+        view_obj.Visibility = bool(visible)
+        after = object_visibility(obj)
+        result["after"] = after
+        result["changed"] = before != after
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+def is_helper_display_object(obj: Any) -> bool:
+    type_id = str(getattr(obj, "TypeId", ""))
+    if type_id in {"App::Origin", "App::Line", "App::Plane", "App::Point"}:
+        return True
+    return type_id.startswith("Sketcher::")
+
+
+def has_renderable_shape(obj: Any) -> bool:
+    summary = gui_shape_summary(getattr(obj, "Shape", None))
+    if not summary or summary.get("is_null"):
+        return False
+    return any(int(summary.get(key) or 0) > 0 for key in ("solids", "shells", "faces", "edges"))
+
+
+def append_unique_object(objects: list[Any], obj: Any) -> None:
+    if obj is None:
+        return
+    name = getattr(obj, "Name", None)
+    if any(getattr(item, "Name", None) == name for item in objects):
+        return
+    objects.append(obj)
+
+
+def containing_bodies(doc: Any, obj: Any) -> list[Any]:
+    if doc is None or obj is None:
+        return []
+    return [candidate for candidate in doc.Objects if is_partdesign_body(candidate) and body_contains(candidate, obj)]
+
+
+def visibility_targets(doc: Any, params: dict[str, Any]) -> list[Any]:
+    if doc is None:
+        return []
+    scope = str(params.get("scope") or params.get("visibility_scope") or "final")
+    if scope not in {"final", "all_geometry", "all"}:
+        raise ValueError("unsupported visibility scope: " + scope)
+
+    if scope == "all":
+        return [obj for obj in doc.Objects if object_visibility(obj) is not None]
+    if scope == "all_geometry":
+        return [obj for obj in doc.Objects if object_visibility(obj) is not None and has_renderable_shape(obj)]
+
+    targets: list[Any] = []
+    object_name = params.get("object_name")
+    if object_name:
+        target = doc.getObject(str(object_name))
+        if target is None:
+            raise ValueError("object not found: " + str(object_name))
+        append_unique_object(targets, target)
+        for body in containing_bodies(doc, target):
+            append_unique_object(targets, body)
+            append_unique_object(targets, getattr(body, "Tip", None))
+        return targets
+
+    active = getattr(doc, "ActiveObject", None)
+    if active is not None and not is_helper_display_object(active):
+        append_unique_object(targets, active)
+        for body in containing_bodies(doc, active):
+            append_unique_object(targets, body)
+            append_unique_object(targets, getattr(body, "Tip", None))
+
+    for body in [obj for obj in doc.Objects if is_partdesign_body(obj)]:
+        append_unique_object(targets, body)
+        append_unique_object(targets, getattr(body, "Tip", None))
+
+    if not targets:
+        for obj in doc.Objects:
+            if not is_helper_display_object(obj) and has_renderable_shape(obj):
+                append_unique_object(targets, obj)
+    return [obj for obj in targets if object_visibility(obj) is not None]
+
+
+def ensure_visibility(doc: Any, params: dict[str, Any]) -> dict[str, Any]:
+    targets = visibility_targets(doc, params)
+    applied = [set_object_visibility(obj, True) for obj in targets]
+    visible_count = sum(1 for item in applied if item.get("after") is True)
+    try:
+        import FreeCADGui as Gui
+
+        Gui.updateGui()
+    except Exception:
+        pass
+    return {
+        "requested": True,
+        "scope": str(params.get("scope") or params.get("visibility_scope") or "final"),
+        "target_count": len(targets),
+        "visible_count": visible_count,
+        "applied": applied,
+    }
 
 
 def link_summary(value: Any) -> Any:
@@ -914,6 +1044,7 @@ def rpc_document_open(params: dict[str, Any]) -> dict[str, Any]:
     path = existing_fcstd_path(params.get("document_path"))
     activate = bool(params.get("activate", True))
     fit_view = bool(params.get("fit_view", True))
+    ensure_visible = bool(params.get("ensure_visible", True))
 
     doc = find_open_document_by_file(path)
     already_open = doc is not None
@@ -925,6 +1056,15 @@ def rpc_document_open(params: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError("FreeCAD did not open document: " + str(path))
 
     gui_doc = activate_document(doc) if activate else (gui_document_for(doc) or Gui.activeDocument())
+    visibility: dict[str, Any] = {"requested": ensure_visible}
+    if ensure_visible:
+        visibility = ensure_visibility(
+            doc,
+            {
+                "visibility_scope": params.get("visibility_scope", "final"),
+                "object_name": params.get("object_name"),
+            },
+        )
     fit: dict[str, Any] = {"requested": fit_view, "fit": None}
     if fit_view:
         try:
@@ -939,6 +1079,7 @@ def rpc_document_open(params: dict[str, Any]) -> dict[str, Any]:
         "activated": activate,
         "document": document_summary(doc),
         "active_document": active_document_summary(),
+        "visibility": visibility,
         "fit": fit,
         "active_view": active_view_summary(),
     }
@@ -1006,6 +1147,28 @@ def rpc_view_fit(params: dict[str, Any]) -> dict[str, Any]:
         view.fitAll()
         mode = "all"
     return {"fit": mode}
+
+
+def rpc_visibility_ensure(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCADGui as Gui
+
+    doc = document_from_params(params)
+    if doc is None:
+        raise ValueError("no active document")
+    visibility = ensure_visibility(doc, params)
+    selection = {"selected": False}
+    targets = visibility_targets(doc, params)
+    if targets and bool(params.get("select", False)):
+        selection = select_object(doc, targets[0], clear=True)
+    gui_doc = gui_document_for(doc) or Gui.activeDocument()
+    fit = fit_view_if_requested(gui_doc, bool(params.get("fit_view", True)), selection_only=False)
+    return {
+        "document": active_document_summary(),
+        "visibility": visibility,
+        "selection": selection,
+        "fit": fit,
+        "active_view": active_view_summary(),
+    }
 
 
 def rpc_view_snapshot(params: dict[str, Any]) -> dict[str, Any]:
@@ -1354,6 +1517,7 @@ RPC_METHODS = {
     "preselection_get": rpc_preselection_get,
     "selection_set": rpc_selection_set,
     "view_fit": rpc_view_fit,
+    "visibility_ensure": rpc_visibility_ensure,
     "view_snapshot": rpc_view_snapshot,
     "primitive_create": rpc_primitive_create,
     "object_label_set": rpc_object_label_set,

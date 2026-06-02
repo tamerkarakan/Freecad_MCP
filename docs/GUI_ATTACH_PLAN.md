@@ -24,7 +24,7 @@ FreeCAD source scan commit: `dee977f98f8a8542c8db0be2ecc529a771931d01`.
 1. User starts FreeCAD GUI normally and starts the bridge manually or through the FreeCAD MCP Workbench.
 2. `scripts/freecad_gui_bridge_server.py` opens a localhost JSON bridge with an optional bearer token.
 3. MCP `freecad_gui_attach` connects to that bridge and returns a `session_id`.
-4. `freecad_gui_document_open` can open an existing generated `.FCStd` document into that live GUI session.
+4. `freecad_gui_document_open` can open an existing generated `.FCStd` document into that live GUI session and ensure the final display object is visible before fitting the view.
 5. Read-only GUI tools can query active document/view/selection without mutating model state.
 6. GUI selection, view-fit, Sketcher edit-mode, and PartDesign Body activation tools can change GUI state, but model geometry still belongs in typed CAD tools.
 7. Closing the MCP session detaches from the bridge but does not close FreeCAD GUI.
@@ -40,12 +40,13 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_detach` | Forget a GUI bridge session without closing FreeCAD GUI. | No |
 | `freecad_gui_status` | Report GUI process, bridge API version/methods, active document, active view type, workbench, and bridge health. | No |
 | `freecad_gui_active_document_get` | Return active GUI document summary plus matching App document id/name. | No |
-| `freecad_gui_document_open` | Open an existing absolute-path `.FCStd` document in the live GUI, activate it by default, and optionally fit the view. | GUI state/file read only |
+| `freecad_gui_document_open` | Open an existing absolute-path `.FCStd` document in the live GUI, activate it by default, ensure final-object visibility by default, and optionally fit the view. | GUI state/file read only |
 | `freecad_gui_active_view_get` | Return active view type/name/camera snapshot when available. | No |
 | `freecad_gui_selection_get` | Return normalized selection records with document, object, subelement names, resolved object labels/types, and picked points. | No |
 | `freecad_gui_preselection_get` | Return current hover/preselection object and subelement when available. | No |
 | `freecad_gui_selection_set` | Set selection from normalized object/subelement references. | Yes |
 | `freecad_gui_view_fit` | Fit all or fit selected in the active view. | View only |
+| `freecad_gui_visibility_ensure` | Turn on visibility for the final display object/Body or, when requested, all renderable geometry in an active/open GUI document. | GUI visibility state only |
 | `freecad_gui_view_snapshot` | Save the active FreeCAD viewport to a local raster image using `activeView().saveImage(...)`. | File write only |
 | `freecad_gui_primitive_create` | Create a typed primitive in the active GUI document; currently supports `cylinder`. | Yes |
 | `freecad_gui_object_label_set` | Set a user-visible object Label while keeping the internal FreeCAD Name stable. | Yes |
@@ -83,7 +84,8 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 
 ## Policy
 
-- GUI attach tools must be read-only by default. `freecad_gui_document_open` is a narrow lifecycle exception: it reads an explicit existing `.FCStd` path and changes the active GUI document/view, but does not create or edit model geometry.
+- GUI attach tools must be read-only by default. `freecad_gui_document_open` is a narrow lifecycle exception: it reads an explicit existing `.FCStd` path and changes the active GUI document/view/visibility, but does not create or edit model geometry.
+- Visibility repair should default to `scope="final"` so the user sees the completed Body/Tip without exposing helper Origin and Sketch objects. Use `all_geometry` or `all` only when an agent explicitly needs broader visual debugging.
 - Sketcher and PartDesign GUI mutations are limited to narrow workflow state: enter/leave edit mode, selection/view changes, viewport snapshots, Body activation, and optional recompute. Geometry creation and feature creation stay in typed CAD tools.
 - Object `Name` is treated as the stable technical identifier; user-facing rename flows set `Label` and should keep labels unique by default.
 - Selection and view reads must not call broad Python execution.
@@ -96,9 +98,9 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert document open, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge, and stale bridge `unknown method` errors are converted into restart guidance.
-- Static MCP smoke confirms GUI attach schemas are listed, including `freecad_gui_document_open`.
-- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_document_open` for the saved `.FCStd`, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, and writes a viewport snapshot.
+- Unit tests assert document open, visibility ensure, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge, and stale bridge `unknown method` errors are converted into restart guidance.
+- Static MCP smoke confirms GUI attach schemas are listed, including `freecad_gui_document_open` and `freecad_gui_visibility_ensure`.
+- Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_document_open` for the saved `.FCStd`, verifies the open call made at least one final object visible, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, and writes a viewport snapshot.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.
 
 ## Non-goals

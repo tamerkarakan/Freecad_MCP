@@ -16,15 +16,15 @@
       "source": "freecad_workbench/FreeCADMCP/InitGui.py",
       "target": "FreeCADMCP/InitGui.py",
       "role": "workbench-entrypoint",
-      "size": 5177,
-      "sha256": "eca58586425c2fee37bcba5dc139e7b3ef327585cbd6f8dd9592ed9e89ec4f8f"
+      "size": 5253,
+      "sha256": "214c8cf1ff333691a29fa5c10a6cbd04a38e2e7040466585c374cc38876f7be8"
     },
     {
       "source": "scripts/freecad_gui_bridge_server.py",
       "target": "FreeCADMCP/freecad_gui_bridge_server.py",
       "role": "embedded-gui-bridge",
-      "size": 50384,
-      "sha256": "d7a425bcfe2e434521948e0e87de3e74db396cfdba888b288b49d9f5fcae27fa"
+      "size": 56137,
+      "sha256": "e2b6daa7b6195a513508a2f59866db918b9548a0a60e1859b372d0e5571b93aa"
     }
   ],
   "install": {

@@ -132,6 +132,29 @@ class WorkbenchBridgeTests(unittest.TestCase):
 
             self.assertEqual(module.bridge_script_path(), sibling_bridge)
 
+    def test_stop_bridge_clears_cached_bridge_namespace(self) -> None:
+        fake_bridge = ROOT / "runs" / "fake-bridge-reload.py"
+        fake_bridge.parent.mkdir(parents=True, exist_ok=True)
+        fake_bridge.write_text(
+            "def start_bridge(**kwargs):\n"
+            "    return {'running': True, 'kwargs': kwargs}\n"
+            "def stop_bridge():\n"
+            "    return {'running': False}\n"
+            "def rpc_status(params):\n"
+            "    return {'bridge': 'ok'}\n",
+            encoding="utf-8",
+        )
+
+        with patch.dict(os.environ, {"FREECAD_MCP_BRIDGE_SCRIPT": str(fake_bridge)}):
+            module, _ = self.import_init_gui()
+            first_namespace = module.bridge_namespace()
+            self.assertIs(module.bridge_namespace(), first_namespace)
+
+            self.assertEqual(module.stop_bridge(), {"running": False})
+
+            self.assertIsNone(module._BRIDGE_NS)
+            self.assertIsNot(module.bridge_namespace(), first_namespace)
+
     def test_autostart_env_flag_is_detected(self) -> None:
         fake_bridge = ROOT / "runs" / "fake-bridge.py"
         fake_bridge.parent.mkdir(parents=True, exist_ok=True)

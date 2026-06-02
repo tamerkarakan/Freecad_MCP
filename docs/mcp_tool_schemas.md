@@ -10669,6 +10669,19 @@ Open an existing FreeCAD .FCStd document in the attached GUI session.
     "fit_view": {
       "type": "boolean",
       "default": true
+    },
+    "ensure_visible": {
+      "type": "boolean",
+      "default": true
+    },
+    "visibility_scope": {
+      "type": "string",
+      "enum": [
+        "final",
+        "all_geometry",
+        "all"
+      ],
+      "default": "final"
     }
   },
   "required": [
@@ -10811,6 +10824,52 @@ Fit all or selected objects in the active GUI view.
       "maximum": 60
     },
     "selection_only": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
+## `freecad_gui_visibility_ensure`
+
+Turn on visibility for the final display object or selected geometry in the active FreeCAD GUI document.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "final",
+        "all_geometry",
+        "all"
+      ],
+      "default": "final"
+    },
+    "fit_view": {
+      "type": "boolean",
+      "default": true
+    },
+    "select": {
       "type": "boolean"
     }
   },

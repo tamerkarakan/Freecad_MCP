@@ -39,8 +39,8 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             result = {
                 "bridge": {
                     "running": True,
-                    "api_version": 2,
-                    "methods": ["active_document_get", "document_open", "status"],
+                    "api_version": 3,
+                    "methods": ["active_document_get", "document_open", "status", "visibility_ensure"],
                 },
                 "active_document": {"name": "Doc"},
             }
@@ -73,7 +73,23 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
                 "document_path": params.get("document_path"),
                 "document": {"name": "OpenedDoc", "file_name": params.get("document_path")},
                 "active_document": {"name": "OpenedDoc"},
+                "visibility": {
+                    "requested": params.get("ensure_visible", True),
+                    "scope": params.get("visibility_scope", "final"),
+                    "visible_count": 2,
+                },
                 "fit": {"requested": params.get("fit_view", True), "fit": "all"},
+                "params": params,
+            }
+        elif method == "visibility_ensure":
+            params = payload.get("params") or {}
+            result = {
+                "visibility": {
+                    "requested": True,
+                    "scope": params.get("scope", "final"),
+                    "target_count": 2,
+                    "visible_count": 2,
+                },
                 "params": params,
             }
         elif method == "view_snapshot":
@@ -125,7 +141,7 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         selected = manager.call(session_id, "selection_get", {"document_name": "Doc"})
 
-        self.assertEqual(attached["status"]["bridge"]["api_version"], 2)
+        self.assertEqual(attached["status"]["bridge"]["api_version"], 3)
         self.assertIn("document_open", attached["status"]["bridge"]["methods"])
         self.assertEqual(selected["gui"]["count"], 1)
         self.assertEqual(selected["session"]["request_count"], 2)
@@ -161,7 +177,7 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         status = tools["freecad_gui_status"].handler({"session_id": session_id})
 
-        self.assertEqual(status["gui"]["bridge"]["api_version"], 2)
+        self.assertEqual(status["gui"]["bridge"]["api_version"], 3)
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
@@ -207,13 +223,37 @@ class GuiBridgeTests(unittest.TestCase):
                 "document_path": "C:/tmp/generated-model.FCStd",
                 "activate": True,
                 "fit_view": True,
+                "ensure_visible": True,
+                "visibility_scope": "final",
             }
         )
 
         self.assertTrue(opened["gui"]["opened"])
         self.assertEqual(opened["gui"]["document"]["file_name"], "C:/tmp/generated-model.FCStd")
+        self.assertEqual(opened["gui"]["visibility"]["visible_count"], 2)
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "document_open")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["document_path"], "C:/tmp/generated-model.FCStd")
+        self.assertTrue(FakeBridgeHandler.requests[-1]["payload"]["params"]["ensure_visible"])
+
+    def test_gui_visibility_ensure_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        visibility = tools["freecad_gui_visibility_ensure"].handler(
+            {
+                "session_id": session_id,
+                "document_name": "Doc",
+                "object_name": "Body",
+                "scope": "final",
+                "fit_view": True,
+            }
+        )
+
+        self.assertEqual(visibility["gui"]["visibility"]["visible_count"], 2)
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "visibility_ensure")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "Body")
 
     def test_gui_view_snapshot_delegates_to_bridge(self) -> None:
         service = GuiToolService()

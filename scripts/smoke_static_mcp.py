@@ -117,6 +117,7 @@ def main() -> int:
     assert "freecad_gui_attach" in tool_names
     assert "freecad_gui_document_open" in tool_names
     assert "freecad_gui_selection_get" in tool_names
+    assert "freecad_gui_visibility_ensure" in tool_names
     assert "freecad_gui_view_snapshot" in tool_names
     assert "freecad_gui_object_label_set" in tool_names
     assert "freecad_gui_sketch_state" in tool_names

@@ -209,6 +209,8 @@ except Exception as exc:
         opened_file = Path(str(document_open["gui"]["document"]["file_name"]))
         if opened_file.resolve() != document_path.resolve():
             raise RuntimeError(f"GUI document open returned unexpected file: {document_open}")
+        if document_open["gui"].get("visibility", {}).get("visible_count", 0) < 1:
+            raise RuntimeError(f"GUI document open did not ensure any visible object: {document_open}")
         status = tools["freecad_gui_status"].handler({"session_id": session_id, "timeout_sec": 10})
         selection = tools["freecad_gui_selection_get"].handler(
             {"session_id": session_id, "document_name": str(ready["document_name"]), "resolve": 0}
