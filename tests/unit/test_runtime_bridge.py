@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
@@ -75,6 +76,29 @@ class RuntimeBridgeTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertTrue(result.timed_out)
         self.assertIsNone(result.returncode)
+
+    def test_execute_python_does_not_inherit_parent_stdin(self) -> None:
+        read_fd, write_fd = os.pipe()
+        original_stdin = os.dup(0)
+        try:
+            os.write(write_fd, b"parent-protocol-line\n")
+            os.close(write_fd)
+            write_fd = -1
+            os.dup2(read_fd, 0)
+            result = FreeCadCmdBridge(Path(sys.executable)).execute_python(
+                "import sys; print('child-stdin:' + repr(sys.stdin.readline()))",
+                timeout_sec=10,
+            )
+        finally:
+            os.dup2(original_stdin, 0)
+            os.close(original_stdin)
+            os.close(read_fd)
+            if write_fd != -1:
+                os.close(write_fd)
+
+        self.assertTrue(result.ok)
+        self.assertIn("child-stdin:''", result.stdout)
+        self.assertNotIn("parent-protocol-line", result.stdout)
 
     def test_execute_python_launch_error_is_structured(self) -> None:
         missing = Path("C:/__definitely_missing__/FreeCADCmd.exe")

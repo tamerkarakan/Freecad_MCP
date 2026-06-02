@@ -33,6 +33,7 @@ try {
     Invoke-PythonChecked @("scripts\export_mcp_tool_schemas.py")
     Invoke-PythonChecked @("scripts\smoke_static_mcp.py")
     Invoke-PythonChecked @("scripts\smoke_freecad_runtime.py")
+    Invoke-PythonChecked @("scripts\smoke_mcp_runtime_stdio.py")
     Invoke-PythonChecked @("scripts\smoke_cad_tools.py")
     Invoke-PythonChecked @("scripts\smoke_fixture_documents.py")
     Invoke-PythonChecked @("scripts\smoke_persistent_worker.py")
