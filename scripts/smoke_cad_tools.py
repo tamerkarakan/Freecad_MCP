@@ -1058,6 +1058,38 @@ def main() -> int:
         )
         if partdesign_revolution["revolution"]["shape"]["solids"] != 1 or partdesign_revolution["body"]["partdesign"]["tip"] != "Revolution":
             raise RuntimeError(f"partdesign revolution did not produce a body solid: {partdesign_revolution}")
+        recipe_revolution_doc = temp / "partdesign_recipe_revolution.FCStd"
+        recipe_revolution = assert_ok(
+            service.definition_map()["freecad_partdesign_profile_feature_create"].handler(
+                {
+                    "document_name": "RecipeRevolutionSmoke",
+                    "body_name": "RecipeRevolveBody",
+                    "sketch_name": "RecipeRevolveSketch",
+                    "feature_kind": "revolution",
+                    "feature_name": "RecipeRevolution",
+                    "attachment_plane": "XY",
+                    "loops": [
+                        {
+                            "segments": [
+                                {"type": "line", "start": [4, 0, 0], "end": [5, 0, 0]},
+                                {"type": "line", "start": [5, 0, 0], "end": [5, 3, 0]},
+                                {"type": "line", "start": [5, 3, 0], "end": [4, 3, 0]},
+                                {"type": "line", "start": [4, 3, 0], "end": [4, 0, 0]},
+                            ],
+                        }
+                    ],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "reference_axis": "sketch_v_axis",
+                    "angle": 180,
+                    "output_path": str(recipe_revolution_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign profile feature revolution recipe",
+        )
+        if recipe_revolution["revolution"]["shape"]["solids"] != 1 or recipe_revolution["body"]["partdesign"]["tip"] != "RecipeRevolution":
+            raise RuntimeError(f"partdesign profile feature recipe did not create a solid revolution: {recipe_revolution}")
         loft_profile = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(
                 {
@@ -1410,6 +1442,33 @@ def main() -> int:
         additive_pipe_partdesign = additive_pipe["pipe"]["partdesign"]
         if additive_pipe_partdesign["transformation"] != "Multisection" or len(additive_pipe_partdesign["sections"]) != 1:
             raise RuntimeError(f"partdesign additive pipe did not keep multisection scaling: {additive_pipe}")
+        recipe_pipe_doc = temp / "partdesign_recipe_pipe.FCStd"
+        recipe_pipe = assert_ok(
+            service.definition_map()["freecad_partdesign_sweep_feature_create"].handler(
+                {
+                    "document_name": "RecipePipeSmoke",
+                    "body_name": "RecipePipeBody",
+                    "feature_kind": "additive_pipe",
+                    "profile_sketch_name": "RecipePipeProfile",
+                    "profile": {"type": "circle", "center": [0, 0, 0], "radius": 1},
+                    "profile_attachment_plane": "XY",
+                    "spine_sketch_name": "RecipePipeSpine",
+                    "spine_attachment_plane": "XZ",
+                    "spine_geometry": [{"type": "line", "start": [0, 0, 0], "end": [0, 3, 0]}],
+                    "spine_constraints": [
+                        {"type": "Coincident", "values": [0, 1, -1, 1]},
+                        {"type": "PointOnObject", "values": [0, 2, -2]},
+                        {"type": "DistanceY", "values": [0, 1, 0, 2, 3]},
+                    ],
+                    "pipe_name": "RecipePipe",
+                    "output_path": str(recipe_pipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign sweep feature recipe",
+        )
+        if recipe_pipe["pipe"]["shape"]["solids"] != 1 or recipe_pipe["body"]["partdesign"]["tip"] != "RecipePipe":
+            raise RuntimeError(f"partdesign sweep recipe did not create a solid pipe: {recipe_pipe}")
         auxiliary_pipe_profile_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {

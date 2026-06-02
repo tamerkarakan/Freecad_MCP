@@ -117,7 +117,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 83,
+      "tool_count": 85,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -157,6 +157,8 @@
         "freecad_partdesign_linear_pattern",
         "freecad_partdesign_polar_pattern",
         "freecad_partdesign_mirrored",
+        "freecad_partdesign_profile_feature_create",
+        "freecad_partdesign_sweep_feature_create",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -249,7 +251,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 158,
+      "tool_count": 160,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -353,6 +355,8 @@
         "freecad_partdesign_linear_pattern",
         "freecad_partdesign_polar_pattern",
         "freecad_partdesign_mirrored",
+        "freecad_partdesign_profile_feature_create",
+        "freecad_partdesign_sweep_feature_create",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",
@@ -458,7 +462,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 161,
+      "tool_count": 163,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -565,6 +569,8 @@
         "freecad_partdesign_linear_pattern",
         "freecad_partdesign_polar_pattern",
         "freecad_partdesign_mirrored",
+        "freecad_partdesign_profile_feature_create",
+        "freecad_partdesign_sweep_feature_create",
         "freecad_sketch_create",
         "freecad_sketch_add_geometry",
         "freecad_sketch_add_constraint",

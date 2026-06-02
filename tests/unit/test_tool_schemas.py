@@ -168,6 +168,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_partdesign_linear_pattern",
             "freecad_partdesign_polar_pattern",
             "freecad_partdesign_mirrored",
+            "freecad_partdesign_profile_feature_create",
+            "freecad_partdesign_sweep_feature_create",
         ]:
             self.assertIn(name, tools)
         loft_props = tools["freecad_partdesign_additive_loft"].to_mcp()["inputSchema"]["properties"]
@@ -209,6 +211,13 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("mirror_plane_name", mirrored_props)
         worker_linear_pattern_props = PersistentToolService().definition_map()["freecad_worker_partdesign_linear_pattern"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("direction_axis", worker_linear_pattern_props)
+        profile_recipe_props = tools["freecad_partdesign_profile_feature_create"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("feature_kind", profile_recipe_props)
+        self.assertIn("loops", profile_recipe_props)
+        sweep_recipe_props = tools["freecad_partdesign_sweep_feature_create"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("profile", sweep_recipe_props)
+        self.assertIn("profile_loops", sweep_recipe_props)
+        self.assertIn("spine_geometry", sweep_recipe_props)
         sketch_props = tools["freecad_sketch_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)

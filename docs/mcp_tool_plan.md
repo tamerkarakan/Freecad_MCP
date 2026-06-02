@@ -63,6 +63,8 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_thickness` | Create a PartDesign Thickness dress-up from selected base faces of an existing Body solid. | PartDesign App API |
 | `freecad_partdesign_draft` | Create a PartDesign Draft dress-up from selected base faces plus neutral-plane and pull-direction references. | PartDesign App API |
 | `freecad_partdesign_linear_pattern` | Create a PartDesign LinearPattern transform from selected Body features or the whole Body shape. | PartDesign App API |
+| `freecad_partdesign_profile_feature_create` | Recipe tool: create/validate a Body-attached profile sketch, then Pad/Pocket/Revolution/Groove. | Existing typed Sketcher + PartDesign tools |
+| `freecad_partdesign_sweep_feature_create` | Recipe tool: create Body-attached profile and spine sketches, then Additive/Subtractive Pipe sweep. | Existing typed Sketcher + PartDesign tools |
 | `freecad_partdesign_polar_pattern` | Create a PartDesign PolarPattern transform from selected Body features or the whole Body shape. | PartDesign App API |
 | `freecad_partdesign_mirrored` | Create a PartDesign Mirrored transform from selected Body features or the whole Body shape. | PartDesign App API |
 | `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |

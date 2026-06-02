@@ -7642,6 +7642,476 @@
       }
     },
     {
+      "name": "freecad_partdesign_profile_feature_create",
+      "title": "Create PartDesign Profile Feature Recipe",
+      "description": "High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "attachment_plane": {
+            "type": "string",
+            "enum": [
+              "XY",
+              "XZ",
+              "YZ"
+            ]
+          },
+          "attachment_object": {
+            "type": "string"
+          },
+          "attachment_subname": {
+            "type": "string"
+          },
+          "attachment_map_mode": {
+            "type": "string"
+          },
+          "attachment_offset": {
+            "type": "number"
+          },
+          "attachment_offset_vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "create_body_if_missing": {
+            "type": "boolean"
+          },
+          "loops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "lock_mode": {
+            "type": "string",
+            "enum": [
+              "none",
+              "block"
+            ]
+          },
+          "endpoint_tolerance": {
+            "type": "number"
+          },
+          "required_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_curve_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minimum_curve_segments": {
+            "type": "integer"
+          },
+          "forbid_polyline_fallback": {
+            "type": "boolean"
+          },
+          "forbid_all_line_loops": {
+            "type": "boolean"
+          },
+          "require_valid": {
+            "type": "boolean"
+          },
+          "require_pad_ready": {
+            "type": "boolean"
+          },
+          "require_fully_constrained": {
+            "type": "boolean"
+          },
+          "forbid_isolated_points": {
+            "type": "boolean"
+          },
+          "forbid_branch_points": {
+            "type": "boolean"
+          },
+          "forbid_micro_offsets": {
+            "type": "boolean"
+          },
+          "micro_offset_tolerance": {
+            "type": "number"
+          },
+          "feature_kind": {
+            "type": "string",
+            "enum": [
+              "pad",
+              "pocket",
+              "revolution",
+              "groove"
+            ],
+            "default": "pad"
+          },
+          "feature_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "number"
+          },
+          "length2": {
+            "type": "number"
+          },
+          "midplane": {
+            "type": "boolean"
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "reference_axis": {
+            "type": "string",
+            "enum": [
+              "sketch_v_axis",
+              "sketch_h_axis",
+              "x_axis",
+              "y_axis",
+              "z_axis"
+            ]
+          },
+          "reference_axis_object": {
+            "type": "string"
+          },
+          "reference_axis_subname": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "angle",
+              "through_all",
+              "up_to_last",
+              "up_to_first",
+              "up_to_face",
+              "two_angles"
+            ]
+          },
+          "angle": {
+            "type": "number"
+          },
+          "angle2": {
+            "type": "number"
+          },
+          "up_to_face_object": {
+            "type": "string"
+          },
+          "up_to_face_subname": {
+            "type": "string"
+          },
+          "fuse_order": {
+            "type": "string",
+            "enum": [
+              "base_first",
+              "feature_first"
+            ]
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Return compact execution metadata without stdout/stderr/argv text."
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "loops"
+        ]
+      }
+    },
+    {
+      "name": "freecad_partdesign_sweep_feature_create",
+      "title": "Create PartDesign Sweep Feature Recipe",
+      "description": "High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "feature_kind": {
+            "type": "string",
+            "enum": [
+              "additive_pipe",
+              "subtractive_pipe"
+            ],
+            "default": "additive_pipe"
+          },
+          "profile_sketch_name": {
+            "type": "string"
+          },
+          "profile_name": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "object",
+            "description": "Profile helper for freecad_sketch_add_profile, such as a circle."
+          },
+          "profile_loops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "profile_attachment_plane": {
+            "type": "string",
+            "enum": [
+              "XY",
+              "XZ",
+              "YZ"
+            ]
+          },
+          "profile_attachment_object": {
+            "type": "string"
+          },
+          "profile_attachment_subname": {
+            "type": "string"
+          },
+          "profile_attachment_map_mode": {
+            "type": "string"
+          },
+          "profile_attachment_offset": {
+            "type": "number"
+          },
+          "profile_attachment_offset_vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "spine_sketch_name": {
+            "type": "string"
+          },
+          "spine_name": {
+            "type": "string"
+          },
+          "spine_geometry": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "spine_constraints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "spine_attachment_plane": {
+            "type": "string",
+            "enum": [
+              "XY",
+              "XZ",
+              "YZ"
+            ]
+          },
+          "spine_attachment_object": {
+            "type": "string"
+          },
+          "spine_attachment_subname": {
+            "type": "string"
+          },
+          "spine_attachment_map_mode": {
+            "type": "string"
+          },
+          "spine_attachment_offset": {
+            "type": "number"
+          },
+          "spine_attachment_offset_vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "spine_subname": {
+            "type": "string"
+          },
+          "spine_tangent": {
+            "type": "boolean"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "object"
+              ]
+            }
+          },
+          "section_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "orientation_mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "fixed",
+              "frenet",
+              "auxiliary",
+              "binormal"
+            ]
+          },
+          "transition": {
+            "type": "string",
+            "enum": [
+              "transformed",
+              "right_corner",
+              "round_corner"
+            ]
+          },
+          "transformation": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "scaling_mode": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "multisection",
+              "linear",
+              "s_shape",
+              "interpolation"
+            ]
+          },
+          "binormal": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "auxiliary_spine_name": {
+            "type": "string"
+          },
+          "auxiliary_spine_subname": {
+            "type": "string"
+          },
+          "auxiliary_spine_tangent": {
+            "type": "boolean"
+          },
+          "auxiliary_curvilinear": {
+            "type": "boolean"
+          },
+          "pipe_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "create_body_if_missing": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Return compact execution metadata without stdout/stderr/argv text."
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "spine_geometry"
+        ]
+      }
+    },
+    {
       "name": "freecad_sketch_create",
       "title": "Create Sketch",
       "description": "Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane or a datum/support object.",

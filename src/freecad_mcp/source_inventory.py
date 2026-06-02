@@ -474,8 +474,10 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_partdesign_linear_pattern",
                 "freecad_partdesign_polar_pattern",
                 "freecad_partdesign_mirrored",
+                "freecad_partdesign_profile_feature_create",
+                "freecad_partdesign_sweep_feature_create",
             ],
-            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows.",
+            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence for agents that do not know the GUI workflow.",
         },
         {
             "family": "freecad.sketcher",

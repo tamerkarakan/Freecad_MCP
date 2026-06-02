@@ -86,7 +86,7 @@ Implemented groups:
 - Document lifecycle: new, open, save, recompute, export.
 - Object inspection and mutation: list, get, set simple properties, delete.
 - Part operations: create primitives, boolean, direct or parametric extrude, revolve, fillet, chamfer, check geometry.
-- PartDesign operations: create/reuse Body objects, attach Sketcher profiles to Body origin planes (`XY`, `XZ`, `YZ`), create Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe features, apply Fillet/Chamfer/Thickness/Draft dress-up features, and create LinearPattern/PolarPattern/Mirrored transforms while keeping the Body Tip and solid result consistent.
+- PartDesign operations: create/reuse Body objects, attach Sketcher profiles to Body origin planes (`XY`, `XZ`, `YZ`), create Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe features, expose high-level Body-attached recipe tools for profile features and sweep features, apply Fillet/Chamfer/Thickness/Draft dress-up features, and create LinearPattern/PolarPattern/Mirrored transforms while keeping the Body Tip and solid result consistent.
 - Sketcher typed coverage: create sketches; optionally attach sketches to PartDesign Body origin planes; add point, line, circle, arc, ellipse/conic arc, B-spline, and polyline geometry; add common profiles; analyze trace points for line/arc/B-spline fit; create/update constraints; create and validate loop-based pad-ready profiles with optional curve-preservation and intent guards; edit geometry/constraints; run transform, auto-constrain, and diagnostics flows.
 - Import/export and mesh operations.
 - Assembly basics: create assembly, insert links, native JointObject proxy creation, recompute, BOM.

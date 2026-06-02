@@ -72,7 +72,7 @@ class CadToolServiceDefinitionTests(unittest.TestCase):
                 "fem",
             ],
         )
-        self.assertEqual(len(service.definitions()), 72)
+        self.assertEqual(len(service.definitions()), 74)
 
     def test_definitions_have_unique_names_and_merge_common_runtime_props(self) -> None:
         definitions = CadToolService().definitions()
@@ -109,6 +109,21 @@ class CadToolServiceRunTests(unittest.TestCase):
 
         with self.assertRaises(ToolInputError):
             handler({"document_path": ""})
+
+        self.assertEqual(discovery.calls, 0)
+
+    def test_subtractive_recipes_require_existing_document_before_discovery(self) -> None:
+        discovery = _RecordingDiscovery()
+        service = CadToolService(discovery=discovery)
+
+        with self.assertRaisesRegex(ToolInputError, "pocket recipe requires document_path"):
+            self._handler(service, "freecad_partdesign_profile_feature_create")(
+                {"feature_kind": "pocket", "output_path": "new.FCStd", "loops": []}
+            )
+        with self.assertRaisesRegex(ToolInputError, "subtractive_pipe recipe requires document_path"):
+            self._handler(service, "freecad_partdesign_sweep_feature_create")(
+                {"feature_kind": "subtractive_pipe", "output_path": "new.FCStd", "spine_geometry": []}
+            )
 
         self.assertEqual(discovery.calls, 0)
 

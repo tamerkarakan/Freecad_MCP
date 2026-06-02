@@ -68,6 +68,7 @@ Available persistent worker tools:
 - `freecad_worker_document_new/open/save/recompute/close/export`
 - `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry`
 - `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe/fillet/chamfer/thickness/draft`
+- `freecad_partdesign_profile_feature_create`, `freecad_partdesign_sweep_feature_create` high-level Body-attached workflow recipes
 - `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/edit_geometry/edit_constraints/transform/auto_constrain/validate`
 - `freecad_worker_mesh_import/export/evaluate/repair/boolean`
 - `freecad_worker_assembly_create/insert/create_joint/solve/bom`

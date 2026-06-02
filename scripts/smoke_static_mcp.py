@@ -146,6 +146,8 @@ def main() -> int:
     assert "freecad_partdesign_linear_pattern" in tool_names
     assert "freecad_partdesign_polar_pattern" in tool_names
     assert "freecad_partdesign_mirrored" in tool_names
+    assert "freecad_partdesign_profile_feature_create" in tool_names
+    assert "freecad_partdesign_sweep_feature_create" in tool_names
     assert "freecad_worker_partdesign_datum_plane_create" in tool_names
     assert "freecad_worker_partdesign_pocket" in tool_names
     assert "freecad_worker_partdesign_hole" in tool_names
