@@ -22,6 +22,7 @@ from typing import Any
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 48777
+BRIDGE_API_VERSION = 2
 
 _SERVER: ThreadingHTTPServer | None = None
 _TOKEN: str | None = None
@@ -826,7 +827,12 @@ def rpc_feature_task_state(params: dict[str, Any]) -> dict[str, Any]:
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
-    bridge = {"running": _SERVER is not None, "token_configured": _TOKEN is not None}
+    bridge = {
+        "running": _SERVER is not None,
+        "token_configured": _TOKEN is not None,
+        "api_version": BRIDGE_API_VERSION,
+        "methods": sorted(RPC_METHODS) if "RPC_METHODS" in globals() else [],
+    }
     if _SERVER is not None:
         bridge["server_address"] = list(_SERVER.server_address)
     return {

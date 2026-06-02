@@ -32,8 +32,18 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
         if method == "fail":
             self.send_payload({"ok": False, "error": "bridge rejected request"}, status=200)
             return
+        if method == "stale_bridge":
+            self.send_payload({"ok": False, "error": "unknown method: document_open"}, status=500)
+            return
         if method == "status":
-            result = {"bridge": "ok", "active_document": {"name": "Doc"}}
+            result = {
+                "bridge": {
+                    "running": True,
+                    "api_version": 2,
+                    "methods": ["active_document_get", "document_open", "status"],
+                },
+                "active_document": {"name": "Doc"},
+            }
         elif method == "selection_get":
             result = {
                 "selection": [
@@ -115,7 +125,8 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         selected = manager.call(session_id, "selection_get", {"document_name": "Doc"})
 
-        self.assertEqual(attached["status"]["bridge"], "ok")
+        self.assertEqual(attached["status"]["bridge"]["api_version"], 2)
+        self.assertIn("document_open", attached["status"]["bridge"]["methods"])
         self.assertEqual(selected["gui"]["count"], 1)
         self.assertEqual(selected["session"]["request_count"], 2)
         self.assertEqual(FakeBridgeHandler.requests[0]["authorization"], "Bearer secret")
@@ -136,6 +147,12 @@ class GuiBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ToolInputError, "bridge rejected request"):
             client.call(url=self.url, method="fail")
 
+    def test_client_reports_stale_bridge_for_unknown_method(self) -> None:
+        client = GuiBridgeClient()
+
+        with self.assertRaisesRegex(ToolInputError, "restart FreeCAD"):
+            client.call(url=self.url, method="stale_bridge")
+
     def test_gui_tool_service_delegates_to_manager(self) -> None:
         service = GuiToolService()
         tools = service.definition_map()
@@ -144,7 +161,7 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         status = tools["freecad_gui_status"].handler({"session_id": session_id})
 
-        self.assertEqual(status["gui"]["bridge"], "ok")
+        self.assertEqual(status["gui"]["bridge"]["api_version"], 2)
         self.assertIn("freecad_gui_selection_get", tools)
         self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)

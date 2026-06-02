@@ -171,4 +171,6 @@ Useful GUI tools after attach:
 
 Headless typed CAD tools remain the preferred path for model mutation. GUI attach is mainly for opening generated `.FCStd` files in the live GUI, active document/view/selection state, and connector-style workflows.
 
+If a GUI tool returns `unknown method: ...`, the MCP client is talking to an older bridge script already running inside FreeCAD. Stop and start the **FreeCAD MCP** bridge, or restart FreeCAD. If you use an installed Workbench zip instead of the repo `-M` path, rebuild and reinstall the zip before restarting FreeCAD.
+
 The full tool schema snapshot is in `docs/mcp_tool_schemas.md`.

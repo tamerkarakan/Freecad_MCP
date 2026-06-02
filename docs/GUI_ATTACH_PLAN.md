@@ -38,7 +38,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_attach` | Connect to an already-running GUI bridge and return GUI session metadata. | No |
 | `freecad_gui_list` | List attached GUI bridge sessions held by this MCP server process. | No |
 | `freecad_gui_detach` | Forget a GUI bridge session without closing FreeCAD GUI. | No |
-| `freecad_gui_status` | Report GUI process, active document, active view type, workbench, and bridge health. | No |
+| `freecad_gui_status` | Report GUI process, bridge API version/methods, active document, active view type, workbench, and bridge health. | No |
 | `freecad_gui_active_document_get` | Return active GUI document summary plus matching App document id/name. | No |
 | `freecad_gui_document_open` | Open an existing absolute-path `.FCStd` document in the live GUI, activate it by default, and optionally fit the view. | GUI state/file read only |
 | `freecad_gui_active_view_get` | Return active view type/name/camera snapshot when available. | No |
@@ -89,13 +89,14 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - Selection and view reads must not call broad Python execution.
 - Returned references must be stable enough for typed tools: `document_name`, `object_name`, and `subelement_name`.
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
+- `unknown method: ...` means the MCP stdio server and the already-running GUI bridge script are out of sync; stop/start the FreeCAD MCP bridge or restart FreeCAD so the current bridge script is loaded.
 - Connector-aware Assembly flows should consume `freecad_gui_selection_get` records before writing native `JointObject` references.
 - Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, narrow programmatic GUI actions second, local screenshot evidence third, smallest useful crop/detail sent to vision models, and user confirmation for ambiguous B-spline/arc/polyline decisions.
 
 ## Test Plan
 
 - Unit tests cover GUI bridge client/session behavior against a fake local HTTP bridge.
-- Unit tests assert document open, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge.
+- Unit tests assert document open, viewport snapshot, Sketcher, and PartDesign GUI state/edit/activation/task-state tools are exposed and delegated through the bridge, and stale bridge `unknown method` errors are converted into restart guidance.
 - Static MCP smoke confirms GUI attach schemas are listed, including `freecad_gui_document_open`.
 - Opt-in GUI smoke (`scripts/smoke_gui_attach.py`) launches FreeCAD GUI, creates/selects two box faces, calls `freecad_gui_document_open` for the saved `.FCStd`, calls `freecad_gui_selection_get`, verifies both `Face1` records, sets a GUI object Label, enters/leaves a sketch, reads feature-task state, activates a PartDesign Body, and writes a viewport snapshot.
 - The same smoke creates a Fixed Assembly joint from those GUI selection records and asserts `Reference1`/`Reference2` are populated.

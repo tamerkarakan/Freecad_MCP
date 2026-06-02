@@ -15,6 +15,33 @@ from freecad_mcp.tooling import JsonObject, ToolInputError
 DEFAULT_GUI_BRIDGE_URL = "http://127.0.0.1:48777"
 
 
+def gui_bridge_error_message(detail: str, *, http_code: int | None = None) -> str:
+    """Turn bridge error payloads into actionable MCP-facing messages."""
+    error_text = detail.strip()
+    try:
+        payload = json.loads(error_text)
+        if isinstance(payload, dict):
+            error_text = str(payload.get("error") or error_text)
+    except json.JSONDecodeError:
+        pass
+
+    if error_text.startswith("unknown method:"):
+        method = error_text.split(":", 1)[1].strip()
+        message = (
+            f"GUI bridge does not support RPC method '{method}'. "
+            "The MCP server and the FreeCAD GUI bridge script are out of sync; "
+            "stop/start the FreeCAD MCP bridge or restart FreeCAD so it reloads "
+            "the current freecad_gui_bridge_server.py. If you installed a "
+            "Workbench zip, rebuild and reinstall that zip first."
+        )
+    else:
+        message = error_text
+
+    if http_code is not None:
+        return f"GUI bridge HTTP {http_code}: {message}"
+    return message
+
+
 @dataclass
 class GuiBridgeSession:
     session_id: str
@@ -59,7 +86,7 @@ class GuiBridgeClient:
                 raw = response.read().decode("utf-8", errors="replace")
         except error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
-            raise ToolInputError(f"GUI bridge HTTP {exc.code}: {detail}") from exc
+            raise ToolInputError(gui_bridge_error_message(detail, http_code=exc.code)) from exc
         except OSError as exc:
             raise ToolInputError(f"GUI bridge is not reachable at {url}: {exc}") from exc
         try:
@@ -69,7 +96,7 @@ class GuiBridgeClient:
         if not isinstance(payload, dict):
             raise ToolInputError("GUI bridge returned a non-object response")
         if not payload.get("ok", False):
-            raise ToolInputError(str(payload.get("error") or "GUI bridge call failed"))
+            raise ToolInputError(gui_bridge_error_message(str(payload.get("error") or "GUI bridge call failed")))
         result = payload.get("result")
         return result if isinstance(result, dict) else {"result": result}
 
