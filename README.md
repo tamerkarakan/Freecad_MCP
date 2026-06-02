@@ -234,6 +234,11 @@ Current unblocked scope is complete, but the next useful expansion areas are:
 - Some Sketcher raw constraint constructors are blocked because they can terminate the current FreeCADCmd runtime.
 - AI-generated CAD should always be reviewed by a qualified human before manufacturing, safety-critical use, quoting, or release.
 
+## Contributors
+
+- Tamer Karakan - project owner and maintainer.
+- Codex (OpenAI) - AI coding agent contributor for implementation support, documentation, verification, and repository maintenance.
+
 ## Disclaimer
 
 This project is not affiliated with, endorsed by, or sponsored by the FreeCAD project or its contributors.
