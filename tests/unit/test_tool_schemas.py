@@ -234,6 +234,23 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("label", props)
         self.assertIn("require_unique", props)
 
+    def test_parameter_expression_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_spreadsheet_create",
+            "freecad_spreadsheet_get",
+            "freecad_object_expression_set",
+            "freecad_object_expression_list",
+        ]:
+            self.assertIn(name, tools)
+
+        spreadsheet_props = tools["freecad_spreadsheet_create"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("rows", spreadsheet_props)
+        self.assertIn("cells", spreadsheet_props)
+        expression_props = tools["freecad_object_expression_set"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("expressions", expression_props)
+
     def test_sketch_profile_tools_are_exposed(self) -> None:
         tools = CadToolService().definition_map()
 

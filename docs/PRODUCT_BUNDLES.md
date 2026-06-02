@@ -4,10 +4,10 @@ Generated sellable bundle manifest for the current MCP tool surface.
 
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
-| FreeCAD MCP Free | `free` | base | 23 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part operations. |
-| FreeCAD MCP Pro | `pro` | paid | 88 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher, PartDesign datum/feature, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 163 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 166 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Free | `free` | base | 27 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part/parameter operations. |
+| FreeCAD MCP Pro | `pro` | paid | 92 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher dimension, PartDesign datum/feature, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 167 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 170 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -19,7 +19,7 @@ Generated sellable bundle manifest for the current MCP tool surface.
 - Audience: Users who want local file-based FreeCAD automation from ChatGPT, Codex, or Claude.
 - Limits: No GUI attach, no Sketcher/PartDesign premium flow, no worker sessions, no source-code intelligence, no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `23`
+- Tool count: `27`
 - Upgrade path: `pro`
 
 Tools:
@@ -37,6 +37,10 @@ Tools:
 - `freecad_object_set_properties`
 - `freecad_object_rename_label`
 - `freecad_object_delete`
+- `freecad_spreadsheet_create`
+- `freecad_spreadsheet_get`
+- `freecad_object_expression_set`
+- `freecad_object_expression_list`
 - `freecad_part_create_primitive`
 - `freecad_part_boolean`
 - `freecad_part_extrude`
@@ -54,7 +58,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `88`
+- Tool count: `92`
 - Upgrade path: `studio`
 
 Tools:
@@ -72,6 +76,10 @@ Tools:
 - `freecad_object_set_properties`
 - `freecad_object_rename_label`
 - `freecad_object_delete`
+- `freecad_spreadsheet_create`
+- `freecad_spreadsheet_get`
+- `freecad_object_expression_set`
+- `freecad_object_expression_list`
 - `freecad_part_create_primitive`
 - `freecad_part_boolean`
 - `freecad_part_extrude`
@@ -154,7 +162,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `163`
+- Tool count: `167`
 - Upgrade path: `team`
 
 Tools:
@@ -236,6 +244,10 @@ Tools:
 - `freecad_object_set_properties`
 - `freecad_object_rename_label`
 - `freecad_object_delete`
+- `freecad_spreadsheet_create`
+- `freecad_spreadsheet_get`
+- `freecad_object_expression_set`
+- `freecad_object_expression_list`
 - `freecad_part_create_primitive`
 - `freecad_part_boolean`
 - `freecad_part_extrude`
@@ -329,7 +341,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `166`
+- Tool count: `170`
 
 Tools:
 
@@ -413,6 +425,10 @@ Tools:
 - `freecad_object_set_properties`
 - `freecad_object_rename_label`
 - `freecad_object_delete`
+- `freecad_spreadsheet_create`
+- `freecad_spreadsheet_get`
+- `freecad_object_expression_set`
+- `freecad_object_expression_list`
 - `freecad_part_create_primitive`
 - `freecad_part_boolean`
 - `freecad_part_extrude`

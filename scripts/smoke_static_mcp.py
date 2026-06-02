@@ -168,6 +168,8 @@ def main() -> int:
     assert "freecad_worker_partdesign_polar_pattern" in tool_names
     assert "freecad_worker_partdesign_mirrored" in tool_names
     assert "freecad_object_rename_label" in tool_names
+    assert "freecad_spreadsheet_create" in tool_names
+    assert "freecad_object_expression_set" in tool_names
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names
     assert "freecad_curve_fit_analyze" in tool_names

@@ -64,6 +64,8 @@ class BuildServerTests(unittest.TestCase):
             "freecad_partdesign_mirrored",
             "freecad_partdesign_profile_feature_create",
             "freecad_partdesign_sweep_feature_create",
+            "freecad_spreadsheet_create",
+            "freecad_object_expression_set",
         ):
             self.assertIn(name, tools)
 
@@ -116,6 +118,8 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_partdesign_profile_feature_create", tools)
         self.assertIn("freecad_partdesign_sweep_feature_create", tools)
         self.assertIn("freecad_object_rename_label", tools)
+        self.assertIn("freecad_spreadsheet_create", tools)
+        self.assertIn("freecad_object_expression_set", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
         self.assertNotIn("freecad_cam_path_create", tools)
         self.assertNotIn("freecad_fem_analysis_create", tools)
@@ -164,6 +168,8 @@ class BuildServerTests(unittest.TestCase):
     def test_tool_module_tags_cover_worker_domain_tools(self) -> None:
         self.assertIn("sketcher", tool_modules("freecad_worker_sketch_profile_create"))
         self.assertIn("headless", tool_modules("freecad_worker_part_create_primitive"))
+        self.assertIn("headless", tool_modules("freecad_spreadsheet_create"))
+        self.assertIn("headless", tool_modules("freecad_object_expression_set"))
         self.assertIn("gui", tool_modules("freecad_gui_status"))
 
 

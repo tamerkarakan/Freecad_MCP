@@ -19,10 +19,14 @@ The typed Sketcher MCP surface targets headless `Sketcher::SketchObject` APIs th
 | `freecad_sketch_transform` | Fillet, trim, extend, split, join, copy, move, symmetric copy, rectangular array, remove axes alignment, convert to NURBS, and edit B-spline degree/knots. |
 | `freecad_sketch_auto_constrain` | Run autoconstraint and detect/apply missing coincident, vertical/horizontal, and equality constraints. |
 | `freecad_sketch_validate` | Solve and report geometry/constraint counts, DoF, open vertices, conflicts, redundants, malformed constraints, missing constraints, dependent geometry, and optional constraint errors. |
+| `freecad_object_expression_set` | Bind expressions into Sketcher dimension constraints such as `Constraints[0]`, usually from a Spreadsheet alias like `params.width`. |
+| `freecad_object_expression_list` | Read expression bindings back from Sketcher objects. FreeCAD may report a named dimension constraint canonically, e.g. `.Constraints.width`. |
 
 ## Constraint Notes
 
 `freecad_sketch_add_constraint` keeps the FreeCAD constructor expressive by accepting either `values` or named fields (`first`, `first_pos`, `second`, `second_pos`, `third`, `third_pos`, `value`). Datum/angle values may be passed as numbers, `{"degrees": 90}`, `{"radians": 1.5708}`, or `{"quantity": "90 deg"}`.
+
+Sketch dimensions are the actual parametric drivers. Spreadsheet cells are useful as named parameters, but they should feed constraints/properties through expressions rather than replacing Sketcher dimensions. A typical typed flow is `freecad_spreadsheet_create` with an alias such as `width`, then `freecad_object_expression_set` on the sketch with `{"Constraints[0]": "params.width"}`. If the constraint has a name, FreeCAD may report the stored expression path as `.Constraints.width`.
 
 `Group` and `Text` constraints are intentionally not given a high-level wrapper yet. In the current FreeCAD 1.1.1 runtime, direct constructor attempts can terminate `FreeCADCmd`, so typed tools block those raw constraint types and smoke-test the safe failure path before a future wrapper is considered.
 
@@ -58,4 +62,4 @@ Commands such as Sketcher edit mode, view alignment, overlays, mouse-driven crea
 
 ## Verification
 
-`scripts/smoke_cad_tools.py` exercises the expanded Sketcher flow with real FreeCAD 1.1.1: advanced geometry, arc creation method catalog/reporting, profile method catalog coverage, rectangle/center rectangle/3-point rectangle/named polygon/slot/arc-slot profiles, connected closed line/B-spline/arc chains, loop-based profile creation/validation, native geometry type reporting, segment intent mismatch rejection, endpoint drift rejection, curve-preservation and line-fallback rejection, curve fit recommendation, constraint datum/driving/active update, construction toggling, missing-constraint detection, validation diagnostics, B-spline edits, copy, and move transforms.
+`scripts/smoke_cad_tools.py` exercises the expanded Sketcher flow with real FreeCAD 1.1.1: advanced geometry, arc creation method catalog/reporting, profile method catalog coverage, rectangle/center rectangle/3-point rectangle/named polygon/slot/arc-slot profiles, connected closed line/B-spline/arc chains, loop-based profile creation/validation, Spreadsheet alias to Sketcher dimension expression binding, native geometry type reporting, segment intent mismatch rejection, endpoint drift rejection, curve-preservation and line-fallback rejection, curve fit recommendation, constraint datum/driving/active update, construction toggling, missing-constraint detection, validation diagnostics, B-spline edits, copy, and move transforms.

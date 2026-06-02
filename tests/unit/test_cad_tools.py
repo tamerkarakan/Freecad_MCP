@@ -61,6 +61,7 @@ class CadToolServiceDefinitionTests(unittest.TestCase):
             [
                 "document",
                 "object",
+                "parameters",
                 "part",
                 "partdesign",
                 "sketcher",
@@ -72,7 +73,7 @@ class CadToolServiceDefinitionTests(unittest.TestCase):
                 "fem",
             ],
         )
-        self.assertEqual(len(service.definitions()), 74)
+        self.assertEqual(len(service.definitions()), 78)
 
     def test_definitions_have_unique_names_and_merge_common_runtime_props(self) -> None:
         definitions = CadToolService().definitions()
@@ -86,6 +87,17 @@ class CadToolServiceDefinitionTests(unittest.TestCase):
             # COMMON_RUNTIME_PROPS must be merged into every typed CAD tool.
             self.assertIn("timeout_sec", schema["properties"], definition.name)
             self.assertIn("compact_execution", schema["properties"], definition.name)
+
+    def test_parameter_tools_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in (
+            "freecad_spreadsheet_create",
+            "freecad_spreadsheet_get",
+            "freecad_object_expression_set",
+            "freecad_object_expression_list",
+        ):
+            self.assertIn(name, tools)
 
 
 class CadToolServiceRunTests(unittest.TestCase):

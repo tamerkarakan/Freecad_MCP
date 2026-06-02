@@ -83,6 +83,8 @@ def tool_modules(tool_name: str) -> set[str]:
 
     if tool_name.startswith("freecad_document_") or tool_name.startswith("freecad_object_"):
         modules.add("headless")
+    if tool_name.startswith("freecad_spreadsheet_"):
+        modules.add("headless")
     if tool_name in {"freecad_import_file", "freecad_export_file"}:
         modules.add("headless")
     if tool_name.startswith("freecad_part_"):

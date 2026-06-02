@@ -12,10 +12,10 @@ Verification: `scripts/smoke_python_package.py` builds wheel and sdist artifacts
 
 | Profile | Channel | Tools | Artifacts | Components |
 | --- | --- | ---: | --- | --- |
-| `free` | public | 23 | `wheel`, `sdist`, `stdio-mcp-config` | `python-package`, `runtime-scripts` |
-| `pro` | paid | 88 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module` | `python-package`, `runtime-scripts`, `gui-bridge`, `workbench-module` |
-| `studio` | paid | 163 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module` | `python-package`, `runtime-scripts`, `persistent-worker`, `gui-bridge`, `workbench-module` |
-| `team` | paid | 166 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module`, `source-intelligence-docs` | `python-package`, `runtime-scripts`, `persistent-worker`, `gui-bridge`, `workbench-module`, `source-intelligence` |
+| `free` | public | 27 | `wheel`, `sdist`, `stdio-mcp-config` | `python-package`, `runtime-scripts` |
+| `pro` | paid | 92 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module` | `python-package`, `runtime-scripts`, `gui-bridge`, `workbench-module` |
+| `studio` | paid | 167 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module` | `python-package`, `runtime-scripts`, `persistent-worker`, `gui-bridge`, `workbench-module` |
+| `team` | paid | 170 | `wheel`, `sdist`, `stdio-mcp-config`, `freecad-workbench-module`, `source-intelligence-docs` | `python-package`, `runtime-scripts`, `persistent-worker`, `gui-bridge`, `workbench-module`, `source-intelligence` |
 | `source` | add-on | 5 | `wheel`, `stdio-mcp-config` | `source-intelligence` |
 | `unsafe` | add-on | 1 | `wheel`, `stdio-mcp-config` | `unsafe-python-exec` |
 

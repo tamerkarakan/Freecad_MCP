@@ -130,6 +130,7 @@ def main() -> int:
         partdesign_doc = temp / "partdesign.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
+        dimension_sketch_doc = temp / "dimension_sketch.FCStd"
 
         create = assert_ok(
             service.definition_map()["freecad_part_create_primitive"].handler(
@@ -175,6 +176,42 @@ def main() -> int:
         )
         if renamed_lookup["object"]["name"] != "Box":
             raise RuntimeError(f"renamed label lookup did not resolve stable object name: {renamed_lookup}")
+
+        box_params = assert_ok(
+            service.definition_map()["freecad_spreadsheet_create"].handler(
+                {
+                    "document_path": str(document),
+                    "sheet_name": "params",
+                    "rows": [{"label": "box_length", "value": 6.0, "alias": "box_length"}],
+                    "output_path": str(document),
+                    "overwrite": True,
+                }
+            ),
+            "spreadsheet_create box params",
+        )
+        if box_params["sheet"]["aliases"].get("box_length", {}).get("cell") != "B1":
+            raise RuntimeError(f"spreadsheet alias was not created: {box_params}")
+        box_expression = assert_ok(
+            service.definition_map()["freecad_object_expression_set"].handler(
+                {
+                    "document_path": str(document),
+                    "object_name": "Box",
+                    "expressions": {"Length": "params.box_length"},
+                    "output_path": str(document),
+                    "overwrite": True,
+                }
+            ),
+            "object_expression_set box length",
+        )
+        box_bound = box_expression["object"]["shape"]["bound_box"]
+        if box_bound["xmax"] - box_bound["xmin"] != 6.0:
+            raise RuntimeError(f"box expression did not drive Length: {box_expression}")
+        box_expressions = {
+            item["path"]: item["expression"]
+            for item in box_expression["after"]
+        }
+        if box_expressions.get("Length") != "params.box_length":
+            raise RuntimeError(f"box expression was not reported: {box_expression}")
 
         export = assert_ok(
             service.definition_map()["freecad_export_file"].handler(
@@ -450,6 +487,78 @@ def main() -> int:
             blocked_payload = blocked.get("freecad") or {}
             if "Group/Text" not in blocked_payload.get("error", ""):
                 raise RuntimeError(f"Sketcher {blocked_type} constraint did not fail safely: {blocked}")
+
+        assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "DimensionSketchSmoke",
+                    "sketch_name": "DimensionSketch",
+                    "output_path": str(dimension_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "dimension sketch create",
+        )
+        assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(dimension_sketch_doc),
+                    "sketch_name": "DimensionSketch",
+                    "geometry": [{"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]}],
+                    "output_path": str(dimension_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "dimension sketch add geometry",
+        )
+        assert_ok(
+            service.definition_map()["freecad_sketch_add_constraint"].handler(
+                {
+                    "document_path": str(dimension_sketch_doc),
+                    "sketch_name": "DimensionSketch",
+                    "constraints": [{"type": "DistanceX", "values": [0, 1, 0, 2, 10.0], "name": "width"}],
+                    "output_path": str(dimension_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "dimension sketch distance constraint",
+        )
+        assert_ok(
+            service.definition_map()["freecad_spreadsheet_create"].handler(
+                {
+                    "document_path": str(dimension_sketch_doc),
+                    "sheet_name": "params",
+                    "rows": [{"label": "width", "value": 12.5, "alias": "width"}],
+                    "output_path": str(dimension_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "spreadsheet_create sketch params",
+        )
+        sketch_expression = assert_ok(
+            service.definition_map()["freecad_object_expression_set"].handler(
+                {
+                    "document_path": str(dimension_sketch_doc),
+                    "object_name": "DimensionSketch",
+                    "expressions": {"Constraints[0]": "params.width"},
+                    "output_path": str(dimension_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "object_expression_set sketch dimension",
+        )
+        sketch_constraints = sketch_expression["object"]["sketch"]["constraints"]
+        if sketch_constraints[0]["value"] != 12.5:
+            raise RuntimeError(f"sketch dimension expression did not update constraint value: {sketch_expression}")
+        sketch_expressions = {
+            item["path"]: item["expression"]
+            for item in sketch_expression["after"]
+        }
+        if "params.width" not in {
+            sketch_expressions.get("Constraints[0]"),
+            sketch_expressions.get(".Constraints.width"),
+        }:
+            raise RuntimeError(f"sketch dimension expression was not reported: {sketch_expression}")
 
         open_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

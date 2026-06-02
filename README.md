@@ -7,7 +7,7 @@ The project is built around one main rule: prefer deterministic typed CAD tools 
 ## Current Status
 
 - Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
-- Full current MCP surface: `167` tools with `FREECAD_MCP_MODULES=all`.
+- Full current MCP surface: `171` tools with `FREECAD_MCP_MODULES=all`.
 - Product-style profiles are generated for `free`, `pro`, `studio`, `team`, `source`, and `unsafe`.
 - The repository includes generated MCP tool schemas, product bundle manifests, distribution profile skeletons, and a local FreeCAD Workbench bridge artifact.
 - The source command inventory currently scans `1112` FreeCAD GUI command registrations from the configured local FreeCAD source checkout.
@@ -20,6 +20,7 @@ Use this MCP server when you want an AI agent to:
 
 - Create FreeCAD documents and geometry from natural-language instructions.
 - Build and validate Sketcher profiles before PartDesign features are created.
+- Bind named parameters into object properties and Sketcher dimension constraints.
 - Create Body-attached Pad, Pocket, Hole, Revolution, Groove, Loft, Pipe, dress-up, and pattern features.
 - Inspect object metadata, topology, bounding boxes, and geometry-check results.
 - Import/export FreeCAD-supported formats such as FCStd, STEP, STL, DXF, and raw G-code where implemented.
@@ -90,13 +91,13 @@ The server can expose different tool surfaces with `FREECAD_MCP_MODULES`.
 
 | Profile | Tools | Intended Use |
 | --- | ---: | --- |
-| `free` | 23 | Static command inventory plus file-based document/object/Part operations. |
-| `pro` | 88 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| `studio` | 163 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
-| `team` | 166 | Studio surface plus source-intelligence tools. |
+| `free` | 27 | Static command inventory plus file-based document/object/Part/parameter operations. |
+| `pro` | 92 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| `studio` | 167 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
+| `team` | 170 | Studio surface plus source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Broad `freecad_python_exec` escape hatch only. |
-| `all` | 167 | Full local maintainer surface. |
+| `all` | 171 | Full local maintainer surface. |
 
 Generated profile files live under [packaging/profiles](packaging/profiles), and the generated bundle manifest is [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md).
 
@@ -109,6 +110,7 @@ Generated profile files live under [packaging/profiles](packaging/profiles), and
 | Runtime status | Discover and report the configured `FreeCADCmd` runtime. |
 | Documents | Create, open, save, recompute, close, and export FreeCAD documents. |
 | Objects | List/get/set properties, rename user-visible labels, and delete objects. |
+| Parameters and expressions | Create/read Spreadsheet parameter sheets and bind expressions into object properties or Sketcher dimension constraints such as `Constraints[0]`. |
 | Part workbench | Primitives, boolean operations, direct and parametric extrude, revolve, fillet, chamfer, and geometry checks. |
 | Sketcher | Create sketches, add geometry and constraints, add profile helpers, build/validate pad-ready profile loops, edit geometry/constraints, transform, auto-constrain, validate, and analyze curve-fit intent. |
 | PartDesign | Body and Datum Plane creation, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe, Fillet, Chamfer, Thickness, Draft, LinearPattern, PolarPattern, and Mirrored. |
@@ -134,8 +136,9 @@ The highest-value engineering path in this project is Sketcher + PartDesign. The
 1. Create or reuse a PartDesign Body.
 2. Attach the sketch to an origin plane, datum plane, or support object.
 3. Build a closed, valid, pad-ready profile.
-4. Validate topology before creating the PartDesign feature.
-5. Create the feature, recompute, and report the Body Tip and shape summary.
+4. Drive dimensions through Sketcher constraints and expressions, optionally using Spreadsheet aliases as named parameters.
+5. Validate topology before creating the PartDesign feature.
+6. Create the feature, recompute, and report the Body Tip and shape summary.
 
 High-level recipe tools:
 
@@ -143,6 +146,11 @@ High-level recipe tools:
 - `freecad_partdesign_sweep_feature_create`: creates Body-attached profile and spine sketches, then creates Additive or Subtractive Pipe.
 
 Lower-level tools remain available when the sketch, support objects, or selected subelements already exist.
+
+Parameter tools:
+
+- `freecad_spreadsheet_create` and `freecad_spreadsheet_get`: create/read named parameter sheets.
+- `freecad_object_expression_set` and `freecad_object_expression_list`: bind/read object property expressions, including Sketcher dimension paths such as `Constraints[0]`. FreeCAD may report a named constraint back in canonical form such as `.Constraints.width`.
 
 ## GUI Attach
 
@@ -216,6 +224,7 @@ Current unblocked scope is complete, but the next useful expansion areas are:
 - Expand GUI live bridge coverage beyond viewport snapshots into command boundaries, transaction/dirty state, console forwarding, and safer GUI-side mutation policies.
 - Deepen image-to-sketch guidance for ambiguous B-spline vs circular arc vs line/polyline decisions.
 - Continue Sketcher and PartDesign research from official docs and local FreeCAD source. Next PartDesign targets include MultiTransform, Scaled, Boolean, and deeper combined Pipe orientation/scaling fixtures.
+- Add persistent-worker parity for Spreadsheet/expression parameter tools after the process-per-call surface settles.
 - Add a guarded GUI command catalog and allowlisted GUI command runner after preconditions, transaction policy, and smoke coverage are clear.
 - Enable the existing GitHub Actions workflow after credentials include the `workflow` OAuth scope.
 - Decide whether generated profiles should become separate packages, Codex plugin bundles, or commercial add-ons.

@@ -3,6 +3,7 @@ import base64
 import json
 import math
 import os
+import re
 import traceback
 
 import FreeCAD as App
@@ -421,7 +422,113 @@ def object_summary(obj):
         "sketch": sketch_summary(obj),
         "techdraw": techdraw_summary(obj),
         "partdesign": partdesign_summary(obj),
+        "expressions": expression_summary(obj),
     }
+
+
+def expression_summary(obj):
+    rows = []
+    try:
+        engine = list(getattr(obj, "ExpressionEngine", []) or [])
+    except Exception:
+        engine = []
+    for item in engine:
+        try:
+            path, expression = item
+        except Exception:
+            rows.append({"repr": repr(item)})
+            continue
+        rows.append({"path": str(path), "expression": str(expression)})
+    return rows
+
+
+CELL_RE = re.compile(r"^[A-Z]{1,3}[1-9][0-9]*$")
+ALIAS_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def normalize_cell(value):
+    cell = str(value or "").strip().upper()
+    if not CELL_RE.match(cell):
+        raise ValueError("invalid spreadsheet cell: " + str(value))
+    return cell
+
+
+def normalize_column(value, default):
+    column = str(value or default).strip().upper()
+    if not re.match(r"^[A-Z]{1,3}$", column):
+        raise ValueError("invalid spreadsheet column: " + str(value))
+    return column
+
+
+def normalize_alias(value):
+    alias = str(value or "").strip()
+    if not alias:
+        return ""
+    if not ALIAS_RE.match(alias):
+        raise ValueError("invalid spreadsheet alias: " + alias)
+    return alias
+
+
+def spreadsheet_value_text(value):
+    if value is None:
+        return ""
+    if isinstance(value, dict):
+        if "quantity" in value:
+            return str(value["quantity"])
+        if "formula" in value:
+            formula = str(value["formula"])
+            return formula if formula.startswith("=") else "=" + formula
+        if "value" in value:
+            return spreadsheet_value_text(value["value"])
+    return str(value)
+
+
+def get_spreadsheet(doc, sheet_name):
+    sheet = get_object(doc, sheet_name)
+    if getattr(sheet, "TypeId", "") != "Spreadsheet::Sheet":
+        raise ValueError("object is not a Spreadsheet::Sheet: " + sheet_name)
+    return sheet
+
+
+def spreadsheet_cell_value(sheet, cell):
+    try:
+        return sheet.get(cell)
+    except Exception as exc:
+        return "<error: %s>" % exc
+
+
+def spreadsheet_summary(sheet, cells=None, aliases=None, include_known_aliases=False):
+    result = {
+        "name": sheet.Name,
+        "label": sheet.Label,
+        "type_id": sheet.TypeId,
+        "cells": {},
+        "aliases": {},
+    }
+    for cell in cells or []:
+        normalized = normalize_cell(cell)
+        result["cells"][normalized] = spreadsheet_cell_value(sheet, normalized)
+    alias_names = []
+    for alias in aliases or []:
+        normalized_alias = normalize_alias(alias)
+        if normalized_alias:
+            alias_names.append(normalized_alias)
+    if include_known_aliases:
+        try:
+            known = sheet.getAliases()
+        except Exception:
+            known = []
+        if isinstance(known, dict):
+            alias_names.extend(str(alias) for alias in known)
+        elif isinstance(known, (list, tuple, set)):
+            alias_names.extend(str(alias) for alias in known)
+    for alias in sorted(set(alias_names)):
+        try:
+            cell = sheet.getCellFromAlias(alias)
+            result["aliases"][alias] = {"cell": cell, "value": spreadsheet_cell_value(sheet, cell)}
+        except Exception as exc:
+            result["aliases"][alias] = {"error": str(exc)}
+    return result
 
 
 def document_summary(doc):
@@ -1376,6 +1483,139 @@ def action_object_set_properties(args):
     doc.recompute()
     saved = save_if_requested(doc, args)
     return {"saved_path": saved, "changed": changed, "object": object_summary(obj), "document": document_summary(doc)}
+
+
+def action_spreadsheet_create(args):
+    doc = open_or_new(args)
+    sheet_name = str(args.get("sheet_name") or "params")
+    existing = doc.getObject(sheet_name)
+    created = False
+    if existing is None:
+        doc.openTransaction("MCP create spreadsheet")
+        try:
+            sheet = doc.addObject("Spreadsheet::Sheet", sheet_name)
+            created = True
+            doc.commitTransaction()
+        except Exception:
+            doc.abortTransaction()
+            raise
+    else:
+        sheet = existing
+        if getattr(sheet, "TypeId", "") != "Spreadsheet::Sheet":
+            raise ValueError("object exists but is not a Spreadsheet::Sheet: " + sheet_name)
+
+    start_row = int(args.get("start_row") or 1)
+    label_column = normalize_column(args.get("label_column"), "A")
+    value_column = normalize_column(args.get("value_column"), "B")
+    changed = []
+    aliases = {}
+    doc.openTransaction("MCP update spreadsheet")
+    try:
+        for index, row in enumerate(args.get("rows") or []):
+            row_number = int(row.get("row") or (start_row + index))
+            label_cell = normalize_cell(row.get("label_cell") or (label_column + str(row_number)))
+            value_cell = normalize_cell(row.get("value_cell") or row.get("cell") or (value_column + str(row_number)))
+            if "label" in row:
+                sheet.set(label_cell, spreadsheet_value_text(row.get("label")))
+                changed.append({"cell": label_cell, "value": spreadsheet_value_text(row.get("label"))})
+            sheet.set(value_cell, spreadsheet_value_text(row.get("value")))
+            changed.append({"cell": value_cell, "value": spreadsheet_value_text(row.get("value"))})
+            alias = normalize_alias(row.get("alias"))
+            if alias:
+                sheet.setAlias(value_cell, alias)
+                aliases[alias] = value_cell
+        for cell_spec in args.get("cells") or []:
+            cell = normalize_cell(cell_spec.get("cell"))
+            sheet.set(cell, spreadsheet_value_text(cell_spec.get("value")))
+            changed.append({"cell": cell, "value": spreadsheet_value_text(cell_spec.get("value"))})
+            alias = normalize_alias(cell_spec.get("alias"))
+            if alias:
+                sheet.setAlias(cell, alias)
+                aliases[alias] = cell
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "created": created,
+        "changed": changed,
+        "aliases": aliases,
+        "sheet": spreadsheet_summary(sheet, cells=[item["cell"] for item in changed], aliases=list(aliases)),
+        "document": document_summary(doc),
+    }
+
+
+def action_spreadsheet_get(args):
+    doc = App.openDocument(args["document_path"])
+    sheet = get_spreadsheet(doc, args["sheet_name"])
+    return {
+        "sheet": spreadsheet_summary(
+            sheet,
+            cells=args.get("cells") or [],
+            aliases=args.get("aliases") or [],
+            include_known_aliases=bool(args.get("include_known_aliases", True)),
+        ),
+        "document": {"name": doc.Name, "label": doc.Label, "file_name": doc.FileName},
+    }
+
+
+def action_object_expression_set(args):
+    doc = App.openDocument(args["document_path"])
+    obj = get_object(doc, args["object_name"])
+    expressions = args.get("expressions") or {}
+    if not isinstance(expressions, dict) or not expressions:
+        raise ValueError("expressions must be a non-empty object")
+    before = expression_summary(obj)
+    applied = []
+    doc.openTransaction("MCP set object expressions")
+    try:
+        for path, expression in expressions.items():
+            path_text = str(path or "").strip()
+            if not path_text or "\n" in path_text or "\r" in path_text:
+                raise ValueError("invalid expression path: " + str(path))
+            if expression is None or str(expression).strip() == "":
+                obj.setExpression(path_text, None)
+                applied.append({"path": path_text, "expression": None})
+            else:
+                obj.setExpression(path_text, str(expression))
+                applied.append({"path": path_text, "expression": str(expression)})
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "object": object_summary(obj),
+        "before": before,
+        "after": expression_summary(obj),
+        "applied": applied,
+        "document": document_summary(doc),
+    }
+
+
+def action_object_expression_list(args):
+    doc = App.openDocument(args["document_path"])
+    if args.get("object_name"):
+        objects = [get_object(doc, args["object_name"])]
+    elif args.get("object_names"):
+        objects = [get_object(doc, name) for name in args.get("object_names") or []]
+    else:
+        objects = list(doc.Objects)
+    return {
+        "objects": [
+            {
+                "object": {"name": obj.Name, "label": obj.Label, "type_id": obj.TypeId},
+                "expressions": expression_summary(obj),
+            }
+            for obj in objects
+        ],
+        "document": {"name": doc.Name, "label": doc.Label, "file_name": doc.FileName},
+    }
 
 
 def action_object_rename_label(args):
@@ -4573,6 +4813,10 @@ DISPATCH = {
     "object_list": action_object_list,
     "object_get": action_object_get,
     "object_set_properties": action_object_set_properties,
+    "spreadsheet_create": action_spreadsheet_create,
+    "spreadsheet_get": action_spreadsheet_get,
+    "object_expression_set": action_object_expression_set,
+    "object_expression_list": action_object_expression_list,
     "object_rename_label": action_object_rename_label,
     "object_delete": action_object_delete,
     "part_create_primitive": action_part_create_primitive,
