@@ -71,6 +71,7 @@ class BuildServerTests(unittest.TestCase):
         tools = build_server(ROOT, enabled_modules="gui").definition_map()
 
         self.assertIn("freecad_gui_attach", tools)
+        self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_object_label_set", tools)
@@ -90,6 +91,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("gui", selection.expanded)
         self.assertIn("partdesign", selection.expanded)
         self.assertIn("freecad_gui_attach", tools)
+        self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_partdesign_datum_plane_create", tools)
         self.assertIn("freecad_partdesign_pad", tools)
         self.assertIn("freecad_partdesign_pocket", tools)

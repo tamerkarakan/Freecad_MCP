@@ -10641,6 +10641,43 @@ Return the active GUI document summary.
 }
 ```
 
+## `freecad_gui_document_open`
+
+Open an existing FreeCAD .FCStd document in the attached GUI session.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "document_path": {
+      "type": "string",
+      "description": "Absolute local path to an existing .FCStd document."
+    },
+    "activate": {
+      "type": "boolean",
+      "default": true
+    },
+    "fit_view": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "session_id",
+    "document_path"
+  ]
+}
+```
+
 ## `freecad_gui_active_view_get`
 
 Return active view metadata and camera text when available.

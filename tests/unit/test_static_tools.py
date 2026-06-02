@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from freecad_mcp.static_tools import InventoryStore, StaticToolService, safe_source_path
 from freecad_mcp.tooling import ToolInputError
@@ -110,6 +112,8 @@ class SourceSearchBoundTests(unittest.TestCase):
 class fake_repo:
     def __enter__(self) -> Path:
         self.temp_dir = tempfile.TemporaryDirectory()
+        self.env_patch = patch.dict(os.environ, {"FREECAD_MCP_FREECAD_ROOT": ""})
+        self.env_patch.start()
         root = Path(self.temp_dir.name)
         freecad_root = root / "upstream" / "FreeCAD"
         command_file = freecad_root / "src" / "Mod" / "Part" / "Gui" / "Command.cpp"
@@ -152,4 +156,5 @@ class fake_repo:
         return root
 
     def __exit__(self, exc_type, exc, tb) -> None:
+        self.env_patch.stop()
         self.temp_dir.cleanup()

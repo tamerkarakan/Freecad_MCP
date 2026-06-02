@@ -56,6 +56,21 @@ class GuiToolService:
             ),
             self._gui_tool("freecad_gui_status", "GUI Bridge Status", "Report GUI bridge health, active document, and active view.", {}, [], "status"),
             self._gui_tool("freecad_gui_active_document_get", "Get Active GUI Document", "Return the active GUI document summary.", {}, [], "active_document_get"),
+            self._gui_tool(
+                "freecad_gui_document_open",
+                "Open GUI Document",
+                "Open an existing FreeCAD .FCStd document in the attached GUI session.",
+                {
+                    "document_path": {
+                        "type": "string",
+                        "description": "Absolute local path to an existing .FCStd document.",
+                    },
+                    "activate": {"type": "boolean", "default": True},
+                    "fit_view": {"type": "boolean", "default": True},
+                },
+                ["document_path"],
+                "document_open",
+            ),
             self._gui_tool("freecad_gui_active_view_get", "Get Active GUI View", "Return active view metadata and camera text when available.", {}, [], "active_view_get"),
             self._gui_tool(
                 "freecad_gui_selection_get",

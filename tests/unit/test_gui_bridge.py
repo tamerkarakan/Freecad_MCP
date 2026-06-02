@@ -55,6 +55,17 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             result = {"control": {"has_active_dialog": True}, "params": payload.get("params") or {}}
         elif method == "object_label_set":
             result = {"object": {"name": "Box", "label": payload.get("params", {}).get("label")}, "params": payload.get("params") or {}}
+        elif method == "document_open":
+            params = payload.get("params") or {}
+            result = {
+                "opened": True,
+                "already_open": False,
+                "document_path": params.get("document_path"),
+                "document": {"name": "OpenedDoc", "file_name": params.get("document_path")},
+                "active_document": {"name": "OpenedDoc"},
+                "fit": {"requested": params.get("fit_view", True), "fit": "all"},
+                "params": params,
+            }
         elif method == "view_snapshot":
             params = payload.get("params") or {}
             result = {
@@ -135,6 +146,7 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(status["gui"]["bridge"], "ok")
         self.assertIn("freecad_gui_selection_get", tools)
+        self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_object_label_set", tools)
@@ -165,6 +177,26 @@ class GuiBridgeTests(unittest.TestCase):
 
         self.assertEqual(created["gui"]["method"], "primitive_create")
         self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["object_name"], "GuiCylinder")
+
+    def test_gui_document_open_delegates_to_bridge(self) -> None:
+        service = GuiToolService()
+        tools = service.definition_map()
+
+        attached = tools["freecad_gui_attach"].handler({"url": self.url})
+        session_id = attached["session"]["session_id"]
+        opened = tools["freecad_gui_document_open"].handler(
+            {
+                "session_id": session_id,
+                "document_path": "C:/tmp/generated-model.FCStd",
+                "activate": True,
+                "fit_view": True,
+            }
+        )
+
+        self.assertTrue(opened["gui"]["opened"])
+        self.assertEqual(opened["gui"]["document"]["file_name"], "C:/tmp/generated-model.FCStd")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["method"], "document_open")
+        self.assertEqual(FakeBridgeHandler.requests[-1]["payload"]["params"]["document_path"], "C:/tmp/generated-model.FCStd")
 
     def test_gui_view_snapshot_delegates_to_bridge(self) -> None:
         service = GuiToolService()

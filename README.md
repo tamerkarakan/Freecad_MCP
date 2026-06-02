@@ -7,7 +7,7 @@ The project is built around one main rule: prefer deterministic typed CAD tools 
 ## Current Status
 
 - Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
-- Full current MCP surface: `164` tools with `FREECAD_MCP_MODULES=all`.
+- Full current MCP surface: `165` tools with `FREECAD_MCP_MODULES=all`.
 - Product-style profiles are generated for `free`, `pro`, `studio`, `team`, `source`, and `unsafe`.
 - The repository includes generated MCP tool schemas, product bundle manifests, distribution profile skeletons, and a local FreeCAD Workbench bridge artifact.
 - The source command inventory currently scans `1112` FreeCAD GUI command registrations from the configured local FreeCAD source checkout.
@@ -23,7 +23,7 @@ Use this MCP server when you want an AI agent to:
 - Create Body-attached Pad, Pocket, Hole, Revolution, Groove, Loft, Pipe, dress-up, and pattern features.
 - Inspect object metadata, topology, bounding boxes, and geometry-check results.
 - Import/export FreeCAD-supported formats such as FCStd, STEP, STL, DXF, and raw G-code where implemented.
-- Read live FreeCAD GUI selection/view state when the user is already working in the GUI.
+- Open generated `.FCStd` documents in a live FreeCAD GUI and read GUI selection/view state when the user is already working there.
 - Research FreeCAD source commands and implementation details from a local source checkout.
 - Offer a safer alternative to "just run arbitrary FreeCAD Python" workflows.
 
@@ -91,12 +91,12 @@ The server can expose different tool surfaces with `FREECAD_MCP_MODULES`.
 | Profile | Tools | Intended Use |
 | --- | ---: | --- |
 | `free` | 23 | Static command inventory plus file-based document/object/Part operations. |
-| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| `studio` | 160 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
-| `team` | 163 | Studio surface plus source-intelligence tools. |
+| `pro` | 86 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| `studio` | 161 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
+| `team` | 164 | Studio surface plus source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Broad `freecad_python_exec` escape hatch only. |
-| `all` | 164 | Full local maintainer surface. |
+| `all` | 165 | Full local maintainer surface. |
 
 Generated profile files live under [packaging/profiles](packaging/profiles), and the generated bundle manifest is [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md).
 
@@ -117,7 +117,7 @@ Generated profile files live under [packaging/profiles](packaging/profiles), and
 | Mesh | Import, export, evaluate, repair, and boolean operations. |
 | Assembly | Create assemblies, insert objects, create native joint proxies, solve/recompute, and generate BOM data. |
 | Persistent worker | Long-lived `FreeCADCmd` sessions for lower startup overhead and session-aware workflows. |
-| GUI attach | Opt-in loopback bridge for active document/view, selection/preselection, selection set, view fit, viewport snapshot, primitive creation, and label updates. |
+| GUI attach | Opt-in loopback bridge for opening generated `.FCStd` documents, active document/view, selection/preselection, selection set, view fit, viewport snapshot, primitive creation, and label updates. |
 | Workbench bridge | Local FreeCAD workbench module that can start/stop/status the GUI bridge from inside FreeCAD. |
 | TechDraw | First typed slice for page/template/view creation, page/view inspection, and headless DXF export. |
 | CAM | First typed slice for explicit raw `Path::Feature` command paths and raw G-code export. |
@@ -163,7 +163,7 @@ $env:FREECAD_MCP_GUI_TOKEN = "choose-a-local-token"
 
 After that, an MCP client can call `freecad_gui_attach` against the local loopback bridge URL, normally `http://127.0.0.1:48777`.
 
-GUI attach is mainly for live active document/view/selection state and visual evidence. Headless typed tools remain the preferred path for deterministic model mutation.
+GUI attach is mainly for opening generated `.FCStd` files in the live GUI, active document/view/selection state, and visual evidence. Headless typed tools remain the preferred path for deterministic model mutation.
 
 ## Safety Model
 

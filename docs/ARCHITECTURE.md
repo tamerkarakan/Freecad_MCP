@@ -73,7 +73,7 @@ The server exposes `freecad-gui-attach` mode for live GUI state. The MCP client 
 | Tool group | Status |
 | --- | --- |
 | Bridge lifecycle | `freecad_gui_attach`, `freecad_gui_list`, `freecad_gui_detach`, `freecad_gui_status` |
-| Active GUI state | `freecad_gui_active_document_get`, `freecad_gui_active_view_get` |
+| Active GUI state | `freecad_gui_active_document_get`, `freecad_gui_document_open`, `freecad_gui_active_view_get` |
 | Selection state | `freecad_gui_selection_get`, `freecad_gui_preselection_get`, `freecad_gui_selection_set` |
 | View action | `freecad_gui_view_fit`, `freecad_gui_view_snapshot` |
 

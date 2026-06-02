@@ -322,6 +322,7 @@
         "freecad_gui_detach",
         "freecad_gui_status",
         "freecad_gui_active_document_get",
+        "freecad_gui_document_open",
         "freecad_gui_active_view_get",
         "freecad_gui_selection_get",
         "freecad_gui_preselection_get",
@@ -337,7 +338,7 @@
         "freecad_gui_body_activate",
         "freecad_gui_feature_task_state"
       ],
-      "evidence": "GUI attach mode is required for active view, viewport snapshots, preselection, picked points, selected edge/face state, user-visible labels, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation."
+      "evidence": "GUI attach mode is required for opening generated documents in the live GUI, active view, viewport snapshots, preselection, picked points, selected edge/face state, user-visible labels, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation."
     },
     {
       "family": "freecad.document",

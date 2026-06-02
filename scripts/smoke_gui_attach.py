@@ -197,6 +197,18 @@ except Exception as exc:
             {"url": f"http://127.0.0.1:{port}", "token": token, "timeout_sec": 10}
         )
         session_id = str(attach["session"]["session_id"])
+        document_open = tools["freecad_gui_document_open"].handler(
+            {
+                "session_id": session_id,
+                "document_path": str(document_path),
+                "activate": True,
+                "fit_view": True,
+                "timeout_sec": 10,
+            }
+        )
+        opened_file = Path(str(document_open["gui"]["document"]["file_name"]))
+        if opened_file.resolve() != document_path.resolve():
+            raise RuntimeError(f"GUI document open returned unexpected file: {document_open}")
         status = tools["freecad_gui_status"].handler({"session_id": session_id, "timeout_sec": 10})
         selection = tools["freecad_gui_selection_get"].handler(
             {"session_id": session_id, "document_name": str(ready["document_name"]), "resolve": 0}
@@ -331,6 +343,7 @@ except Exception as exc:
             "document_path": str(document_path),
             "ready": ready,
             "attach": attach,
+            "document_open_result": document_open,
             "status_result": status,
             "selection_result": selection,
             "label_set_result": label_set,

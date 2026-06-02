@@ -97,6 +97,18 @@ def vector_list(value: Any) -> list[float] | None:
         return None
 
 
+def document_summary(doc: Any) -> dict[str, Any] | None:
+    if doc is None:
+        return None
+    return {
+        "name": getattr(doc, "Name", None),
+        "label": getattr(doc, "Label", None),
+        "file_name": getattr(doc, "FileName", None),
+        "object_count": len(getattr(doc, "Objects", []) or []),
+        "active_object": doc.ActiveObject.Name if getattr(doc, "ActiveObject", None) else None,
+    }
+
+
 def active_document_summary() -> dict[str, Any] | None:
     import FreeCAD as App
     import FreeCADGui as Gui
@@ -108,13 +120,7 @@ def active_document_summary() -> dict[str, Any] | None:
     doc = app_doc or getattr(gui_doc, "Document", None)
     if doc is None:
         return {"gui_document": str(gui_doc), "document": None}
-    return {
-        "name": doc.Name,
-        "label": doc.Label,
-        "file_name": doc.FileName,
-        "object_count": len(doc.Objects),
-        "active_object": doc.ActiveObject.Name if getattr(doc, "ActiveObject", None) else None,
-    }
+    return document_summary(doc)
 
 
 def active_view_summary() -> dict[str, Any] | None:
@@ -836,6 +842,102 @@ def rpc_active_document_get(params: dict[str, Any]) -> dict[str, Any]:
     return {"active_document": active_document_summary()}
 
 
+def existing_fcstd_path(raw_path: Any) -> Path:
+    text = str(raw_path or "").strip()
+    if not text:
+        raise ValueError("document_path is required")
+    path = Path(text).expanduser()
+    if not path.is_absolute():
+        raise ValueError("document_path must be absolute")
+    if path.suffix.lower() != ".fcstd":
+        raise ValueError("document_path must point to a .FCStd file")
+    if not path.exists():
+        raise ValueError("document_path does not exist: " + str(path))
+    if not path.is_file():
+        raise ValueError("document_path must be a file: " + str(path))
+    return path.resolve()
+
+
+def document_file_matches(doc: Any, path: Path) -> bool:
+    file_name = str(getattr(doc, "FileName", "") or "")
+    if not file_name:
+        return False
+    try:
+        return Path(file_name).resolve() == path
+    except Exception:
+        return str(Path(file_name)) == str(path)
+
+
+def find_open_document_by_file(path: Path) -> Any:
+    import FreeCAD as App
+
+    try:
+        documents = App.listDocuments()
+    except Exception:
+        documents = {}
+    for doc in (documents.values() if isinstance(documents, dict) else []):
+        if document_file_matches(doc, path):
+            return doc
+    return None
+
+
+def activate_document(doc: Any) -> Any:
+    import FreeCAD as App
+    import FreeCADGui as Gui
+
+    if doc is None:
+        return Gui.activeDocument()
+    try:
+        App.setActiveDocument(doc.Name)
+    except Exception:
+        pass
+    try:
+        gui_doc = Gui.getDocument(doc.Name)
+        if gui_doc is not None:
+            Gui.ActiveDocument = gui_doc
+            return gui_doc
+    except Exception:
+        pass
+    return gui_document_for(doc)
+
+
+def rpc_document_open(params: dict[str, Any]) -> dict[str, Any]:
+    import FreeCAD as App
+    import FreeCADGui as Gui
+
+    path = existing_fcstd_path(params.get("document_path"))
+    activate = bool(params.get("activate", True))
+    fit_view = bool(params.get("fit_view", True))
+
+    doc = find_open_document_by_file(path)
+    already_open = doc is not None
+    if doc is None:
+        doc = App.openDocument(str(path))
+        if doc is None:
+            doc = find_open_document_by_file(path) or App.activeDocument()
+    if doc is None:
+        raise RuntimeError("FreeCAD did not open document: " + str(path))
+
+    gui_doc = activate_document(doc) if activate else (gui_document_for(doc) or Gui.activeDocument())
+    fit: dict[str, Any] = {"requested": fit_view, "fit": None}
+    if fit_view:
+        try:
+            fit = fit_view_if_requested(gui_doc, True)
+        except Exception as exc:
+            fit = {"requested": True, "fit": None, "error": str(exc)}
+
+    return {
+        "opened": not already_open,
+        "already_open": already_open,
+        "document_path": str(path),
+        "activated": activate,
+        "document": document_summary(doc),
+        "active_document": active_document_summary(),
+        "fit": fit,
+        "active_view": active_view_summary(),
+    }
+
+
 def rpc_active_view_get(params: dict[str, Any]) -> dict[str, Any]:
     return {"active_view": active_view_summary()}
 
@@ -1240,6 +1342,7 @@ def rpc_body_activate(params: dict[str, Any]) -> dict[str, Any]:
 RPC_METHODS = {
     "status": rpc_status,
     "active_document_get": rpc_active_document_get,
+    "document_open": rpc_document_open,
     "active_view_get": rpc_active_view_get,
     "selection_get": rpc_selection_get,
     "preselection_get": rpc_preselection_get,

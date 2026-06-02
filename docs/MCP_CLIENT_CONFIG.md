@@ -41,9 +41,9 @@ Current bundle profiles:
 | Profile | Tool Count | Use |
 | --- | ---: | --- |
 | `free` | 23 | File-based document/object/Part operations. |
-| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| `studio` | 160 | Adds worker sessions plus TechDraw, CAM, and FEM. |
-| `team` | 163 | Adds source-intelligence tools. |
+| `pro` | 86 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| `studio` | 161 | Adds worker sessions plus TechDraw, CAM, and FEM. |
+| `team` | 164 | Adds source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Only `freecad_python_exec`; opt-in add-on. |
 
@@ -160,6 +160,7 @@ Useful GUI tools after attach:
 
 - `freecad_gui_status`
 - `freecad_gui_active_document_get`
+- `freecad_gui_document_open`
 - `freecad_gui_active_view_get`
 - `freecad_gui_selection_get`
 - `freecad_gui_preselection_get`
@@ -168,6 +169,6 @@ Useful GUI tools after attach:
 - `freecad_gui_view_snapshot`
 - `freecad_gui_primitive_create`
 
-Headless typed CAD tools remain the preferred path for model mutation. GUI attach is mainly for active document/view/selection state and connector-style workflows.
+Headless typed CAD tools remain the preferred path for model mutation. GUI attach is mainly for opening generated `.FCStd` files in the live GUI, active document/view/selection state, and connector-style workflows.
 
 The full tool schema snapshot is in `docs/mcp_tool_schemas.md`.
