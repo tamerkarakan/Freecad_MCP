@@ -773,6 +773,50 @@ def main() -> int:
                 raise RuntimeError(f"worker PartDesign LinearPattern did not produce a body solid: {worker_linear_pattern}")
             if worker_linear_pattern["transform"]["partdesign"]["direction"]["object"] != "X_Axis":
                 raise RuntimeError(f"worker PartDesign LinearPattern did not keep X direction: {worker_linear_pattern}")
+            linear_pattern_2d_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerLinearPattern2DSmoke",
+                body_name="WorkerLinearPattern2DBody",
+                sketch_name="WorkerLinearPattern2DBaseSketch",
+                pad_name="WorkerLinearPattern2DBasePad",
+            )
+            worker_linear_pattern_2d = worker_result(
+                service.definition_map()["freecad_worker_partdesign_linear_pattern"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": linear_pattern_2d_document_id,
+                        "body_name": "WorkerLinearPattern2DBody",
+                        "original_feature_name": "WorkerLinearPattern2DBasePad",
+                        "direction_axis": "x_axis",
+                        "direction2_axis": "y_axis",
+                        "length": 20,
+                        "length2": 20,
+                        "occurrences": 2,
+                        "occurrences2": 2,
+                        "linear_pattern_name": "WorkerLinearPattern2D",
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_partdesign_2d_linear_pattern",
+            )
+            worker_linear_pattern_2d_shape = worker_linear_pattern_2d["transform"]["shape"]
+            worker_linear_pattern_2d_pd = worker_linear_pattern_2d["transform"]["partdesign"]
+            worker_linear_pattern_2d_box = worker_linear_pattern_2d_shape["bound_box"]
+            if worker_linear_pattern_2d_shape["solids"] != 4 or worker_linear_pattern_2d["body"]["partdesign"]["tip"] != "WorkerLinearPattern2D":
+                raise RuntimeError(f"worker PartDesign 2D LinearPattern did not create a 2x2 transform: {worker_linear_pattern_2d}")
+            if worker_linear_pattern_2d_pd["direction2"]["object"] != "Y_Axis" or worker_linear_pattern_2d_pd["occurrences2"] != 2:
+                raise RuntimeError(f"worker PartDesign 2D LinearPattern did not keep second direction: {worker_linear_pattern_2d}")
+            if worker_linear_pattern_2d_box["xmax"] < 24.9 or worker_linear_pattern_2d_box["ymax"] < 24.9:
+                raise RuntimeError(f"worker PartDesign 2D LinearPattern did not expand in both directions: {worker_linear_pattern_2d}")
+            closed_linear_pattern_2d_doc = worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": linear_pattern_2d_document_id}
+                ),
+                "worker_partdesign_2d_linear_pattern_document_close",
+            )
+            if closed_linear_pattern_2d_doc["document_count"] != 1:
+                raise RuntimeError(f"worker PartDesign 2D LinearPattern document close failed: {closed_linear_pattern_2d_doc}")
             closed_linear_pattern_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(
                     {"session_id": session_id, "document_id": linear_pattern_document_id}

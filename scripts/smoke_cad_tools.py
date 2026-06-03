@@ -1083,6 +1083,7 @@ def main() -> int:
                     "attachment_plane": "XY",
                     "pocket_name": "Pocket",
                     "length": 3,
+                    "reversed": True,
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1091,6 +1092,8 @@ def main() -> int:
         )
         if partdesign_pocket["pocket"]["shape"]["solids"] != 1 or partdesign_pocket["body"]["partdesign"]["tip"] != "Pocket":
             raise RuntimeError(f"partdesign pocket did not preserve a body solid: {partdesign_pocket}")
+        if partdesign_pocket["pocket"]["shape"]["faces"] <= partdesign_pad["pad"]["shape"]["faces"]:
+            raise RuntimeError(f"partdesign pocket did not cut visible topology: {partdesign_pocket}")
         tip_to_pad = assert_ok(
             service.definition_map()["freecad_object_set_properties"].handler(
                 {
@@ -1657,6 +1660,7 @@ def main() -> int:
         thickness_doc = temp / "partdesign_thickness.FCStd"
         draft_doc = temp / "partdesign_draft.FCStd"
         linear_pattern_doc = temp / "partdesign_linear_pattern.FCStd"
+        linear_pattern_2d_doc = temp / "partdesign_linear_pattern_2d.FCStd"
         polar_pattern_doc = temp / "partdesign_polar_pattern.FCStd"
         mirrored_doc = temp / "partdesign_mirrored.FCStd"
         additive_pipe_profile_sketch = assert_ok(
@@ -2216,6 +2220,42 @@ def main() -> int:
             raise RuntimeError(f"partdesign linear pattern did not keep X direction: {linear_pattern}")
         if linear_pattern["transform"]["partdesign"]["occurrences"] != 2:
             raise RuntimeError(f"partdesign linear pattern did not keep occurrences: {linear_pattern}")
+        create_partdesign_rect_pad(
+            service,
+            linear_pattern_2d_doc,
+            document_name="LinearPattern2DSmoke",
+            body_name="LinearPattern2DBody",
+            sketch_name="LinearPattern2DBaseSketch",
+            pad_name="LinearPattern2DBasePad",
+        )
+        linear_pattern_2d = assert_ok(
+            service.definition_map()["freecad_partdesign_linear_pattern"].handler(
+                {
+                    "document_path": str(linear_pattern_2d_doc),
+                    "body_name": "LinearPattern2DBody",
+                    "original_feature_name": "LinearPattern2DBasePad",
+                    "direction_axis": "x_axis",
+                    "direction2_axis": "y_axis",
+                    "length": 20,
+                    "length2": 20,
+                    "occurrences": 2,
+                    "occurrences2": 2,
+                    "linear_pattern_name": "LinearPattern2D",
+                    "output_path": str(linear_pattern_2d_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign 2d linear pattern",
+        )
+        linear_pattern_2d_shape = linear_pattern_2d["transform"]["shape"]
+        linear_pattern_2d_pd = linear_pattern_2d["transform"]["partdesign"]
+        linear_pattern_2d_box = linear_pattern_2d_shape["bound_box"]
+        if linear_pattern_2d_shape["solids"] != 4 or linear_pattern_2d["body"]["partdesign"]["tip"] != "LinearPattern2D":
+            raise RuntimeError(f"partdesign 2d linear pattern did not create a 2x2 transform: {linear_pattern_2d}")
+        if linear_pattern_2d_pd["direction2"]["object"] != "Y_Axis" or linear_pattern_2d_pd["occurrences2"] != 2:
+            raise RuntimeError(f"partdesign 2d linear pattern did not keep second direction: {linear_pattern_2d}")
+        if linear_pattern_2d_box["xmax"] < 29.9 or linear_pattern_2d_box["ymax"] < 29.9:
+            raise RuntimeError(f"partdesign 2d linear pattern did not expand in both directions: {linear_pattern_2d}")
         create_partdesign_rect_pad(
             service,
             polar_pattern_doc,

@@ -23,6 +23,7 @@ from freecad_mcp.tooling import JsonObject, ToolInputError, load_runtime_script
 WORKER_PREFIX = "__FREECAD_MCP_WORKER__"
 MAX_WORKER_STREAM_CHARS = 12_000
 DEFAULT_MAX_WORKER_SESSIONS = 8
+WORKER_TIMEOUT_PREFIX = "worker request timed out after "
 
 
 def _resolve_max_worker_sessions(value: int | None) -> int:
@@ -333,7 +334,8 @@ class PersistentBridgeManager:
         session = self.get(session_id)
         try:
             response = session.request("status", {}, timeout_sec=timeout_sec)
-        except ToolInputError:
+        except ToolInputError as exc:
+            self._terminate_after_timeout(session_id, session, exc)
             self._drop_if_stopped(session_id, session)
             raise
         if not response.ok:
@@ -367,7 +369,8 @@ class PersistentBridgeManager:
                 {**params, "workspace_root": str(self.workspace_root)},
                 timeout_sec=timeout_sec,
             )
-        except ToolInputError:
+        except ToolInputError as exc:
+            self._terminate_after_timeout(session_id, session, exc)
             self._drop_if_stopped(session_id, session)
             raise
         if not response.ok:
@@ -421,6 +424,25 @@ class PersistentBridgeManager:
             return
         session.close(timeout_sec=1)
         self.sessions.pop(session_id, None)
+
+    def _terminate_after_timeout(
+        self,
+        session_id: str,
+        session: FreeCadWorkerSession,
+        exc: ToolInputError,
+    ) -> None:
+        if not str(exc).startswith(WORKER_TIMEOUT_PREFIX):
+            return
+        try:
+            session.close(timeout_sec=1)
+        except Exception:
+            pass
+        self.sessions.pop(session_id, None)
+        raise ToolInputError(
+            f"{exc}; worker session {session_id} was terminated to avoid continuing "
+            "a stale FreeCAD operation. Start a new worker session and retry with a "
+            "larger timeout_sec if the operation is expected to take longer."
+        ) from exc
 
 
 def discovery_summary(discovery: FreeCadDiscoveryResult) -> JsonObject:

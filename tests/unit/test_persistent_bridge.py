@@ -20,6 +20,7 @@ from freecad_mcp.tooling import ToolInputError
 FAKE_WORKER_SCRIPT = r'''
 import json
 import sys
+import time
 
 PREFIX = "__FREECAD_MCP_WORKER__"
 
@@ -43,6 +44,10 @@ for raw in sys.stdin:
         sys.stderr.write("planned crash\n")
         sys.stderr.flush()
         raise SystemExit(7)
+    if method == "sleep":
+        time.sleep(float((request.get("params") or {}).get("seconds", 5)))
+        emit({"id": request.get("id"), "ok": True, "result": {"slept": True}})
+        continue
     if method == "console":
         sys.stdout.write("FreeCAD console hello\n")
         sys.stdout.flush()
@@ -148,6 +153,18 @@ class PersistentBridgeTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ToolInputError, "worker exited"):
                 manager.request(session_id, "crash", {}, timeout_sec=10)
+
+        self.assertEqual(manager.list_sessions()["count"], 0)
+        self.assertTrue(manager.close(session_id)["already_closed"])
+
+    def test_manager_terminates_session_after_request_timeout(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = PersistentBridgeManager(workspace_root=Path(temp_dir), worker_script=FAKE_WORKER_SCRIPT)
+            started = manager.start_session(executable=sys.executable, timeout_sec=10)
+            session_id = started["session"]["session_id"]
+
+            with self.assertRaisesRegex(ToolInputError, "terminated to avoid continuing"):
+                manager.request(session_id, "sleep", {"seconds": 5}, timeout_sec=1)
 
         self.assertEqual(manager.list_sessions()["count"], 0)
         self.assertTrue(manager.close(session_id)["already_closed"])
