@@ -1621,6 +1621,25 @@ def main() -> int:
             if profile_alias["profile_type"] != "slot_start_end_radius" or len(profile_alias["added_indices"]) != 4:
                 raise RuntimeError(f"worker sketch profile alias mismatch: {profile_alias}")
 
+            worker_hexagon_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "profile": {
+                            "type": "hexagon",
+                            "center": [18, 0, 0],
+                            "corner": [21, 0, 0],
+                            "constrain": True,
+                        },
+                    }
+                ),
+                "worker_sketch_add_profile_hexagon",
+            )
+            if worker_hexagon_profile["profile_type"] != "hexagon" or len(worker_hexagon_profile["added_indices"]) != 7:
+                raise RuntimeError(f"worker sketch hexagon profile mismatch: {worker_hexagon_profile}")
+
             worker_extrude_sketch = worker_result(
                 service.definition_map()["freecad_worker_sketch_create"].handler(
                     {

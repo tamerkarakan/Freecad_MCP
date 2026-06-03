@@ -4,6 +4,7 @@
 
 - No unblocked roadmap item remains in the current scope. See `docs/ROADMAP_STATUS.md` for the completed, blocked, and future-deepening split.
 - The Claude Desktop stdio runtime-tool hang was fixed by isolating process-per-call FreeCADCmd stdin and covered by `scripts/smoke_mcp_runtime_stdio.py`; no follow-up backlog item is open for that bug.
+- FreeCAD GUI's regular-polygon Sketcher signature (`center` plus `corner`) has been folded into typed process and worker profile helpers with construction-circle constraints; no separate backlog item is open for that helper.
 
 ## Next Expansion Candidates
 

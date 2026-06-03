@@ -3607,13 +3607,20 @@ def sketch_geometry_method_catalog():
             {
                 "profile": "regular_polygon",
                 "methods": [
-                    {"type": "regular_polygon", "fields": ["center", "radius", "sides"], "optional": ["start_angle"]},
-                    {"type": "triangle", "fields": ["center", "radius"], "optional": ["start_angle"]},
-                    {"type": "square", "fields": ["center", "radius"], "optional": ["start_angle"]},
-                    {"type": "pentagon", "fields": ["center", "radius"], "optional": ["start_angle"]},
-                    {"type": "hexagon", "fields": ["center", "radius"], "optional": ["start_angle"]},
-                    {"type": "heptagon", "fields": ["center", "radius"], "optional": ["start_angle"]},
-                    {"type": "octagon", "fields": ["center", "radius"], "optional": ["start_angle"]},
+                    {"type": "regular_polygon", "fields": ["center", "corner", "sides"], "optional": ["construction_circle"]},
+                    {"type": "regular_polygon", "fields": ["center", "radius", "sides"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "triangle", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "triangle", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "square", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "square", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "pentagon", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "pentagon", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "hexagon", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "hexagon", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "heptagon", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "heptagon", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
+                    {"type": "octagon", "fields": ["center", "corner"], "optional": ["construction_circle"]},
+                    {"type": "octagon", "fields": ["center", "radius"], "optional": ["start_angle", "construction_circle"]},
                 ],
             },
             {"profile": "circle", "methods": [{"fields": ["center", "radius"], "optional": ["radius_constraint"]}]},
@@ -3773,16 +3780,42 @@ def add_profile_geometry(sketch, profile):
         if sides < 3:
             raise ValueError("regular_polygon requires sides >= 3")
         center = vector(profile.get("center"), [0, 0, 0])
-        radius = float(profile["radius"])
-        start = angle_radians(profile.get("start_angle"), 0.0)
+        corner_value = None
+        for corner_key in ("corner", "first_corner", "firstCornerPoint", "first_corner_point", "corner_point"):
+            if profile.get(corner_key) is not None:
+                corner_value = profile[corner_key]
+                break
+        if corner_value is not None:
+            first_corner = vector(corner_value)
+            diff = App.Vector(first_corner.x - center.x, first_corner.y - center.y, 0)
+            radius = float(diff.Length)
+            if radius <= 1e-12:
+                raise ValueError("regular_polygon requires distinct center and corner")
+        else:
+            radius = float(profile["radius"])
+            if radius <= 1e-12:
+                raise ValueError("regular_polygon requires radius > 0")
+            start = angle_radians(profile.get("start_angle"), 0.0)
+            diff = App.Vector(radius * math.cos(start), radius * math.sin(start), 0)
         points = [
-            App.Vector(center.x + radius * math.cos(start + (2 * math.pi * idx / sides)), center.y + radius * math.sin(start + (2 * math.pi * idx / sides)), center.z)
+            App.Vector(
+                center.x + math.cos(2 * math.pi * idx / sides) * diff.x - math.sin(2 * math.pi * idx / sides) * diff.y,
+                center.y + math.cos(2 * math.pi * idx / sides) * diff.y + math.sin(2 * math.pi * idx / sides) * diff.x,
+                center.z,
+            )
             for idx in range(sides)
         ]
         local = add_lines(points, True)
+        circle_idx = None
+        if bool(profile.get("construction_circle", True)):
+            circle_idx = sketch.addGeometry(Part.Circle(center, vector(profile.get("normal"), [0, 0, 1]), radius), True)
+            added.append(circle_idx)
         if constrain and bool(profile.get("equal_edges", True)):
             for idx in range(1, len(local)):
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[0], local[idx])))
+        if constrain and circle_idx is not None and bool(profile.get("point_on_circle", True)):
+            for idx in range(len(local)):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("PointOnObject", local[idx], 2, circle_idx)))
     elif kind in {"circle", "circle_profile"}:
         center = vector(profile.get("center"), [0, 0, 0])
         geom = Part.Circle(center, vector(profile.get("normal"), [0, 0, 1]), float(profile["radius"]))
