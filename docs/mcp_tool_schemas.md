@@ -3114,7 +3114,7 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
 
 ## `freecad_worker_sketch_add_geometry`
 
-Add typed geometry to a worker Sketcher object.
+Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z].
 
 ```json
 {
@@ -3303,7 +3303,7 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].
 
 ```json
 {
@@ -8233,7 +8233,7 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
 
 ## `freecad_sketch_add_geometry`
 
-Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch.
+Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z].
 
 ```json
 {
@@ -8419,7 +8419,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].
 
 ```json
 {

@@ -105,6 +105,85 @@ def create_worker_rect_pad(
     return document_id
 
 
+def smoke_worker_sketch_input_ergonomics(service: PersistentToolService) -> None:
+    """Exercise agent-friendly Sketcher inputs in a short isolated worker."""
+    started = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
+    session_id = started["session"]["session_id"]
+    try:
+        document = worker_result(
+            service.definition_map()["freecad_worker_document_new"].handler(
+                {"session_id": session_id, "document_name": "WorkerSketchInputErgonomics", "timeout_sec": 30}
+            ),
+            "worker_sketch_input_document_new",
+        )
+        document_id = document["document"]["document_id"]
+        coordinates_2d_sketch = worker_result(
+            service.definition_map()["freecad_worker_sketch_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "Worker2DCoordinates",
+                    "timeout_sec": 30,
+                }
+            ),
+            "worker_2d_coordinate_sketch_create",
+        )
+        if coordinates_2d_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+            raise RuntimeError(f"worker 2d coordinate sketch create failed: {coordinates_2d_sketch}")
+        coordinates_2d = worker_result(
+            service.definition_map()["freecad_worker_sketch_add_geometry"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "Worker2DCoordinates",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0], "end": [6, 0]},
+                        {"type": "line", "start": [6, 0], "end": [6, 4]},
+                        {"type": "line", "start": [6, 4], "end": [0, 4]},
+                        {"type": "line", "start": [0, 4], "end": [0, 0]},
+                    ],
+                    "connect_sequence": True,
+                    "close_sequence": True,
+                    "require_closed": True,
+                    "timeout_sec": 30,
+                }
+            ),
+            "worker_2d_coordinate_sketch_add_geometry",
+        )
+        if coordinates_2d.get("closed_validation", {}).get("open_vertices"):
+            raise RuntimeError(f"worker 2d coordinate sketch is not closed: {coordinates_2d}")
+
+        worker_rectangle_loop = worker_result(
+            service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerRectangleLoop",
+                    "loops": [{"type": "rectangle", "origin": [0, 10], "width": 6, "height": 4}],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "timeout_sec": 30,
+                }
+            ),
+            "worker_rectangle_loop_profile_create",
+        )
+        if not worker_rectangle_loop["validation"]["ok"] or not worker_rectangle_loop["validation"]["pad_ready"]:
+            raise RuntimeError(f"worker rectangle loop profile was not pad-ready: {worker_rectangle_loop}")
+        if len(worker_rectangle_loop["loops"][0]["added_indices"]) != 4:
+            raise RuntimeError(f"worker rectangle loop did not expand to four lines: {worker_rectangle_loop}")
+
+        closed = worker_result(
+            service.definition_map()["freecad_worker_document_close"].handler(
+                {"session_id": session_id, "document_id": document_id, "timeout_sec": 30}
+            ),
+            "worker_sketch_input_document_close",
+        )
+        if closed["document_count"] != 0:
+            raise RuntimeError(f"worker sketch input document close failed: {closed}")
+    finally:
+        service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
+
+
 def main() -> int:
     if not os.environ.get("FREECAD_MCP_FREECAD_HOME") and not os.environ.get("FREECAD_MCP_FREECAD_CMD"):
         message = "persistent worker smoke SKIPPED: FreeCAD runtime env not configured"
@@ -503,6 +582,9 @@ def main() -> int:
                 raise RuntimeError(f"worker initial sketch document close failed: {closed_initial_doc}")
             service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
+
+            smoke_worker_sketch_input_ergonomics(service)
+
             restarted_dressup = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_dressup["session"]["session_id"]
             if not restarted_dressup["session"]["running"]:

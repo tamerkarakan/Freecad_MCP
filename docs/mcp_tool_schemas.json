@@ -3033,7 +3033,7 @@
     {
       "name": "freecad_worker_sketch_add_geometry",
       "title": "Worker Add Sketch Geometry",
-      "description": "Add typed geometry to a worker Sketcher object.",
+      "description": "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z].",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3216,7 +3216,7 @@
     {
       "name": "freecad_worker_sketch_profile_create",
       "title": "Worker Create Sketch Profile",
-      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.",
+      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -8032,7 +8032,7 @@
     {
       "name": "freecad_sketch_add_geometry",
       "title": "Add Sketch Geometry",
-      "description": "Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch.",
+      "description": "Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z].",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -8212,7 +8212,7 @@
     {
       "name": "freecad_sketch_profile_create",
       "title": "Create Sketch Profile",
-      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.",
+      "description": "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].",
       "inputSchema": {
         "type": "object",
         "properties": {

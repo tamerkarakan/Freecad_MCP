@@ -19,7 +19,18 @@ def emit(payload):
 def vector(value, default=None):
     if value is None:
         value = default if default is not None else [0, 0, 0]
-    return App.Vector(float(value[0]), float(value[1]), float(value[2]))
+    if hasattr(value, "x") and hasattr(value, "y"):
+        return App.Vector(float(value.x), float(value.y), float(getattr(value, "z", 0.0)))
+    if isinstance(value, dict):
+        if "value" in value:
+            return vector(value["value"], default)
+        if "x" in value and "y" in value:
+            return App.Vector(float(value["x"]), float(value["y"]), float(value.get("z", 0.0)))
+    if len(value) == 2:
+        return App.Vector(float(value[0]), float(value[1]), 0.0)
+    if len(value) >= 3:
+        return App.Vector(float(value[0]), float(value[1]), float(value[2]))
+    raise ValueError("vector values must contain at least x/y coordinates")
 
 
 def angle_radians(value, default=0.0):
@@ -3331,14 +3342,80 @@ def validate_sketch_profile(sketch, args):
     }
 
 
+PROFILE_RECTANGLE_TYPES = {
+    "rectangle",
+    "rectangle_corner",
+    "rectangle_corners",
+    "rectangle_2_point",
+    "rectangle_two_points",
+    "rectangle_center",
+    "center_rectangle",
+    "rectangle_3_point",
+    "rectangle_three_points",
+}
+
+
+def line_segments_from_points(points, *, closed=True):
+    segments = []
+    for index in range(len(points) - 1):
+        segments.append({"type": "line", "start": point_list(points[index]), "end": point_list(points[index + 1])})
+    if closed and points:
+        segments.append({"type": "line", "start": point_list(points[-1]), "end": point_list(points[0])})
+    return segments
+
+
+def rectangle_loop_points(loop):
+    kind = str(loop.get("type") or "").lower()
+    if kind in {"rectangle_center", "center_rectangle"} or loop.get("center") is not None:
+        center = vector(loop.get("center"), [0, 0, 0])
+        width = float(loop["width"])
+        height = float(loop["height"])
+        c1 = App.Vector(center.x - width / 2.0, center.y - height / 2.0, center.z)
+        c2 = App.Vector(center.x + width / 2.0, center.y + height / 2.0, center.z)
+        return [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
+    if kind in {"rectangle_3_point", "rectangle_three_points"}:
+        points_input = loop.get("points") or [loop["point1"], loop["point2"], loop["point3"]]
+        p1 = vector(points_input[0])
+        p2 = vector(points_input[1])
+        p3 = vector(points_input[2])
+        edge = p2 - p1
+        length = float(edge.Length)
+        if length <= 1e-12:
+            raise ValueError("rectangle_3_point requires distinct point1 and point2")
+        normal = App.Vector(-edge.y / length, edge.x / length, 0)
+        height = (p3 - p2).dot(normal)
+        if abs(height) <= 1e-12:
+            raise ValueError("rectangle_3_point requires point3 away from the first edge")
+        return [p1, p2, p2 + normal * height, p1 + normal * height]
+    if loop.get("corner1") is not None and loop.get("corner2") is not None:
+        c1 = vector(loop["corner1"])
+        c2 = vector(loop["corner2"])
+    else:
+        c1 = vector(loop.get("origin"), [0, 0, 0])
+        c2 = App.Vector(c1.x + float(loop["width"]), c1.y + float(loop["height"]), c1.z)
+    return [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
+
+
+def profile_loop_segments(loop):
+    segments = loop.get("segments") or loop.get("geometry") or []
+    if segments:
+        return segments
+    kind = str(loop.get("type") or "").lower()
+    if kind in PROFILE_RECTANGLE_TYPES:
+        return line_segments_from_points(rectangle_loop_points(loop), closed=True)
+    if kind == "polyline" and loop.get("points"):
+        return line_segments_from_points([vector(point) for point in loop["points"]], closed=bool(loop.get("closed", True)))
+    return []
+
+
 def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_tolerance):
     import Sketcher
 
     name = str(loop.get("name") or ("loop_" + str(loop_index)))
     construction = bool(loop.get("construction", False))
-    segments = loop.get("segments") or loop.get("geometry") or []
+    segments = profile_loop_segments(loop)
     if not segments:
-        raise ValueError("profile loop has no segments: " + name)
+        raise ValueError("profile loop has no segments or supported profile type: " + name)
     segment_intents, segment_intent_mismatches = profile_segment_intent_report(segments)
     curve_contract = enforce_profile_loop_curve_contract(loop, params, segments, name)
     flat = []

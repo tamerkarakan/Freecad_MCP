@@ -32,6 +32,8 @@
 
 ## Closed
 
+- Sketcher geometry vector parsing previously assumed every coordinate list had three items, so natural `[x,y]` sketch points returned raw `list index out of range`; process and worker runtime scripts now accept `[x,y]` as `z=0`, with real FreeCAD smoke coverage.
+- `freecad_sketch_profile_create` previously rejected a high-level rectangle loop such as `{"type":"rectangle","origin":[0,0],"width":30,"height":20}` with `profile loop has no segments`; process and worker profile creation now expand safe rectangle/polyline helper loops into ordered line segments before validation.
 - GUI bridge object summaries previously assumed every object `Shape` could expose topology and volume; empty/invalid Sketch shapes in live FreeCAD GUI can raise `shape is invalid`, so GUI shape summaries now guard invalid/null shapes and return bounded counts instead of failing state reads.
 - FreeCAD 1.1.1 can return a present-but-null `Shape` for shell-only Sketcher `Part::Extrusion` features; runtime shape summaries now report structured `is_null=true` metadata with zero counts instead of returning `None` and breaking downstream smoke/tool consumers.
 - Persistent worker mode previously covered only session/document/object basics, document export, and several Part operations; it now exposes worker Sketcher, mesh, and Assembly typed operations with real FreeCAD smoke coverage.

@@ -126,6 +126,8 @@ def main() -> int:
         open_sketch_doc = temp / "open_sketch.FCStd"
         advanced_sketch_doc = temp / "advanced_sketch.FCStd"
         connected_sketch_doc = temp / "connected_sketch.FCStd"
+        coordinates_2d_doc = temp / "coordinates_2d.FCStd"
+        rectangle_loop_doc = temp / "rectangle_loop.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
         partdesign_doc = temp / "partdesign.FCStd"
         slot_pad_doc = temp / "slot_pad.FCStd"
@@ -868,6 +870,61 @@ def main() -> int:
         connected_arc_reports = connected_geometry.get("geometry_reports", [])
         if len(connected_arc_reports) != 1 or not 179.0 <= connected_arc_reports[0]["sweep_deg"] <= 181.0:
             raise RuntimeError(f"connected sketch did not report the circular arc correctly: {connected_geometry}")
+
+        coordinates_2d_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "Coordinate2DSmoke",
+                    "sketch_name": "Coordinate2DSketch",
+                    "output_path": str(coordinates_2d_doc),
+                    "overwrite": True,
+                }
+            ),
+            "2d coordinate sketch create",
+        )
+        if coordinates_2d_sketch["sketch"]["type_id"] != "Sketcher::SketchObject":
+            raise RuntimeError(f"2d coordinate sketch create failed: {coordinates_2d_sketch}")
+        coordinates_2d_geometry = assert_ok(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(coordinates_2d_doc),
+                    "sketch_name": "Coordinate2DSketch",
+                    "geometry": [
+                        {"type": "line", "start": [0, 0], "end": [6, 0]},
+                        {"type": "line", "start": [6, 0], "end": [6, 4]},
+                        {"type": "line", "start": [6, 4], "end": [0, 4]},
+                        {"type": "line", "start": [0, 4], "end": [0, 0]},
+                    ],
+                    "connect_sequence": True,
+                    "close_sequence": True,
+                    "require_closed": True,
+                    "output_path": str(coordinates_2d_doc),
+                    "overwrite": True,
+                }
+            ),
+            "2d coordinate sketch add geometry",
+        )
+        if coordinates_2d_geometry.get("closed_validation", {}).get("open_vertices"):
+            raise RuntimeError(f"2d coordinate sketch is not closed: {coordinates_2d_geometry}")
+
+        rectangle_loop_profile = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "RectangleLoopSmoke",
+                    "sketch_name": "RectangleLoopSketch",
+                    "loops": [{"type": "rectangle", "origin": [0, 0], "width": 6, "height": 4}],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "output_path": str(rectangle_loop_doc),
+                    "overwrite": True,
+                }
+            ),
+            "rectangle loop sketch profile create",
+        )
+        if not rectangle_loop_profile["validation"]["ok"] or not rectangle_loop_profile["validation"]["pad_ready"]:
+            raise RuntimeError(f"rectangle loop profile was not pad-ready: {rectangle_loop_profile}")
+        if len(rectangle_loop_profile["loops"][0]["added_indices"]) != 4:
+            raise RuntimeError(f"rectangle loop profile did not expand to four lines: {rectangle_loop_profile}")
 
         profile_builder = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(

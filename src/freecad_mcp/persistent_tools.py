@@ -745,7 +745,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_geometry",
                 "Worker Add Sketch Geometry",
-                "Add typed geometry to a worker Sketcher object.",
+                "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z].",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -796,7 +796,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_create",
                 "Worker Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body.",
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
