@@ -454,6 +454,14 @@ Create a document inside a persistent worker session.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -481,6 +489,14 @@ Open a FreeCAD document inside a persistent worker session.
     },
     "document_path": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -522,6 +538,14 @@ Save a worker document by document id.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -563,6 +587,14 @@ Recompute a worker document by document id.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -591,6 +623,14 @@ Close an in-memory worker document by document id.
     },
     "document_id": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -635,6 +675,14 @@ Export selected/all objects from an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -683,6 +731,14 @@ Create or reuse a PartDesign Body with origin planes inside an in-memory worker 
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -768,6 +824,14 @@ Create a PartDesign datum plane inside a worker Body, attached to a Body origin 
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -847,6 +911,14 @@ Create a PartDesign Pad from a worker Sketcher profile inside a Body, attaching 
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -927,6 +999,14 @@ Create a PartDesign Pocket that removes material from an existing worker Body so
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1041,6 +1121,14 @@ Create a plain PartDesign Hole from a worker Sketcher circle profile inside an e
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1162,6 +1250,14 @@ Create an additive PartDesign Revolution from a worker Sketcher profile around a
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1274,6 +1370,14 @@ Create a subtractive PartDesign Groove from a worker Sketcher profile around a s
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1367,6 +1471,14 @@ Create an additive PartDesign Loft from a worker profile sketch and one or more 
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1459,6 +1571,14 @@ Create a subtractive PartDesign Loft that removes material from a worker Body so
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1662,6 +1782,14 @@ Create an additive PartDesign Pipe by sweeping a worker profile sketch along a s
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1865,6 +1993,14 @@ Create a subtractive PartDesign Pipe by sweeping a worker profile sketch along a
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -1990,6 +2126,14 @@ Create a PartDesign Fillet dress-up in an in-memory worker document.
     },
     "fillet_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2135,6 +2279,14 @@ Create a PartDesign Chamfer dress-up in an in-memory worker document.
     },
     "chamfer_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2281,6 +2433,14 @@ Create a PartDesign Thickness dress-up in an in-memory worker document.
     },
     "thickness_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2430,6 +2590,14 @@ Create a PartDesign Draft dress-up in an in-memory worker document.
     },
     "draft_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2597,6 +2765,14 @@ Create a PartDesign LinearPattern transform in an in-memory worker document.
     },
     "pattern_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2722,6 +2898,14 @@ Create a PartDesign PolarPattern transform in an in-memory worker document.
     },
     "pattern_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2827,6 +3011,14 @@ Create a PartDesign Mirrored transform in an in-memory worker document.
     },
     "mirror_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2903,6 +3095,14 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -2965,6 +3165,14 @@ Add typed geometry to a worker Sketcher object.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3017,6 +3225,14 @@ Add typed constraints to a worker Sketcher object.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3030,7 +3246,7 @@ Add typed constraints to a worker Sketcher object.
 
 ## `freecad_worker_sketch_add_profile`
 
-Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.
+Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.
 
 ```json
 {
@@ -3066,6 +3282,14 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3211,6 +3435,14 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3297,6 +3529,14 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
       "items": {
         "type": "object"
       }
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3348,6 +3588,14 @@ Delete, move, toggle construction, or manage external Sketcher geometry.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3400,6 +3648,14 @@ Delete, rename, set datum, toggle driving/active/virtual, and validate constrain
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3452,6 +3708,14 @@ Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spl
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3504,6 +3768,14 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality, and red
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3554,6 +3826,14 @@ Solve and summarize Sketcher state, constraints, missing constraints, and constr
     },
     "angle_precision": {
       "type": "number"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3599,6 +3879,14 @@ Import a mesh file into an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3644,6 +3932,14 @@ Export selected/all mesh objects from an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3679,6 +3975,14 @@ Summarize mesh object quality fields inside an in-memory worker document.
       "items": {
         "type": "string"
       }
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3735,6 +4039,14 @@ Repair mesh copies and assign them back, or create a replacement mesh object whe
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3793,6 +4105,14 @@ Run mesh union/difference/intersection inside an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3838,6 +4158,14 @@ Create an Assembly container inside an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3888,6 +4216,14 @@ Insert an object into a worker Assembly as an App::Link.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3946,6 +4282,14 @@ Create a native Assembly joint proxy inside an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -3988,6 +4332,14 @@ Recompute a worker Assembly document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4019,6 +4371,14 @@ Return a compact row list for an Assembly or the whole worker document.
     },
     "assembly_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4047,6 +4407,14 @@ List objects from an in-memory worker document.
     },
     "document_id": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4078,6 +4446,14 @@ Inspect an object from an in-memory worker document.
     },
     "object_name": {
       "type": "string"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4090,7 +4466,7 @@ Inspect an object from an in-memory worker document.
 
 ## `freecad_worker_object_set_properties`
 
-Set simple object properties inside an in-memory worker document.
+Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs inside an in-memory worker document.
 
 ```json
 {
@@ -4126,6 +4502,14 @@ Set simple object properties inside an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4178,6 +4562,14 @@ Set the user-visible object Label while keeping the internal FreeCAD Name stable
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4191,7 +4583,7 @@ Set the user-visible object Label while keeping the internal FreeCAD Name stable
 
 ## `freecad_worker_object_delete`
 
-Delete object(s) inside an in-memory worker document.
+Delete object(s) inside an in-memory worker document and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.
 
 ```json
 {
@@ -4230,6 +4622,14 @@ Delete object(s) inside an in-memory worker document.
     "allow_external_paths": {
       "type": "boolean",
       "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
     }
   },
   "required": [
@@ -4552,7 +4952,7 @@ Inspect one document object.
 
 ## `freecad_object_set_properties`
 
-Set simple object properties and save optionally.
+Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs, then save optionally.
 
 ```json
 {
@@ -4667,7 +5067,7 @@ Set the user-visible object Label while keeping the internal FreeCAD Name stable
 
 ## `freecad_object_delete`
 
-Delete object(s) by name/label.
+Delete object(s) by name/label and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.
 
 ```json
 {
@@ -7963,7 +8363,7 @@ Add raw or named Sketcher constraints with optional metadata such as datum, driv
 
 ## `freecad_sketch_add_profile`
 
-Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.
+Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.
 
 ```json
 {

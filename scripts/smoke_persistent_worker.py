@@ -477,6 +477,7 @@ def main() -> int:
                         ],
                         "lock_mode": "block",
                         "require_fully_constrained": True,
+                        "timeout_sec": 90,
                     }
                 ),
                 "worker_partdesign_datum_attached_profile",
@@ -500,7 +501,7 @@ def main() -> int:
             )
             if closed_initial_doc["document_count"] != 0:
                 raise RuntimeError(f"worker initial sketch document close failed: {closed_initial_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_dressup = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_dressup["session"]["session_id"]
@@ -655,7 +656,7 @@ def main() -> int:
             if closed_draft_doc["document_count"] != 0:
                 raise RuntimeError(f"worker PartDesign Draft document close failed: {closed_draft_doc}")
 
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_transform = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_transform["session"]["session_id"]
@@ -771,7 +772,7 @@ def main() -> int:
             if closed_mirrored_doc["document_count"] != 0:
                 raise RuntimeError(f"worker PartDesign Mirrored document close failed: {closed_mirrored_doc}")
 
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_sketch["session"]["session_id"]
@@ -928,7 +929,7 @@ def main() -> int:
             )
             if closed_revolved_doc["document_count"] != 0:
                 raise RuntimeError(f"worker revolved document close failed: {closed_revolved_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_loft = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_loft["session"]["session_id"]
@@ -1038,7 +1039,7 @@ def main() -> int:
             )
             if closed_additive_loft_doc["document_count"] != 0:
                 raise RuntimeError(f"worker additive loft document close failed: {closed_additive_loft_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_subtractive_loft = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_subtractive_loft["session"]["session_id"]
@@ -1192,7 +1193,7 @@ def main() -> int:
             )
             if closed_loft_doc["document_count"] != 0:
                 raise RuntimeError(f"worker subtractive loft document close failed: {closed_loft_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_additive_pipe = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_additive_pipe["session"]["session_id"]
@@ -1341,7 +1342,7 @@ def main() -> int:
             )
             if closed_additive_pipe_doc["document_count"] != 0:
                 raise RuntimeError(f"worker additive pipe document close failed: {closed_additive_pipe_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_subtractive_pipe = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_subtractive_pipe["session"]["session_id"]
@@ -1501,7 +1502,7 @@ def main() -> int:
             )
             if closed_subtractive_pipe_doc["document_count"] != 0:
                 raise RuntimeError(f"worker subtractive pipe document close failed: {closed_subtractive_pipe_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted_sketch = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted_sketch["session"]["session_id"]
@@ -1639,6 +1640,27 @@ def main() -> int:
             )
             if worker_hexagon_profile["profile_type"] != "hexagon" or len(worker_hexagon_profile["added_indices"]) != 7:
                 raise RuntimeError(f"worker sketch hexagon profile mismatch: {worker_hexagon_profile}")
+
+            worker_keyhole_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_add_profile"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "profile": {
+                            "type": "keyhole",
+                            "circle_center": [26, 0, 0],
+                            "circle_radius": 3,
+                            "slot_end": [32, 0, 0],
+                            "slot_radius": 1,
+                            "constrain": True,
+                        },
+                    }
+                ),
+                "worker_sketch_add_profile_keyhole",
+            )
+            if worker_keyhole_profile["profile_type"] != "keyhole" or len(worker_keyhole_profile["added_indices"]) != 4:
+                raise RuntimeError(f"worker sketch keyhole profile mismatch: {worker_keyhole_profile}")
 
             worker_extrude_sketch = worker_result(
                 service.definition_map()["freecad_worker_sketch_create"].handler(
@@ -1826,7 +1848,7 @@ def main() -> int:
             )
             if closed_sketch_doc["document_count"] != 0:
                 raise RuntimeError(f"worker sketch document close failed: {closed_sketch_doc}")
-            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+            service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
             session_id = None
             restarted = service.definition_map()["freecad_worker_session_start"].handler({"timeout_sec": 30})
             session_id = restarted["session"]["session_id"]
@@ -2035,6 +2057,11 @@ def main() -> int:
             )
             if objects["document"]["object_count"] < 2:
                 raise RuntimeError(f"worker object count mismatch: {objects}")
+            compact_objects = service.definition_map()["freecad_worker_object_list"].handler(
+                {"session_id": session_id, "document_id": document_id, "compact_response": True}
+            )
+            if not compact_objects.get("compact_response") or "objects" in compact_objects["worker"]["result"]["document"]:
+                raise RuntimeError(f"worker compact response did not omit document object dump: {compact_objects}")
 
             obj = worker_result(
                 service.definition_map()["freecad_worker_object_get"].handler(
@@ -2045,6 +2072,105 @@ def main() -> int:
             bbox = obj["object"]["shape"]["bound_box"]
             if [bbox["xmax"], bbox["ymax"], bbox["zmax"]] != [8.0, 5.0, 3.0]:
                 raise RuntimeError(f"worker bbox mismatch: {obj}")
+
+            tip_document_id = create_worker_rect_pad(
+                service,
+                session_id=session_id,
+                document_name="WorkerTipSmoke",
+                body_name="WorkerTipBody",
+                sketch_name="WorkerTipBaseSketch",
+                pad_name="WorkerTipPad",
+            )
+            worker_tip_pocket_profile = worker_result(
+                service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": tip_document_id,
+                        "sketch_name": "WorkerTipPocketSketch",
+                        "body_name": "WorkerTipBody",
+                        "attachment_plane": "XY",
+                        "loops": [
+                            {
+                                "segments": [
+                                    {"type": "line", "start": [-2, -2, 0], "end": [2, -2, 0]},
+                                    {"type": "line", "start": [2, -2, 0], "end": [2, 2, 0]},
+                                    {"type": "line", "start": [2, 2, 0], "end": [-2, 2, 0]},
+                                    {"type": "line", "start": [-2, 2, 0], "end": [-2, -2, 0]},
+                                ],
+                            }
+                        ],
+                        "lock_mode": "block",
+                        "require_fully_constrained": True,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_tip_pocket_profile",
+            )
+            if not worker_tip_pocket_profile["attachment"]["attached"]:
+                raise RuntimeError(f"worker Tip pocket profile did not attach: {worker_tip_pocket_profile}")
+            worker_tip_pocket = worker_result(
+                service.definition_map()["freecad_worker_partdesign_pocket"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": tip_document_id,
+                        "body_name": "WorkerTipBody",
+                        "sketch_name": "WorkerTipPocketSketch",
+                        "pocket_name": "WorkerTipPocket",
+                        "length": 4,
+                        "timeout_sec": 90,
+                    }
+                ),
+                "worker_tip_pocket",
+            )
+            if worker_tip_pocket["body"]["partdesign"]["tip"] != "WorkerTipPocket":
+                raise RuntimeError(f"worker Tip pocket did not become Body Tip: {worker_tip_pocket}")
+            worker_tip_to_pad = worker_result(
+                service.definition_map()["freecad_worker_object_set_properties"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": tip_document_id,
+                        "object_name": "WorkerTipBody",
+                        "properties": {"Tip": {"$ref": "WorkerTipPad"}},
+                    }
+                ),
+                "worker_tip_body_tip_set_to_pad",
+            )
+            if worker_tip_to_pad["changed"]["Tip"]["$ref"] != "WorkerTipPad" or worker_tip_to_pad["object"]["partdesign"]["tip"] != "WorkerTipPad":
+                raise RuntimeError(f"worker Body Tip $ref property set failed: {worker_tip_to_pad}")
+            worker_tip_to_pocket = worker_result(
+                service.definition_map()["freecad_worker_object_set_properties"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": tip_document_id,
+                        "object_name": "WorkerTipBody",
+                        "properties": {"Tip": {"$ref": "WorkerTipPocket"}},
+                    }
+                ),
+                "worker_tip_body_tip_set_to_pocket",
+            )
+            if worker_tip_to_pocket["object"]["partdesign"]["tip"] != "WorkerTipPocket":
+                raise RuntimeError(f"worker Body Tip restore to Pocket failed: {worker_tip_to_pocket}")
+            worker_deleted_tip = worker_result(
+                service.definition_map()["freecad_worker_object_delete"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": tip_document_id,
+                        "object_name": "WorkerTipPocket",
+                    }
+                ),
+                "worker_tip_current_tip_delete",
+            )
+            if worker_deleted_tip["tip_restorations"] != [{"body": "WorkerTipBody", "before_tip": "WorkerTipPocket", "after_tip": "WorkerTipPad", "restored": True}]:
+                raise RuntimeError(f"worker Body Tip was not restored before deleting current Tip: {worker_deleted_tip}")
+            worker_tip_body_after_delete = next(obj for obj in worker_deleted_tip["document"]["objects"] if obj["name"] == "WorkerTipBody")
+            if worker_tip_body_after_delete["partdesign"]["tip"] != "WorkerTipPad":
+                raise RuntimeError(f"worker Body Tip after delete is not WorkerTipPad: {worker_deleted_tip}")
+            worker_result(
+                service.definition_map()["freecad_worker_document_close"].handler(
+                    {"session_id": session_id, "document_id": tip_document_id}
+                ),
+                "worker_tip_document_close",
+            )
 
             assembly = worker_result(
                 service.definition_map()["freecad_worker_assembly_create"].handler(
@@ -2137,7 +2263,7 @@ def main() -> int:
                 raise RuntimeError(f"worker document close failed: {closed_doc}")
         finally:
             if session_id:
-                service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id})
+                service.definition_map()["freecad_worker_session_close"].handler({"session_id": session_id, "timeout_sec": 30})
 
     print("persistent worker smoke OK")
     return 0

@@ -578,6 +578,34 @@ def ensure_unique_label(doc, obj, label):
             raise ValueError("label already exists on object: " + candidate.Name)
 
 
+def property_value_summary(value):
+    if hasattr(value, "Name") and hasattr(value, "TypeId"):
+        return {"$ref": value.Name, "label": value.Label, "type_id": value.TypeId}
+    if isinstance(value, (list, tuple)):
+        return [property_value_summary(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): property_value_summary(item) for key, item in value.items()}
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
+def resolve_property_value(doc, value):
+    if isinstance(value, dict):
+        if "$ref" in value:
+            return get_object(doc, str(value["$ref"]))
+        if "$refs" in value:
+            return [get_object(doc, str(name)) for name in (value.get("$refs") or [])]
+        if "$link" in value:
+            return get_object(doc, str(value["$link"]))
+        if "$links" in value:
+            return [get_object(doc, str(name)) for name in (value.get("$links") or [])]
+        return {key: resolve_property_value(doc, item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [resolve_property_value(doc, item) for item in value]
+    return value
+
+
 def partdesign_summary(obj):
     type_id = getattr(obj, "TypeId", "")
     if not str(type_id).startswith("PartDesign::"):
@@ -1276,6 +1304,33 @@ def find_single_partdesign_body(doc):
     return None
 
 
+def find_body_tip_fallback(body, deleted_names):
+    for candidate in reversed(list(getattr(body, "Group", []) or [])):
+        if getattr(candidate, "Name", None) in deleted_names:
+            continue
+        if object_solid_count(candidate) > 0:
+            return candidate
+    return None
+
+
+def restore_body_tips_before_delete(doc, objects):
+    deleted_names = {obj.Name for obj in objects}
+    reports = []
+    for body in [obj for obj in doc.Objects if getattr(obj, "TypeId", "") == "PartDesign::Body"]:
+        tip = getattr(body, "Tip", None)
+        if tip is None or getattr(tip, "Name", None) not in deleted_names:
+            continue
+        fallback = find_body_tip_fallback(body, deleted_names)
+        report = {"body": body.Name, "before_tip": getattr(tip, "Name", None), "after_tip": getattr(fallback, "Name", None)}
+        if fallback is not None:
+            body.Tip = fallback
+            report["restored"] = True
+        else:
+            report["restored"] = False
+        reports.append(report)
+    return reports
+
+
 def get_or_create_partdesign_body(doc, args, *, default_if_requested=True):
     requested = args.get("body_name")
     requested_partdesign = attachment_requested(args)
@@ -1474,12 +1529,17 @@ def action_object_set_properties(args):
     obj = get_object(doc, args["object_name"])
     doc.openTransaction("MCP set object properties")
     changed = {}
-    for key, value in (args.get("properties") or {}).items():
-        if key not in obj.PropertiesList and not hasattr(obj, key):
-            raise ValueError("unknown property: " + key)
-        setattr(obj, key, value)
-        changed[key] = value
-    doc.commitTransaction()
+    try:
+        for key, value in (args.get("properties") or {}).items():
+            if key not in obj.PropertiesList and not hasattr(obj, key):
+                raise ValueError("unknown property: " + key)
+            resolved = resolve_property_value(doc, value)
+            setattr(obj, key, resolved)
+            changed[key] = property_value_summary(resolved)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
     doc.recompute()
     saved = save_if_requested(doc, args)
     return {"saved_path": saved, "changed": changed, "object": object_summary(obj), "document": document_summary(doc)}
@@ -1644,13 +1704,19 @@ def action_object_delete(args):
     doc = App.openDocument(args["document_path"])
     names = args.get("object_names") or [args["object_name"]]
     doc.openTransaction("MCP delete objects")
-    for name in names:
-        obj = get_object(doc, name)
-        doc.removeObject(obj.Name)
-    doc.commitTransaction()
+    try:
+        objects = [get_object(doc, name) for name in names]
+        deleted = [obj.Name for obj in objects]
+        tip_restorations = restore_body_tips_before_delete(doc, objects)
+        for obj in objects:
+            doc.removeObject(obj.Name)
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
     doc.recompute()
     saved = save_if_requested(doc, args)
-    return {"saved_path": saved, "deleted": names, "document": document_summary(doc)}
+    return {"saved_path": saved, "deleted": deleted, "tip_restorations": tip_restorations, "document": document_summary(doc)}
 
 
 def action_part_create_primitive(args):
@@ -3630,6 +3696,7 @@ def sketch_geometry_method_catalog():
                     {"type": "slot", "fields": ["center", "length", "radius"]},
                     {"type": "slot_start_end_radius", "fields": ["start", "end", "radius"]},
                     {"type": "arc_slot", "fields": ["center", "radius", "width", "start_angle", "end_angle"], "optional": ["direction", "sweep"]},
+                    {"type": "keyhole", "fields": ["circle_center", "circle_radius", "slot_end", "slot_radius"]},
                 ],
             },
             {"profile": "polyline", "methods": [{"fields": ["points"], "optional": ["closed"]}]},
@@ -3854,12 +3921,67 @@ def add_profile_geometry(sketch, profile):
             for idx in range(len(local) - 1):
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
             constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
+            if bool(profile.get("tangent_constraints", False)):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[0], 2, local[1], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[1], 2, local[2], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[2], 2, local[3], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[3], 2, local[0], 1)))
             if abs(unit.y) <= 1e-12:
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[0])))
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Horizontal", local[2])))
             else:
                 constraints.append(sketch.addConstraint(Sketcher.Constraint("Parallel", local[0], local[2])))
-            constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[1], local[3])))
+            if bool(profile.get("equal_arcs", False)):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Equal", local[1], local[3])))
+    elif kind in {"keyhole", "circle_slot_union", "slot_circle_union"}:
+        center = vector(profile.get("circle_center") or profile.get("center"), [0, 0, 0])
+        circle_radius = float(profile.get("circle_radius", profile.get("head_radius", profile.get("radius"))))
+        if profile.get("slot_radius") is not None:
+            slot_radius = float(profile["slot_radius"])
+        elif profile.get("neck_radius") is not None:
+            slot_radius = float(profile["neck_radius"])
+        elif profile.get("slot_width") is not None:
+            slot_radius = float(profile["slot_width"]) / 2.0
+        elif profile.get("width") is not None:
+            slot_radius = float(profile["width"]) / 2.0
+        else:
+            raise ValueError("keyhole requires slot_radius or slot_width")
+        slot_end = vector(profile.get("slot_end") or profile.get("end"))
+        axis = App.Vector(slot_end.x - center.x, slot_end.y - center.y, 0)
+        axis_length = float(axis.Length)
+        if circle_radius <= 0:
+            raise ValueError("keyhole requires circle_radius > 0")
+        if slot_radius <= 0 or slot_radius >= circle_radius:
+            raise ValueError("keyhole requires 0 < slot_radius < circle_radius")
+        if axis_length <= 1e-12:
+            raise ValueError("keyhole requires distinct circle_center and slot_end")
+        unit = App.Vector(axis.x / axis_length, axis.y / axis_length, 0)
+        normal = App.Vector(-unit.y, unit.x, 0)
+        transition = math.sqrt(max(circle_radius * circle_radius - slot_radius * slot_radius, 0.0))
+        if axis_length <= transition + 1e-9:
+            raise ValueError("keyhole slot_end must extend beyond the circle/slot transition")
+        top_near = center + unit * transition + normal * slot_radius
+        bottom_near = center + unit * transition - normal * slot_radius
+        top_far = slot_end + normal * slot_radius
+        bottom_far = slot_end - normal * slot_radius
+        far_mid = slot_end + unit * slot_radius
+        circle_mid = center - unit * circle_radius
+        local = [
+            sketch.addGeometry(Part.LineSegment(top_near, top_far), construction),
+            sketch.addGeometry(Part.ArcOfCircle(top_far, far_mid, bottom_far), construction),
+            sketch.addGeometry(Part.LineSegment(bottom_far, bottom_near), construction),
+            sketch.addGeometry(Part.ArcOfCircle(bottom_near, circle_mid, top_near), construction),
+        ]
+        added.extend(local)
+        if constrain:
+            for idx in range(len(local) - 1):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[idx], 2, local[idx + 1], 1)))
+            constraints.append(sketch.addConstraint(Sketcher.Constraint("Coincident", local[-1], 2, local[0], 1)))
+            if bool(profile.get("tangent_constraints", False)):
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[0], 2, local[1], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[1], 2, local[2], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[2], 2, local[3], 1)))
+                constraints.append(sketch.addConstraint(Sketcher.Constraint("Tangent", local[3], 2, local[0], 1)))
     elif kind in {"arc_slot", "slot_arc"}:
         center = vector(profile.get("center"), [0, 0, 0])
         radius = float(profile["radius"])

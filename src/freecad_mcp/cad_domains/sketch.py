@@ -30,7 +30,7 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_add_profile",
                 "Add Sketch Profile",
-                "Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
+                "Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.",
                 {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "profile": {"type": "object"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "profile"],
                 "sketch_add_profile",

@@ -222,6 +222,47 @@ class PersistentBridgeTests(unittest.TestCase):
             finally:
                 manager.close(session_id, timeout_sec=10)
 
+    def test_worker_compact_response_is_schema_backed_and_host_side(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service, manager, session_id = self._started_service(temp_dir)
+            tool = service.definition_map()["freecad_worker_object_get"]
+            try:
+                props = tool.to_mcp()["inputSchema"]["properties"]
+                self.assertIn("compact_response", props)
+                result = tool.handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": "Doc",
+                        "object_name": "Pad",
+                        "compact_response": True,
+                    }
+                )
+            finally:
+                manager.close(session_id, timeout_sec=10)
+
+        self.assertTrue(result["compact_response"])
+        self.assertEqual(result["session"]["session_id"], session_id)
+        self.assertNotIn("stderr", result["session"])
+        params = result["worker"]["result"]["params"]
+        self.assertEqual(params["document_id"], "Doc")
+        self.assertNotIn("compact_response", params)
+
+    def test_worker_compact_response_must_be_boolean(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service, manager, session_id = self._started_service(temp_dir)
+            try:
+                with self.assertRaisesRegex(ToolInputError, "compact_response"):
+                    service.definition_map()["freecad_worker_object_get"].handler(
+                        {
+                            "session_id": session_id,
+                            "document_id": "Doc",
+                            "object_name": "Pad",
+                            "compact_response": "yes",
+                        }
+                    )
+            finally:
+                manager.close(session_id, timeout_sec=10)
+
     def test_worker_boolean_requires_two_objects_before_worker_request(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             service, manager, session_id = self._started_service(temp_dir)

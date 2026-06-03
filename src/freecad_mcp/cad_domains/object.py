@@ -12,7 +12,7 @@ class ObjectCadToolService(CadDomainToolService):
         return [
             CadToolSpec("freecad_object_list", "List FreeCAD Objects", "List document objects.", {"document_path": {"type": "string"}}, ["document_path"], "object_list"),
             CadToolSpec("freecad_object_get", "Get FreeCAD Object", "Inspect one document object.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "include_properties": {"type": "boolean"}}, ["document_path", "object_name"], "object_get"),
-            CadToolSpec("freecad_object_set_properties", "Set FreeCAD Object Properties", "Set simple object properties and save optionally.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "properties": {"type": "object"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "object_name", "properties"], "object_set_properties"),
+            CadToolSpec("freecad_object_set_properties", "Set FreeCAD Object Properties", "Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs, then save optionally.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "properties": {"type": "object"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "object_name", "properties"], "object_set_properties"),
             CadToolSpec(
                 "freecad_object_rename_label",
                 "Rename FreeCAD Object Label",
@@ -21,5 +21,5 @@ class ObjectCadToolService(CadDomainToolService):
                 ["document_path", "object_name", "label"],
                 "object_rename_label",
             ),
-            CadToolSpec("freecad_object_delete", "Delete FreeCAD Objects", "Delete object(s) by name/label.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "object_delete"),
+            CadToolSpec("freecad_object_delete", "Delete FreeCAD Objects", "Delete object(s) by name/label and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.", {"document_path": {"type": "string"}, "object_name": {"type": "string"}, "object_names": {"type": "array", "items": {"type": "string"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "object_delete"),
         ]

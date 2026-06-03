@@ -128,6 +128,8 @@ def main() -> int:
         connected_sketch_doc = temp / "connected_sketch.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
         partdesign_doc = temp / "partdesign.FCStd"
+        slot_pad_doc = temp / "slot_pad.FCStd"
+        keyhole_pocket_doc = temp / "keyhole_pocket.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
         dimension_sketch_doc = temp / "dimension_sketch.FCStd"
@@ -689,7 +691,7 @@ def main() -> int:
         for expected_type in ["line_angle_length", "arc_3_point", "arc_start_end_radius", "arc_center_angles", "circle_3_point", "bspline"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch geometry method catalog missing {expected_type}: {method_catalog}")
-        for expected_type in ["rectangle_center", "rectangle_3_point", "triangle", "square", "hexagon", "slot_start_end_radius", "arc_slot"]:
+        for expected_type in ["rectangle_center", "rectangle_3_point", "triangle", "square", "hexagon", "slot_start_end_radius", "arc_slot", "keyhole"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch profile method catalog missing {expected_type}: {method_catalog}")
 
@@ -722,6 +724,7 @@ def main() -> int:
             ({"type": "slot", "center": [45, 0, 0], "length": 8, "radius": 1.5}, 4),
             ({"type": "slot_start_end_radius", "start": [50, -10, 0], "end": [58, -8, 0], "radius": 1.5}, 4),
             ({"type": "arc_slot", "center": [66, -8, 0], "radius": 5, "width": 2, "start_angle": 0, "end_angle": {"degrees": 90}, "direction": "ccw"}, 4),
+            ({"type": "keyhole", "circle_center": [72, 0, 0], "circle_radius": 3, "slot_end": [78, 0, 0], "slot_radius": 1}, 4),
             ({"type": "circle", "center": [58, 0, 0], "radius": 2}, 1),
         ]:
             helper_profile = assert_ok(
@@ -1031,6 +1034,179 @@ def main() -> int:
         )
         if partdesign_pocket["pocket"]["shape"]["solids"] != 1 or partdesign_pocket["body"]["partdesign"]["tip"] != "Pocket":
             raise RuntimeError(f"partdesign pocket did not preserve a body solid: {partdesign_pocket}")
+        tip_to_pad = assert_ok(
+            service.definition_map()["freecad_object_set_properties"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "object_name": "Body",
+                    "properties": {"Tip": {"$ref": "Pad"}},
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign body Tip set to Pad",
+        )
+        if tip_to_pad["changed"]["Tip"]["$ref"] != "Pad" or tip_to_pad["object"]["partdesign"]["tip"] != "Pad":
+            raise RuntimeError(f"body Tip $ref property set failed: {tip_to_pad}")
+        tip_to_pocket = assert_ok(
+            service.definition_map()["freecad_object_set_properties"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "object_name": "Body",
+                    "properties": {"Tip": {"$ref": "Pocket"}},
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign body Tip set to Pocket",
+        )
+        if tip_to_pocket["object"]["partdesign"]["tip"] != "Pocket":
+            raise RuntimeError(f"body Tip restore to Pocket failed: {tip_to_pocket}")
+        deleted_tip = assert_ok(
+            service.definition_map()["freecad_object_delete"].handler(
+                {
+                    "document_path": str(partdesign_doc),
+                    "object_name": "Pocket",
+                    "output_path": str(partdesign_doc),
+                    "overwrite": True,
+                }
+            ),
+            "partdesign current Tip delete",
+        )
+        if deleted_tip["tip_restorations"] != [{"body": "Body", "before_tip": "Pocket", "after_tip": "Pad", "restored": True}]:
+            raise RuntimeError(f"body Tip was not restored before deleting current Tip: {deleted_tip}")
+        body_after_tip_delete = next(obj for obj in deleted_tip["document"]["objects"] if obj["name"] == "Body")
+        if body_after_tip_delete["partdesign"]["tip"] != "Pad":
+            raise RuntimeError(f"body Tip after delete is not Pad: {deleted_tip}")
+
+        slot_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_name": "SlotPadSmoke",
+                    "sketch_name": "SlotPadSketch",
+                    "body_name": "SlotBody",
+                    "attachment_plane": "XY",
+                    "output_path": str(slot_pad_doc),
+                    "overwrite": True,
+                }
+            ),
+            "slot pad sketch create",
+        )
+        if not slot_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"slot sketch was not attached: {slot_sketch}")
+        slot_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(slot_pad_doc),
+                    "sketch_name": "SlotPadSketch",
+                    "profile": {"type": "slot_start_end_radius", "start": [1, 5, 0], "end": [8, 5, 0], "radius": 1.2},
+                    "output_path": str(slot_pad_doc),
+                    "overwrite": True,
+                }
+            ),
+            "slot_start_end_radius pad profile",
+        )
+        if slot_profile["sketch"]["sketch"]["redundant_constraints"]:
+            raise RuntimeError(f"slot profile produced redundant constraints: {slot_profile}")
+        slot_validation = assert_ok(
+            service.definition_map()["freecad_sketch_profile_validate"].handler(
+                {
+                    "document_path": str(slot_pad_doc),
+                    "sketch_name": "SlotPadSketch",
+                    "require_pad_ready": True,
+                }
+            ),
+            "slot_start_end_radius profile validate",
+        )
+        if not slot_validation["validation"]["pad_ready"]:
+            raise RuntimeError(f"slot_start_end_radius profile is not pad-ready: {slot_validation}")
+        slot_pad = assert_ok(
+            service.definition_map()["freecad_partdesign_pad"].handler(
+                {
+                    "document_path": str(slot_pad_doc),
+                    "body_name": "SlotBody",
+                    "sketch_name": "SlotPadSketch",
+                    "attachment_plane": "XY",
+                    "pad_name": "SlotPad",
+                    "length": 4,
+                    "output_path": str(slot_pad_doc),
+                    "overwrite": True,
+                }
+            ),
+            "slot_start_end_radius pad",
+        )
+        if slot_pad["pad"]["shape"]["solids"] != 1 or slot_pad["body"]["partdesign"]["tip"] != "SlotPad":
+            raise RuntimeError(f"slot_start_end_radius Pad did not produce a solid: {slot_pad}")
+
+        create_partdesign_rect_pad(
+            service,
+            keyhole_pocket_doc,
+            document_name="KeyholePocketSmoke",
+            body_name="KeyholeBody",
+            sketch_name="KeyholeBaseSketch",
+            pad_name="KeyholeBasePad",
+        )
+        keyhole_sketch = assert_ok(
+            service.definition_map()["freecad_sketch_create"].handler(
+                {
+                    "document_path": str(keyhole_pocket_doc),
+                    "sketch_name": "KeyholeSketch",
+                    "body_name": "KeyholeBody",
+                    "attachment_plane": "XY",
+                    "output_path": str(keyhole_pocket_doc),
+                    "overwrite": True,
+                }
+            ),
+            "keyhole sketch create",
+        )
+        if not keyhole_sketch["attachment"]["attached"]:
+            raise RuntimeError(f"keyhole sketch was not attached: {keyhole_sketch}")
+        keyhole_profile = assert_ok(
+            service.definition_map()["freecad_sketch_add_profile"].handler(
+                {
+                    "document_path": str(keyhole_pocket_doc),
+                    "sketch_name": "KeyholeSketch",
+                    "profile": {"type": "keyhole", "circle_center": [3, 5, 0], "circle_radius": 1.5, "slot_end": [7, 5, 0], "slot_radius": 0.5},
+                    "output_path": str(keyhole_pocket_doc),
+                    "overwrite": True,
+                }
+            ),
+            "keyhole profile",
+        )
+        if keyhole_profile["profile_type"] != "keyhole" or len(keyhole_profile["added_indices"]) != 4:
+            raise RuntimeError(f"keyhole profile mismatch: {keyhole_profile}")
+        keyhole_validation = assert_ok(
+            service.definition_map()["freecad_sketch_profile_validate"].handler(
+                {
+                    "document_path": str(keyhole_pocket_doc),
+                    "sketch_name": "KeyholeSketch",
+                    "require_pad_ready": True,
+                    "required_curve_types": ["arc"],
+                    "minimum_curve_segments": 2,
+                    "forbid_all_line_loops": True,
+                }
+            ),
+            "keyhole profile validate",
+        )
+        if not keyhole_validation["validation"]["pad_ready"]:
+            raise RuntimeError(f"keyhole profile is not pad-ready: {keyhole_validation}")
+        keyhole_pocket = assert_ok(
+            service.definition_map()["freecad_partdesign_pocket"].handler(
+                {
+                    "document_path": str(keyhole_pocket_doc),
+                    "body_name": "KeyholeBody",
+                    "sketch_name": "KeyholeSketch",
+                    "attachment_plane": "XY",
+                    "pocket_name": "KeyholePocket",
+                    "length": 6,
+                    "output_path": str(keyhole_pocket_doc),
+                    "overwrite": True,
+                }
+            ),
+            "keyhole pocket",
+        )
+        if keyhole_pocket["pocket"]["shape"]["solids"] != 1 or keyhole_pocket["body"]["partdesign"]["tip"] != "KeyholePocket":
+            raise RuntimeError(f"keyhole Pocket did not preserve a body solid: {keyhole_pocket}")
         hole_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {

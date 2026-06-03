@@ -20,6 +20,17 @@ SESSION_PROPS: JsonObject = {
     "timeout_sec": {"type": "integer", "minimum": 1, "maximum": 180},
 }
 
+WORKER_COMPACT_PROPS: JsonObject = {
+    "compact_response": {
+        "type": "boolean",
+        "description": "Return a compact worker response that omits repeated full document object dumps.",
+    },
+    "compact_execution": {
+        "type": "boolean",
+        "description": "Alias for compact_response on worker tools.",
+    },
+}
+
 SAVE_PROPS: JsonObject = {
     "output_path": {"type": "string"},
     "overwrite": {"type": "boolean"},
@@ -772,7 +783,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_profile",
                 "Worker Add Sketch Profile",
-                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
+                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -1061,7 +1072,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_object_set_properties",
                 "Worker Set Object Properties",
-                "Set simple object properties inside an in-memory worker document.",
+                "Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs inside an in-memory worker document.",
                 {
                     "document_id": {"type": "string"},
                     "object_name": {"type": "string"},
@@ -1088,7 +1099,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_object_delete",
                 "Worker Delete Objects",
-                "Delete object(s) inside an in-memory worker document.",
+                "Delete object(s) inside an in-memory worker document and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.",
                 {
                     "document_id": {"type": "string"},
                     "object_name": {"type": "string"},
@@ -1143,7 +1154,7 @@ class PersistentToolService:
         required: list[str],
         method: str,
     ) -> ToolDefinition:
-        schema = {"type": "object", "properties": {**SESSION_PROPS, **properties}}
+        schema = {"type": "object", "properties": {**SESSION_PROPS, **properties, **WORKER_COMPACT_PROPS}}
         schema["required"] = ["session_id", *required]
         return ToolDefinition(name, title, description, schema, lambda args, method=method, required=required: self._request(method, args, required))
 
@@ -1161,5 +1172,96 @@ class PersistentToolService:
             if references and len(references) != 2:
                 raise ToolInputError("references must contain exactly two connector references")
         timeout_sec = bounded_int(args, "timeout_sec", default=30, minimum=1, maximum=180)
-        params = {key: value for key, value in args.items() if key not in {"session_id", "timeout_sec"}}
-        return self.manager.request(session_id, method, params, timeout_sec=timeout_sec)
+        compact_response = args.get("compact_response", args.get("compact_execution", False))
+        if not isinstance(compact_response, bool):
+            raise ToolInputError("compact_response must be a boolean")
+        params = {
+            key: value
+            for key, value in args.items()
+            if key not in {"session_id", "timeout_sec", "compact_response", "compact_execution"}
+        }
+        payload = self.manager.request(session_id, method, params, timeout_sec=timeout_sec)
+        return compact_worker_payload(payload) if compact_response else payload
+
+
+def compact_shape_summary(shape: object) -> object:
+    if not isinstance(shape, dict):
+        return shape
+    return {key: shape.get(key) for key in ("valid", "is_null", "solids", "faces", "edges", "vertices") if key in shape}
+
+
+def compact_sketch_summary(sketch: object) -> object:
+    if not isinstance(sketch, dict):
+        return sketch
+    return {
+        key: sketch.get(key)
+        for key in ("geometry_count", "constraint_count", "degrees_of_freedom", "open_vertices", "redundant_constraints", "conflicting_constraints")
+        if key in sketch
+    }
+
+
+def compact_partdesign_summary(partdesign: object) -> object:
+    if not isinstance(partdesign, dict):
+        return partdesign
+    return {
+        key: partdesign.get(key)
+        for key in ("type", "tip", "profile", "length", "length2", "reversed", "midplane")
+        if key in partdesign
+    }
+
+
+def compact_object_summary(value: JsonObject) -> JsonObject:
+    result: JsonObject = {
+        key: value.get(key)
+        for key in ("name", "label", "type_id", "visibility")
+        if key in value
+    }
+    if "shape" in value:
+        result["shape"] = compact_shape_summary(value.get("shape"))
+    if value.get("sketch") is not None:
+        result["sketch"] = compact_sketch_summary(value.get("sketch"))
+    if value.get("partdesign") is not None:
+        result["partdesign"] = compact_partdesign_summary(value.get("partdesign"))
+    return result
+
+
+def compact_document_summary(value: JsonObject) -> JsonObject:
+    return {
+        key: value.get(key)
+        for key in ("document_id", "name", "label", "file_name", "object_count")
+        if key in value
+    }
+
+
+def compact_worker_value(value: object) -> object:
+    if isinstance(value, list):
+        return [compact_worker_value(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    if "objects" in value and "object_count" in value:
+        return compact_document_summary(value)
+    if "type_id" in value and "name" in value:
+        return compact_object_summary(value)
+    return {key: compact_worker_value(item) for key, item in value.items()}
+
+
+def compact_worker_payload(payload: JsonObject) -> JsonObject:
+    compacted: JsonObject = {"ok": payload.get("ok"), "compact_response": True}
+    session = payload.get("session")
+    if isinstance(session, dict):
+        compacted["session"] = {
+            key: session.get(key)
+            for key in ("session_id", "mode", "pid", "running", "request_count")
+            if key in session
+        }
+    worker = payload.get("worker")
+    if isinstance(worker, dict):
+        compact_worker: JsonObject = {"ok": worker.get("ok")}
+        if "result" in worker:
+            compact_worker["result"] = compact_worker_value(worker.get("result"))
+        if "error" in worker:
+            compact_worker["error"] = worker.get("error")
+        if "traceback_truncated" in worker:
+            compact_worker["traceback_truncated"] = worker.get("traceback_truncated")
+        compacted["worker"] = compact_worker
+    return compacted

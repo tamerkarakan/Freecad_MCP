@@ -421,6 +421,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -446,6 +454,14 @@
           },
           "document_path": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -485,6 +501,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -524,6 +548,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -550,6 +582,14 @@
           },
           "document_id": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -592,6 +632,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -638,6 +686,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -721,6 +777,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -798,6 +862,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -876,6 +948,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -988,6 +1068,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1107,6 +1195,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1217,6 +1313,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1308,6 +1412,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1398,6 +1510,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1599,6 +1719,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1800,6 +1928,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -1923,6 +2059,14 @@
           },
           "fillet_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2066,6 +2210,14 @@
           },
           "chamfer_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2210,6 +2362,14 @@
           },
           "thickness_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2357,6 +2517,14 @@
           },
           "draft_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2522,6 +2690,14 @@
           },
           "pattern_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2645,6 +2821,14 @@
           },
           "pattern_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2748,6 +2932,14 @@
           },
           "mirror_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2822,6 +3014,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2882,6 +3082,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2932,6 +3140,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -2945,7 +3161,7 @@
     {
       "name": "freecad_worker_sketch_add_profile",
       "title": "Worker Add Sketch Profile",
-      "description": "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
+      "description": "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2979,6 +3195,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3122,6 +3346,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3206,6 +3438,14 @@
             "items": {
               "type": "object"
             }
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3255,6 +3495,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3305,6 +3553,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3355,6 +3611,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3405,6 +3669,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3453,6 +3725,14 @@
           },
           "angle_precision": {
             "type": "number"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3496,6 +3776,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3539,6 +3827,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3572,6 +3868,14 @@
             "items": {
               "type": "string"
             }
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3626,6 +3930,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3682,6 +3994,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3725,6 +4045,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3773,6 +4101,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3829,6 +4165,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3869,6 +4213,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3898,6 +4250,14 @@
           },
           "assembly_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3924,6 +4284,14 @@
           },
           "document_id": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3953,6 +4321,14 @@
           },
           "object_name": {
             "type": "string"
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -3965,7 +4341,7 @@
     {
       "name": "freecad_worker_object_set_properties",
       "title": "Worker Set Object Properties",
-      "description": "Set simple object properties inside an in-memory worker document.",
+      "description": "Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs inside an in-memory worker document.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3999,6 +4375,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -4049,6 +4433,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -4062,7 +4454,7 @@
     {
       "name": "freecad_worker_object_delete",
       "title": "Worker Delete Objects",
-      "description": "Delete object(s) inside an in-memory worker document.",
+      "description": "Delete object(s) inside an in-memory worker document and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4099,6 +4491,14 @@
           "allow_external_paths": {
             "type": "boolean",
             "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          },
+          "compact_response": {
+            "type": "boolean",
+            "description": "Return a compact worker response that omits repeated full document object dumps."
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Alias for compact_response on worker tools."
           }
         },
         "required": [
@@ -4407,7 +4807,7 @@
     {
       "name": "freecad_object_set_properties",
       "title": "Set FreeCAD Object Properties",
-      "description": "Set simple object properties and save optionally.",
+      "description": "Set simple object properties and link properties such as Tip, BaseFeature, or Group using {'$ref':'ObjectName'} / {'$refs':['A','B']} specs, then save optionally.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4518,7 +4918,7 @@
     {
       "name": "freecad_object_delete",
       "title": "Delete FreeCAD Objects",
-      "description": "Delete object(s) by name/label.",
+      "description": "Delete object(s) by name/label and restore a PartDesign Body Tip to the previous solid feature when the deleted object was the current Tip.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -7758,7 +8158,7 @@
     {
       "name": "freecad_sketch_add_profile",
       "title": "Add Sketch Profile",
-      "description": "Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, and straight/oriented/arc slots.",
+      "description": "Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.",
       "inputSchema": {
         "type": "object",
         "properties": {
