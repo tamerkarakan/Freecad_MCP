@@ -324,9 +324,6 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_worker_document_recompute",
                 "freecad_worker_document_close",
                 "freecad_worker_document_export",
-                "freecad_worker_part_create_primitive",
-                "freecad_worker_part_boolean",
-                "freecad_worker_part_extrude",
                 "freecad_worker_partdesign_body_create",
                 "freecad_worker_partdesign_datum_plane_create",
                 "freecad_worker_partdesign_pad",
@@ -345,8 +342,6 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_worker_partdesign_linear_pattern",
                 "freecad_worker_partdesign_polar_pattern",
                 "freecad_worker_partdesign_mirrored",
-                "freecad_worker_part_revolve",
-                "freecad_worker_part_check_geometry",
                 "freecad_worker_sketch_create",
                 "freecad_worker_sketch_add_geometry",
                 "freecad_worker_sketch_add_constraint",
@@ -375,7 +370,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_worker_object_delete",
                 "freecad_python_exec",
             ],
-            "evidence": "Hybrid server needs a live FreeCAD Python bridge for stateful operations.",
+            "evidence": "Hybrid server needs a live FreeCAD Python bridge for stateful operations. Worker Part primitive tools remain implemented internally but are hidden from the advertised MCP surface to keep agents on Sketcher/PartDesign flows.",
         },
         {
             "family": "freecad.gui",
@@ -453,20 +448,6 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_command_run",
             ],
             "evidence": f"Source scan found {len(commands)} GUI command registrations across {len(counts)} modules.",
-        },
-        {
-            "family": "freecad.part",
-            "priority": "P1",
-            "tools": [
-                "freecad_part_create_primitive",
-                "freecad_part_boolean",
-                "freecad_part_extrude",
-                "freecad_part_revolve",
-                "freecad_part_fillet",
-                "freecad_part_chamfer",
-                "freecad_part_check_geometry",
-            ],
-            "evidence": f"Part module exposes {counts.get('Part', 0)} scanned commands.",
         },
         {
             "family": "freecad.partdesign",
@@ -675,7 +656,7 @@ def write_markdown(path: Path, payload: dict[str, object]) -> None:
             "- This is a static source scan. Runtime-only commands and dynamically named commands may need a live FreeCAD bridge pass.",
             "- C++ command names are taken from `Gui::Command(\"...\")` constructors.",
             "- Python command names are taken from literal `FreeCADGui.addCommand(...)` / `Gui.addCommand(...)` calls.",
-            "- For the MCP server, prefer typed document/object/Part/Sketch tools first, then expose `freecad_command_run` as a lower-level escape hatch.",
+            "- For the MCP server, prefer typed document/object/Sketcher/PartDesign tools first, keep Part primitive tools internal-only, then expose `freecad_command_run` as a lower-level escape hatch.",
             "",
         ]
     )

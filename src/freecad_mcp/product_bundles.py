@@ -42,8 +42,8 @@ PRODUCT_BUNDLES: tuple[ProductBundle, ...] = (
         profile="free",
         kind="base",
         audience="Users who want local file-based FreeCAD automation from ChatGPT, Codex, or Claude.",
-        position="Static command inventory, runtime discovery, and process-per-call document/object/Part/parameter operations.",
-        limits="No GUI attach, no Sketcher/PartDesign premium flow, no worker sessions, no source-code intelligence, no unsafe Python exec.",
+        position="Static command inventory, runtime discovery, and process-per-call document/object/parameter/import-export operations.",
+        limits="No Part primitive tools, no GUI attach, no Sketcher/PartDesign premium flow, no worker sessions, no source-code intelligence, no unsafe Python exec.",
         upgrade_to="pro",
     ),
     ProductBundle(

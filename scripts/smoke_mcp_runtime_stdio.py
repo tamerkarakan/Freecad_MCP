@@ -114,12 +114,26 @@ def main() -> int:
                     "id": 2,
                     "method": "tools/call",
                     "params": {
-                        "name": "freecad_part_create_primitive",
+                        "name": "freecad_partdesign_profile_feature_create",
                         "arguments": {
                             "document_name": "McpRuntimeStdioSmoke",
-                            "primitive": "box",
-                            "object_name": "McpRuntimeStdioBox",
-                            "properties": {"Length": 10, "Width": 8, "Height": 6},
+                            "body_name": "Body",
+                            "sketch_name": "McpRuntimeStdioSketch",
+                            "feature_kind": "pad",
+                            "feature_name": "McpRuntimeStdioPad",
+                            "length": 6,
+                            "loops": [
+                                {
+                                    "segments": [
+                                        {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
+                                        {"type": "line", "start": [10, 0, 0], "end": [10, 8, 0]},
+                                        {"type": "line", "start": [10, 8, 0], "end": [0, 8, 0]},
+                                        {"type": "line", "start": [0, 8, 0], "end": [0, 0, 0]},
+                                    ],
+                                }
+                            ],
+                            "lock_mode": "block",
+                            "require_fully_constrained": True,
                             "output_path": str(output_path),
                             "overwrite": True,
                             "compact_execution": True,
@@ -161,7 +175,7 @@ def main() -> int:
     assert created_payload["freecad"]["ok"] is True, created_payload
     assert listed_payload["freecad"]["ok"] is True, listed_payload
     objects = listed_payload["freecad"].get("objects") or listed_payload["freecad"].get("document", {}).get("objects", [])
-    assert any(obj.get("name") == "McpRuntimeStdioBox" for obj in objects), listed_payload
+    assert any(obj.get("name") == "McpRuntimeStdioPad" for obj in objects), listed_payload
     if process.returncode != 0:
         raise RuntimeError(f"server exited with {process.returncode}: {stderr}")
     print("MCP runtime stdio smoke OK")

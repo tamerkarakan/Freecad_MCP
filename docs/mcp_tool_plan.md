@@ -16,7 +16,6 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_session_list` | List persistent FreeCAD worker sessions. | FreeCAD process |
 | `freecad_session_close` | Close a persistent FreeCAD worker session. | FreeCAD process |
 | `freecad_worker_document_new/open/save/recompute/close/export` | Manage and export in-memory worker documents by document id. | FreeCAD process |
-| `freecad_worker_part_create_primitive/boolean/extrude/revolve/check_geometry` | Create and validate basic Part geometry in persistent worker documents. | Part workbench commands |
 | `freecad_worker_partdesign_body_create/datum_plane_create/pad/pocket/hole/revolution/groove/additive_loft/subtractive_loft/additive_pipe/subtractive_pipe/fillet/chamfer/thickness/draft/linear_pattern/polar_pattern/mirrored` | Create Body-based datum, additive, subtractive, multi-sketch, sweep, dress-up, and transform PartDesign features in persistent worker documents. | PartDesign App API |
 | `freecad_worker_sketch_create/add_geometry/add_constraint/add_profile/profile_create/profile_validate/edit_geometry/edit_constraints/transform/auto_constrain/validate` | Edit and validate Sketcher objects in persistent worker documents, including loop-based pad-ready profile creation with curve-preservation guards. | Sketcher App API |
 | `freecad_worker_mesh_import/export/evaluate/repair/boolean` | Import, export, evaluate, repair, and boolean mesh objects in persistent worker documents. | Mesh module |
@@ -44,9 +43,6 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_command_list` | List scanned/runtime GUI commands. | 1112 scanned command records |
 | `freecad_command_describe` | Return menu text, tooltip, module, source ref. | `docs/freecad_tool_inventory.json` |
 | `freecad_command_run` | Run a named FreeCAD GUI command when a typed wrapper is missing. | Command registry |
-| `freecad_part_create_primitive` | Create box, cylinder, sphere, cone, torus. | `Part_*` command/API surface |
-| `freecad_part_boolean` | Fuse/cut/common selected Part shapes. | Part workbench commands |
-| `freecad_part_extrude` | Extrude selected profile/face with direct shape mode or opt-in parametric `Part::Extrusion` options. | Part workbench commands |
 | `freecad_partdesign_body_create` | Create or reuse a PartDesign Body with origin planes. | PartDesign App API |
 | `freecad_partdesign_datum_plane_create` | Create a PartDesign datum plane inside a Body, attached to an origin plane or support object with optional offset. | PartDesign App API |
 | `freecad_partdesign_pad` | Create a PartDesign Pad from a Sketcher profile inside a Body, attaching to `XY`/`XZ`/`YZ` when needed. | PartDesign App API |
@@ -67,10 +63,6 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_sweep_feature_create` | Recipe tool: create Body-attached profile and spine sketches, then Additive/Subtractive Pipe sweep. | Existing typed Sketcher + PartDesign tools |
 | `freecad_partdesign_polar_pattern` | Create a PartDesign PolarPattern transform from selected Body features or the whole Body shape. | PartDesign App API |
 | `freecad_partdesign_mirrored` | Create a PartDesign Mirrored transform from selected Body features or the whole Body shape. | PartDesign App API |
-| `freecad_part_revolve` | Revolve selected profile/face. | Part workbench commands |
-| `freecad_part_fillet` | Add fillet to selected edges. | Part workbench commands |
-| `freecad_part_chamfer` | Add chamfer to selected edges. | Part workbench commands |
-| `freecad_part_check_geometry` | Run geometry validation. | `Part_CheckGeometry` |
 | `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane or datum/support object. | Sketcher + PartDesign App API |
 | `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, and circular-arc actual geometry reports. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints plus datum/driving/active/visibility metadata. | Sketcher App API |
@@ -117,6 +109,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 ## Implementation Notes
 
 - Typed tools should call FreeCAD Python APIs directly where possible.
+- Part primitive/boolean/extrude/revolve/fillet/chamfer/check tools remain implemented internally but are hidden from the advertised MCP surface while Sketcher + PartDesign maturity is the product focus.
 - `freecad_command_run` is an escape hatch, not the primary interface.
 - Every mutating runtime tool should return a structured document/object diff.
 - Source tools can work without FreeCAD installed; runtime tools require a configured FreeCAD executable.

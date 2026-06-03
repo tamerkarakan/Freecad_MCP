@@ -8,6 +8,11 @@ from dataclasses import dataclass
 
 MODULE_ENV = "FREECAD_MCP_MODULES"
 
+HIDDEN_MCP_TOOL_PREFIXES: tuple[str, ...] = (
+    "freecad_part_",
+    "freecad_worker_part_",
+)
+
 
 MODULE_ALIASES: dict[str, set[str]] = {
     "all": {"all"},
@@ -59,6 +64,11 @@ def parse_module_selection(value: str | None = None) -> ModuleSelection:
     for item in requested:
         expanded.update(MODULE_ALIASES.get(item, {item}))
     return ModuleSelection(requested=requested, expanded=frozenset(expanded))
+
+
+def is_hidden_mcp_tool(tool_name: str) -> bool:
+    """Return true for implemented tools that are intentionally not advertised."""
+    return any(tool_name.startswith(prefix) for prefix in HIDDEN_MCP_TOOL_PREFIXES)
 
 
 def tool_modules(tool_name: str) -> set[str]:

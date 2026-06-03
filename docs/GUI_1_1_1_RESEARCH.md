@@ -114,5 +114,5 @@ Command count is not the same as product value. For mechanical 3D engineering, p
 - Prefer typed tools for deterministic model mutation.
 - Use GUI attach for observing live user state, selection-driven commands, TechDraw GUI exporters, task panels, and visual helpers.
 - Do not add broad GUI command execution as the happy path. If command execution is needed, gate it behind an allowlist, structured preconditions, transactions, recompute, and smoke tests.
-- Keep developer aliases full-surface. Product packaging must not restrict local maintainer workflow.
+- Keep developer aliases full advertised-surface. Product packaging must not restrict local maintainer workflow, while intentionally hidden tools can still stay internal-only.
 - Update `docs/SESSION_STATE.md`, `docs/BACKLOG.md`, and the relevant plan doc when changing GUI behavior.

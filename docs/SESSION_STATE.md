@@ -12,7 +12,7 @@
 - GitHub remote is public at `origin` after the user changed repository visibility from the GitHub web UI.
 - FreeCAD upstream source is checked out under ignored `upstream/FreeCAD`.
 - Static inventory currently scans 1112 GUI command registrations from FreeCAD commit `dee977f98f8a8542c8db0be2ecc529a771931d01`.
-- MCP plan favors typed document/object/Part/Sketch tools plus lower-level command and Python escape hatches.
+- MCP plan favors typed document/object/Sketcher/PartDesign tools plus lower-level command and Python escape hatches; Part primitive tools remain internal-only for now.
 - Verification command: `scripts\verify.ps1`.
 - MCP server entrypoint exists at `server.py`.
 - Implemented static tools: `freecad_command_list`, `freecad_command_describe`, `freecad_source_symbol_index`, `freecad_source_search`, `freecad_source_open`.
@@ -45,9 +45,9 @@
 - Stdio server response writing now has a serialization fallback so non-JSON-serializable tool payloads return a structured internal error instead of terminating the server loop.
 - MCP resource template listing is supported with an empty `resourceTemplates` response for clients that probe `resources/templates/list`.
 - `scripts/smoke_static_mcp.py` now smoke-checks `resources/templates/list`.
-- `scripts/smoke_mcp_runtime_stdio.py` now exercises a real `tools/call` path over stdio for `freecad_part_create_primitive` plus `freecad_object_list`, guarding the Claude Desktop runtime-tool hang regression.
-- Product-style module filtering is implemented through `freecad_mcp.module_registry` and `FREECAD_MCP_MODULES`; default `all` preserves the full surface, while aliases such as `free`, `pro`, `studio`, `team`, and `source` expose narrower package-style tool sets. `dev`, `developer`, and `local-dev` intentionally remain full-surface aliases for local maintainer work. Worker tools require the `worker` module even when they also have domain tags, source-intelligence uses the `source` add-on alias, and unsafe Python exec remains an explicit `unsafe` add-on for product bundles.
-- Sellable bundle descriptors live in `freecad_mcp.product_bundles`; generated outputs are `docs/PRODUCT_BUNDLES.md` and `docs/product_bundles.json`, exposed as MCP resources. Current generated counts are Free 27, Pro 92, Studio 167, Team 170, Source add-on 5, and Unsafe add-on 1.
+- `scripts/smoke_mcp_runtime_stdio.py` now exercises a real `tools/call` path over stdio for a Sketcher/PartDesign Pad recipe plus `freecad_object_list`, guarding the Claude Desktop runtime-tool hang regression without exposing Part primitive tools.
+- Product-style module filtering is implemented through `freecad_mcp.module_registry` and `FREECAD_MCP_MODULES`; default `all` preserves the full advertised surface, while aliases such as `free`, `pro`, `studio`, `team`, and `source` expose narrower package-style tool sets. `dev`, `developer`, and `local-dev` intentionally remain full advertised-surface aliases for local maintainer work. Worker tools require the `worker` module even when they also have domain tags, source-intelligence uses the `source` add-on alias, unsafe Python exec remains an explicit `unsafe` add-on for product bundles, and Part primitive tools are hidden from every advertised profile.
+- Sellable bundle descriptors live in `freecad_mcp.product_bundles`; generated outputs are `docs/PRODUCT_BUNDLES.md` and `docs/product_bundles.json`, exposed as MCP resources. Current generated counts are Free 20, Pro 85, Studio 155, Team 158, Source add-on 5, and Unsafe add-on 1.
 - Distribution profile descriptors live in `freecad_mcp.distribution_profiles`; generated outputs are `docs/DISTRIBUTION_PROFILES.md`, `docs/distribution_profiles.json`, `packaging/README.md`, and `packaging/profiles/*.mcp.json`, exposed as MCP resources where applicable.
 - `pyproject.toml` now declares setuptools build metadata, `src` package discovery, `freecad_mcp/runtime_scripts/*.py` package data, and the `freecad-hybrid-mcp` console entrypoint. Installed entrypoint runs can set `FREECAD_MCP_REPO_ROOT` when resources/docs live outside the current working directory.
 - `scripts/smoke_python_package.py` builds and inspects wheel and sdist artifacts, verifies both runtime scripts plus the `freecad-hybrid-mcp` entrypoint are present, installs the wheel into a temporary venv, starts the installed entrypoint outside the repo cwd with `FREECAD_MCP_REPO_ROOT`, and verifies MCP initialize/tool calls under the `free` profile.
@@ -61,7 +61,8 @@
 - Persistent worker startup also uses a temp `.py` script for long worker payloads and keeps that file until session close to avoid Windows script-load races.
 - Persistent worker manager now drops and cleans up crashed/stopped sessions after request/status errors, with fake-worker crash injection unit coverage.
 - `freecad_assembly_create_joint` now creates native Assembly `JointObject.Joint` proxies instead of plain placeholder string metadata.
-- Current MCP tool count is 171 when `FREECAD_MCP_MODULES=all`.
+- Current MCP tool count is 159 when `FREECAD_MCP_MODULES=all`.
+- Part primitive/boolean/extrude/revolve/fillet/chamfer/check tools remain implemented in the codebase for internal regression smoke, but `freecad_part_*` and `freecad_worker_part_*` tools are hidden from the advertised MCP surface so agents choose Sketcher + PartDesign workflows instead of primitive shortcuts.
 - MCP resources and prompts are implemented in `freecad_mcp.mcp_stdio`; product modules, product bundle manifests, distribution profile manifests, and the Workbench artifact manifest are exposed as read-only resources.
 - Roadmap status is finalized in `docs/ROADMAP_STATUS.md` and exposed as an MCP resource; there are no unblocked roadmap items left in the current scope.
 - GUI attach design for opening generated `.FCStd` documents, final-object visibility repair, active document, active view/orientation, selection, preselection, and subelement records is documented in `docs/GUI_ATTACH_PLAN.md` and exposed as an MCP resource.

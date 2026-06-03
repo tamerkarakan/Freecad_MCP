@@ -7,7 +7,7 @@ The project is built around one main rule: prefer deterministic typed CAD tools 
 ## Current Status
 
 - Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
-- Full current MCP surface: `171` tools with `FREECAD_MCP_MODULES=all`.
+- Full current MCP surface: `159` tools with `FREECAD_MCP_MODULES=all`.
 - Product-style profiles are generated for `free`, `pro`, `studio`, `team`, `source`, and `unsafe`.
 - The repository includes generated MCP tool schemas, product bundle manifests, distribution profile skeletons, and a local FreeCAD Workbench bridge artifact.
 - The source command inventory currently scans `1112` FreeCAD GUI command registrations from the configured local FreeCAD source checkout.
@@ -91,13 +91,13 @@ The server can expose different tool surfaces with `FREECAD_MCP_MODULES`.
 
 | Profile | Tools | Intended Use |
 | --- | ---: | --- |
-| `free` | 27 | Static command inventory plus file-based document/object/Part/parameter operations. |
-| `pro` | 92 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| `studio` | 167 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
-| `team` | 170 | Studio surface plus source-intelligence tools. |
+| `free` | 20 | Static command inventory plus file-based document/object/parameter/import-export operations. |
+| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| `studio` | 155 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
+| `team` | 158 | Studio surface plus source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Broad `freecad_python_exec` escape hatch only. |
-| `all` | 171 | Full local maintainer surface. |
+| `all` | 159 | Full advertised MCP surface. |
 
 Generated profile files live under [packaging/profiles](packaging/profiles), and the generated bundle manifest is [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md).
 
@@ -111,7 +111,6 @@ Generated profile files live under [packaging/profiles](packaging/profiles), and
 | Documents | Create, open, save, recompute, close, and export FreeCAD documents. |
 | Objects | List/get/set properties, rename user-visible labels, and delete objects. |
 | Parameters and expressions | Create/read Spreadsheet parameter sheets and bind expressions into object properties or Sketcher dimension constraints such as `Constraints[0]`. |
-| Part workbench | Primitives, boolean operations, direct and parametric extrude, revolve, fillet, chamfer, and geometry checks. |
 | Sketcher | Create sketches, add geometry and constraints, add profile helpers, build/validate pad-ready profile loops, edit geometry/constraints, transform, auto-constrain, validate, and analyze curve-fit intent. |
 | PartDesign | Body and Datum Plane creation, Pad, Pocket, Hole, Revolution, Groove, Additive/Subtractive Loft, Additive/Subtractive Pipe, Fillet, Chamfer, Thickness, Draft, LinearPattern, PolarPattern, and Mirrored. |
 | PartDesign recipes | High-level Body-attached workflow tools for profile features and sweep features, so agents do not need to guess FreeCAD's Body + Sketch + plane/support sequence. |
@@ -240,6 +239,7 @@ Current unblocked scope is complete, but the next useful expansion areas are:
 - GUI attach is intentionally limited and opt-in.
 - TechDraw, CAM, and FEM are first-slice typed integrations, not full workbench replacements.
 - CAM postprocessor execution, FEM solver execution, and GUI-only TechDraw PDF/SVG export are not default-safe flows yet.
+- Part workbench primitive/boolean/extrude/revolve/fillet/chamfer/check tools are intentionally hidden from the advertised MCP surface for now. Their code remains in the repository for internal smoke/regression use, but public agent workflows should use Sketcher + PartDesign instead.
 - Some Sketcher raw constraint constructors are blocked because they can terminate the current FreeCADCmd runtime.
 - AI-generated CAD should always be reviewed by a qualified human before manufacturing, safety-critical use, quoting, or release.
 

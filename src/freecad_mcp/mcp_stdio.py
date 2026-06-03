@@ -22,7 +22,7 @@ from mcp.server.stdio import stdio_server
 from freecad_mcp import __version__
 from freecad_mcp.cad_tools import CadToolService
 from freecad_mcp.gui_tools import GuiToolService
-from freecad_mcp.module_registry import ModuleSelection, parse_module_selection
+from freecad_mcp.module_registry import ModuleSelection, is_hidden_mcp_tool, parse_module_selection
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
 from freecad_mcp.logging_config import configure_logging, log_event, log_tool_call
@@ -209,6 +209,7 @@ class CompositeToolService:
                 definition
                 for definition in service.definitions()
                 if self.module_selection.allows(definition.name)
+                and not is_hidden_mcp_tool(definition.name)
             )
         return definitions
 

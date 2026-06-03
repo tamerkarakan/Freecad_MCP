@@ -19,7 +19,7 @@ $env:FREECAD_MCP_MODULES = "core,headless,gui,sketcher,partdesign"
 | Module | Purpose |
 | --- | --- |
 | `core` | FreeCAD command inventory and runtime status/discovery. |
-| `headless` | FreeCADCmd document/object/import-export/Part primitives plus Spreadsheet parameter and expression-binding operations. |
+| `headless` | FreeCADCmd document/object/import-export plus Spreadsheet parameter and expression-binding operations. Part primitive tools are implemented but hidden from the advertised MCP surface. |
 | `worker` | Persistent FreeCADCmd worker sessions and in-memory document workflows. |
 | `gui` | FreeCAD GUI attach, active document/view, selection, view-fit, active viewport snapshots, first live primitive creation, user-visible label updates, live Sketcher/PartDesign state inspection, Sketcher edit mode, PartDesign Body activation, and feature-task state. |
 | `sketcher` | Sketcher creation, geometry, constraints, profile validation, transforms, and curve-fit guidance. |
@@ -52,10 +52,10 @@ Current generated counts:
 
 | Bundle | Profile | Tool Count | Notes |
 | --- | --- | ---: | --- |
-| Free | `free` | 27 | File-based FreeCADCmd document/object/Part/parameter operations. |
-| Pro | `pro` | 92 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| Studio | `studio` | 167 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
-| Team | `team` | 170 | Adds source-intelligence tools. |
+| Free | `free` | 20 | File-based FreeCADCmd document/object/parameter/import-export operations. |
+| Pro | `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| Studio | `studio` | 155 | Adds persistent worker sessions plus TechDraw, CAM, and FEM. |
+| Team | `team` | 158 | Adds source-intelligence tools. |
 | Source add-on | `source` | 5 | Command/source intelligence only. |
 | Local developer | `developer` / `dev` / `local-dev` | Full surface | Same as `all`; not a sellable restricted package. |
 | Unsafe add-on | `unsafe` | 1 | Only `freecad_python_exec`; never included in paid tiers by default. |
@@ -64,4 +64,4 @@ Current generated counts:
 
 This is still one installable codebase, but the headless typed CAD surface is no longer one monolithic `cad_tools.py` implementation. Shared execution lives in `freecad_mcp.cad_tool_base`, and domain services live under `freecad_mcp.cad_domains`.
 
-The registry still controls what the MCP client sees. Product bundle manifests make the commercial split explicit, but the local maintainer aliases stay full-surface by design. A local FreeCAD Workbench module zip exists for GUI-capable profiles; separate paid/free Python packages, Codex plugin bundles, and signed FreeCAD Addon Manager packaging are later distribution phases.
+The registry still controls what the MCP client sees. Product bundle manifests make the commercial split explicit, and Part primitive tools are hidden even from `all` so agents stay on Sketcher + PartDesign paths. A local FreeCAD Workbench module zip exists for GUI-capable profiles; separate paid/free Python packages, Codex plugin bundles, and signed FreeCAD Addon Manager packaging are later distribution phases.

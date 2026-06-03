@@ -148,7 +148,8 @@ def _smoke_installed_entrypoint(wheel_path: Path, temp_root: Path) -> None:
 
     assert "tools" in initialized["result"]["capabilities"]
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
-    assert "freecad_part_create_primitive" in tool_names
+    assert "freecad_spreadsheet_create" in tool_names
+    assert "freecad_part_create_primitive" not in tool_names
     assert "freecad_gui_attach" not in tool_names
     assert "freecad_worker_document_new" not in tool_names
     assert described["result"]["structuredContent"]["matches"][0]["name"] == "Part_Box"

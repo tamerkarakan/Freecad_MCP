@@ -170,6 +170,8 @@ def main() -> int:
     assert "freecad_object_rename_label" in tool_names
     assert "freecad_spreadsheet_create" in tool_names
     assert "freecad_object_expression_set" in tool_names
+    assert not any(name.startswith("freecad_part_") for name in tool_names)
+    assert not any(name.startswith("freecad_worker_part_") for name in tool_names)
     assert "freecad_sketch_profile_create" in tool_names
     assert "freecad_sketch_profile_validate" in tool_names
     assert "freecad_curve_fit_analyze" in tool_names

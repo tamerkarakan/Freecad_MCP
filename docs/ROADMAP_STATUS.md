@@ -5,7 +5,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-06-0
 ## Completed
 
 - Phase 1 static source intelligence and generated FreeCAD command inventory.
-- Phase 2 process-per-call `FreeCADCmd` runtime bridge with typed document/object/Part/Sketcher/import-export/mesh/Assembly tools.
+- Phase 2 process-per-call `FreeCADCmd` runtime bridge with typed document/object/Sketcher/PartDesign/import-export/mesh/Assembly tools. Part primitive tools remain implemented internally but are hidden from the advertised MCP surface.
 - Expanded Sketcher typed coverage for geometry, geometry method cataloging, arc actual-geometry reporting, profiles, constraints, transforms, diagnostics, and auto-constraints.
 - Process-per-call parameter tools for Spreadsheet alias creation/reading and expression bindings into object properties or Sketcher dimension constraints.
 - Loop-based Sketcher profile builder/validator for pad-ready traced profiles, endpoint drift rejection, curve-preservation contracts, native geometry type/intent reporting, curve fit analysis, Part face validation, and no-cheat topology checks.
@@ -28,6 +28,7 @@ Last verified against the configured FreeCAD 1.1.1 portable runtime on 2026-06-0
 - MCP SDK adapter: `mcp` is now installable, so the stdio server runs on `mcp.server.lowlevel.Server` and the hand-rolled JSON-RPC dispatcher was removed (`mcp>=1.0` dependency).
 - Structured JSON server logging; FreeCAD worker console reading (`freecad_session_console`); `source_search` traversal bounds; image-to-sketch decision guidance in `freecad_curve_fit_analyze`; and the first PartDesign subtractive/revolved typed tools.
 - Product-style tool filtering through `FREECAD_MCP_MODULES`, with `free`, `pro`, `studio`, `team`, and explicit module-list support.
+- Hidden MCP surface filtering now keeps implemented Part primitive tools (`freecad_part_*`, `freecad_worker_part_*`) out of `tools/list` so agents favor Sketcher + PartDesign instead of shortcut primitives.
 - Product bundle manifests generated at `docs/PRODUCT_BUNDLES.md` and `docs/product_bundles.json`; worker tools now require the `worker` module, source-code intelligence is the `source` add-on, `developer/dev/local-dev` remain full local maintainer aliases, and unsafe Python exec remains an explicit add-on.
 - Distribution profile skeletons generated at `docs/DISTRIBUTION_PROFILES.md`, `docs/distribution_profiles.json`, and `packaging/profiles/*.mcp.json`; `pyproject.toml` now declares setuptools build metadata, package discovery, runtime script package data, and the `freecad-hybrid-mcp` console entrypoint.
 - Python package smoke now builds and inspects wheel and sdist artifacts, installs the wheel into a temporary venv, starts the installed `freecad-hybrid-mcp` entrypoint, and verifies MCP initialize/tool calls under the `free` profile.

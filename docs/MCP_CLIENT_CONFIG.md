@@ -34,16 +34,16 @@ Optional product-style filtering:
 $env:FREECAD_MCP_MODULES = "pro"
 ```
 
-Use `all` for the full current tool surface. `dev`, `developer`, and `local-dev` are full-surface aliases for local maintainers, so sales/package profiles do not narrow development workflows. Use `source` for the source-intelligence add-on, or explicit comma-separated modules such as `core,headless,gui,sketcher`. Generated sellable bundle counts and tool lists are in `docs/PRODUCT_BUNDLES.md`; generated distribution profiles and MCP config skeletons are in `docs/DISTRIBUTION_PROFILES.md` and `packaging/profiles/`; module rules are in `docs/PRODUCT_MODULES.md`.
+Use `all` for the full advertised tool surface. `dev`, `developer`, and `local-dev` are full advertised-surface aliases for local maintainers, while hidden Part primitive tools remain unlisted so agents stay on Sketcher + PartDesign paths. Use `source` for the source-intelligence add-on, or explicit comma-separated modules such as `core,headless,gui,sketcher`. Generated sellable bundle counts and tool lists are in `docs/PRODUCT_BUNDLES.md`; generated distribution profiles and MCP config skeletons are in `docs/DISTRIBUTION_PROFILES.md` and `packaging/profiles/`; module rules are in `docs/PRODUCT_MODULES.md`.
 
 Current bundle profiles:
 
 | Profile | Tool Count | Use |
 | --- | ---: | --- |
-| `free` | 23 | File-based document/object/Part operations. |
-| `pro` | 88 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
-| `studio` | 163 | Adds worker sessions plus TechDraw, CAM, and FEM. |
-| `team` | 166 | Adds source-intelligence tools. |
+| `free` | 20 | File-based document/object/parameter/import-export operations. |
+| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly. |
+| `studio` | 155 | Adds worker sessions plus TechDraw, CAM, and FEM. |
+| `team` | 158 | Adds source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Only `freecad_python_exec`; opt-in add-on. |
 

@@ -4,10 +4,10 @@ Generated sellable bundle manifest for the current MCP tool surface.
 
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
-| FreeCAD MCP Free | `free` | base | 27 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/Part/parameter operations. |
-| FreeCAD MCP Pro | `pro` | paid | 92 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher dimension, PartDesign datum/feature, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 167 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 170 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Free | `free` | base | 20 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/parameter/import-export operations. |
+| FreeCAD MCP Pro | `pro` | paid | 85 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher dimension, PartDesign datum/feature, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 155 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 158 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -17,9 +17,9 @@ Generated sellable bundle manifest for the current MCP tool surface.
 
 - Environment: `FREECAD_MCP_MODULES=free`
 - Audience: Users who want local file-based FreeCAD automation from ChatGPT, Codex, or Claude.
-- Limits: No GUI attach, no Sketcher/PartDesign premium flow, no worker sessions, no source-code intelligence, no unsafe Python exec.
+- Limits: No Part primitive tools, no GUI attach, no Sketcher/PartDesign premium flow, no worker sessions, no source-code intelligence, no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `27`
+- Tool count: `20`
 - Upgrade path: `pro`
 
 Tools:
@@ -41,13 +41,6 @@ Tools:
 - `freecad_spreadsheet_get`
 - `freecad_object_expression_set`
 - `freecad_object_expression_list`
-- `freecad_part_create_primitive`
-- `freecad_part_boolean`
-- `freecad_part_extrude`
-- `freecad_part_revolve`
-- `freecad_part_fillet`
-- `freecad_part_chamfer`
-- `freecad_part_check_geometry`
 - `freecad_import_file`
 - `freecad_export_file`
 - `freecad_supported_formats`
@@ -58,7 +51,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `92`
+- Tool count: `85`
 - Upgrade path: `studio`
 
 Tools:
@@ -80,13 +73,6 @@ Tools:
 - `freecad_spreadsheet_get`
 - `freecad_object_expression_set`
 - `freecad_object_expression_list`
-- `freecad_part_create_primitive`
-- `freecad_part_boolean`
-- `freecad_part_extrude`
-- `freecad_part_revolve`
-- `freecad_part_fillet`
-- `freecad_part_chamfer`
-- `freecad_part_check_geometry`
 - `freecad_partdesign_body_create`
 - `freecad_partdesign_datum_plane_create`
 - `freecad_partdesign_pad`
@@ -162,7 +148,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `167`
+- Tool count: `155`
 - Upgrade path: `team`
 
 Tools:
@@ -185,9 +171,6 @@ Tools:
 - `freecad_worker_document_recompute`
 - `freecad_worker_document_close`
 - `freecad_worker_document_export`
-- `freecad_worker_part_create_primitive`
-- `freecad_worker_part_boolean`
-- `freecad_worker_part_extrude`
 - `freecad_worker_partdesign_body_create`
 - `freecad_worker_partdesign_datum_plane_create`
 - `freecad_worker_partdesign_pad`
@@ -206,8 +189,6 @@ Tools:
 - `freecad_worker_partdesign_linear_pattern`
 - `freecad_worker_partdesign_polar_pattern`
 - `freecad_worker_partdesign_mirrored`
-- `freecad_worker_part_revolve`
-- `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
 - `freecad_worker_sketch_add_geometry`
 - `freecad_worker_sketch_add_constraint`
@@ -248,13 +229,6 @@ Tools:
 - `freecad_spreadsheet_get`
 - `freecad_object_expression_set`
 - `freecad_object_expression_list`
-- `freecad_part_create_primitive`
-- `freecad_part_boolean`
-- `freecad_part_extrude`
-- `freecad_part_revolve`
-- `freecad_part_fillet`
-- `freecad_part_chamfer`
-- `freecad_part_check_geometry`
 - `freecad_partdesign_body_create`
 - `freecad_partdesign_datum_plane_create`
 - `freecad_partdesign_pad`
@@ -341,7 +315,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `170`
+- Tool count: `158`
 
 Tools:
 
@@ -366,9 +340,6 @@ Tools:
 - `freecad_worker_document_recompute`
 - `freecad_worker_document_close`
 - `freecad_worker_document_export`
-- `freecad_worker_part_create_primitive`
-- `freecad_worker_part_boolean`
-- `freecad_worker_part_extrude`
 - `freecad_worker_partdesign_body_create`
 - `freecad_worker_partdesign_datum_plane_create`
 - `freecad_worker_partdesign_pad`
@@ -387,8 +358,6 @@ Tools:
 - `freecad_worker_partdesign_linear_pattern`
 - `freecad_worker_partdesign_polar_pattern`
 - `freecad_worker_partdesign_mirrored`
-- `freecad_worker_part_revolve`
-- `freecad_worker_part_check_geometry`
 - `freecad_worker_sketch_create`
 - `freecad_worker_sketch_add_geometry`
 - `freecad_worker_sketch_add_constraint`
@@ -429,13 +398,6 @@ Tools:
 - `freecad_spreadsheet_get`
 - `freecad_object_expression_set`
 - `freecad_object_expression_list`
-- `freecad_part_create_primitive`
-- `freecad_part_boolean`
-- `freecad_part_extrude`
-- `freecad_part_revolve`
-- `freecad_part_fillet`
-- `freecad_part_chamfer`
-- `freecad_part_check_geometry`
 - `freecad_partdesign_body_create`
 - `freecad_partdesign_datum_plane_create`
 - `freecad_partdesign_pad`

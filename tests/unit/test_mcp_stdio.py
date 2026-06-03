@@ -13,7 +13,7 @@ from freecad_mcp.mcp_stdio import (
     render_prompt,
     resolve_repo_root,
 )
-from freecad_mcp.module_registry import parse_module_selection, tool_modules
+from freecad_mcp.module_registry import is_hidden_mcp_tool, parse_module_selection, tool_modules
 from freecad_mcp.tooling import ToolDefinition, ToolInputError
 
 
@@ -68,6 +68,8 @@ class BuildServerTests(unittest.TestCase):
             "freecad_object_expression_set",
         ):
             self.assertIn(name, tools)
+        self.assertNotIn("freecad_part_create_primitive", tools)
+        self.assertNotIn("freecad_worker_part_create_primitive", tools)
 
     def test_module_filter_can_expose_gui_only_surface(self) -> None:
         tools = build_server(ROOT, enabled_modules="gui").definition_map()
@@ -121,6 +123,8 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_spreadsheet_create", tools)
         self.assertIn("freecad_object_expression_set", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
+        self.assertNotIn("freecad_part_create_primitive", tools)
+        self.assertNotIn("freecad_worker_part_create_primitive", tools)
         self.assertNotIn("freecad_cam_path_create", tools)
         self.assertNotIn("freecad_fem_analysis_create", tools)
         self.assertNotIn("freecad_source_search", tools)
@@ -171,6 +175,10 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("headless", tool_modules("freecad_spreadsheet_create"))
         self.assertIn("headless", tool_modules("freecad_object_expression_set"))
         self.assertIn("gui", tool_modules("freecad_gui_status"))
+        self.assertTrue(is_hidden_mcp_tool("freecad_part_create_primitive"))
+        self.assertTrue(is_hidden_mcp_tool("freecad_worker_part_create_primitive"))
+        self.assertFalse(is_hidden_mcp_tool("freecad_partdesign_pad"))
+        self.assertFalse(is_hidden_mcp_tool("freecad_worker_partdesign_pad"))
 
 
 class ResourceTests(unittest.TestCase):
