@@ -410,7 +410,7 @@
         "freecad_partdesign_profile_feature_create",
         "freecad_partdesign_sweep_feature_create"
       ],
-      "evidence": "PartDesign module exposes 41 scanned commands and requires Body/datum/plane attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence for agents that do not know the GUI workflow."
+      "evidence": "PartDesign module exposes 41 scanned commands and requires Body Origin, planar face/subelement, or datum/support attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence for agents that do not know the GUI workflow."
     },
     {
       "family": "freecad.sketcher",

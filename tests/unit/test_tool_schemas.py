@@ -225,6 +225,11 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("body_name", sketch_props)
         self.assertIn("attachment_plane", sketch_props)
         self.assertIn("attachment_object", sketch_props)
+        self.assertIn("FaceN", sketch_props["attachment_object"]["description"])
+        self.assertIn("Face1", sketch_props["attachment_subname"]["description"])
+        datum_description = tools["freecad_partdesign_datum_plane_create"].to_mcp()["description"]
+        self.assertIn("basically redundant for support of one sketch", datum_description)
+        self.assertIn("topological naming risk", datum_description)
 
     def test_object_label_rename_tool_is_exposed(self) -> None:
         tools = CadToolService().definition_map()

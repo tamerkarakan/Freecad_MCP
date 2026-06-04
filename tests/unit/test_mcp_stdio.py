@@ -188,6 +188,7 @@ class ResourceTests(unittest.TestCase):
         self.assertIn("freecad://docs/roadmap-status", uris)
         self.assertIn("freecad://docs/workbench-bridge", uris)
         self.assertIn("freecad://docs/gui-1-1-1-research", uris)
+        self.assertIn("freecad://docs/partdesign-attachment-policy", uris)
         self.assertIn("freecad://docs/product-modules", uris)
         self.assertIn("freecad://docs/product-bundles", uris)
         self.assertIn("freecad://product/bundles", uris)
@@ -232,6 +233,14 @@ class ResourceTests(unittest.TestCase):
         self.assertEqual(contents["mimeType"], "text/markdown")
         self.assertIn("GUI Priority Order", contents["text"])
 
+    def test_read_partdesign_attachment_policy_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://docs/partdesign-attachment-policy")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "text/markdown")
+        self.assertIn("Planar generated face", contents["text"])
+        self.assertIn("add_external", contents["text"])
+
     def test_read_unknown_resource_returns_none(self) -> None:
         self.assertIsNone(read_resource(ROOT, "freecad://docs/does-not-exist"))
 
@@ -248,7 +257,10 @@ class PromptTests(unittest.TestCase):
     def test_render_design_task_includes_task(self) -> None:
         rendered = render_prompt("freecad_design_task", {"task": "make a cube"})
 
-        self.assertIn("make a cube", rendered["messages"][0]["content"]["text"])
+        text = rendered["messages"][0]["content"]["text"]
+        self.assertIn("make a cube", text)
+        self.assertIn("FaceN", text)
+        self.assertIn("Hole or Pocket", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

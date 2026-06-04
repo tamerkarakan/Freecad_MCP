@@ -100,7 +100,7 @@ Write paths are guarded by default: `output_path` must be absolute and remain un
 
 ## MCP Resources And Prompts
 
-The server exposes read-only resources for architecture, session state, roadmap status, testing, Sketcher capabilities, GUI attach planning, Workbench bridge setup, Workbench artifact shape, TechDraw/CAM/FEM typed-wrapper planning, product-module filtering, product bundles, distribution profiles, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
+The server exposes read-only resources for architecture, session state, roadmap status, testing, Sketcher capabilities, PartDesign attachment policy, GUI attach planning, Workbench bridge setup, Workbench artifact shape, TechDraw/CAM/FEM typed-wrapper planning, product-module filtering, product bundles, distribution profiles, tool schemas, and inventory summary. It also exposes workflow prompts for design tasks and phase gates.
 
 ## Product Module Filtering
 

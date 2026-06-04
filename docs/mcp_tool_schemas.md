@@ -750,7 +750,7 @@ Create or reuse a PartDesign Body with origin planes inside an in-memory worker 
 
 ## `freecad_worker_partdesign_datum_plane_create`
 
-Create a PartDesign datum plane inside a worker Body, attached to a Body origin plane or another support object with optional offset.
+Create a PartDesign datum plane inside a worker Body, attached to a Body origin plane or another support object with optional offset. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -789,25 +789,30 @@ Create a PartDesign datum plane inside a worker Body, attached to a Body origin 
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Origin plane to derive this datum from. The Body Origin may be hidden in GUI but is still addressable."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Optional support object for datum references, including origin plane, planar face, edge, vertex, or another datum."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Datum offset in the datum's local coordinate system; z is along the datum normal."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "Datum XYZ offset in the datum's local coordinate system; z is along the datum normal."
     },
     "require_valid": {
       "type": "boolean"
@@ -931,7 +936,7 @@ Create a PartDesign Pad from a worker Sketcher profile inside a Body, attaching 
 
 ## `freecad_worker_partdesign_pocket`
 
-Create a PartDesign Pocket that removes material from an existing worker Body solid using a Sketcher profile.
+Create a PartDesign Pocket that removes material from an existing worker Body solid using a Sketcher profile. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the profile, then pocket.
 
 ```json
 {
@@ -1019,7 +1024,7 @@ Create a PartDesign Pocket that removes material from an existing worker Body so
 
 ## `freecad_worker_partdesign_hole`
 
-Create a plain PartDesign Hole from a worker Sketcher circle profile inside an existing Body solid.
+Create a plain PartDesign Hole from a worker Sketcher circle profile inside an existing Body solid. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the circle position and diameter, then create Hole.
 
 ```json
 {
@@ -3030,7 +3035,7 @@ Create a PartDesign Mirrored transform in an in-memory worker document.
 
 ## `freecad_worker_sketch_create`
 
-Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane.
+Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane, planar face, datum, or other support. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -3060,25 +3065,30 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base sketches or simple independent offsets."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the sketch. Use with attachment_subname='FaceN' for normal planar-face sketching, or with a datum/support object for reusable references."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset from the selected origin plane, planar face, or datum support."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset from the selected origin plane, planar face, or datum support."
     },
     "create_body_if_missing": {
       "type": "boolean"
@@ -3303,7 +3313,7 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -3333,25 +3343,30 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base profile sketches or simple independent offsets."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the profile sketch. Use with attachment_subname='FaceN' for normal planar-face hole/pocket profiles, or with a datum/support object for reusable references."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset from the selected origin plane, planar face, or datum support."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset from the selected origin plane, planar face, or datum support."
     },
     "create_body_if_missing": {
       "type": "boolean"
@@ -5481,7 +5496,7 @@ Create or reuse a PartDesign Body with origin planes.
 
 ## `freecad_partdesign_datum_plane_create`
 
-Create a PartDesign datum plane inside a Body, attached to a Body origin plane or another support object with optional offset.
+Create a PartDesign datum plane inside a Body, attached to a Body origin plane or another support object with optional offset. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -5514,25 +5529,30 @@ Create a PartDesign datum plane inside a Body, attached to a Body origin plane o
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Origin plane to derive this datum from. The Body Origin may be hidden in GUI but is still addressable."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Optional support object for datum references, including origin plane, planar face, edge, vertex, or another datum."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Datum offset in the datum's local coordinate system; z is along the datum normal."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "Datum XYZ offset in the datum's local coordinate system; z is along the datum normal."
     },
     "require_valid": {
       "type": "boolean"
@@ -5660,7 +5680,7 @@ Create a PartDesign Pad from a Sketcher profile inside a Body, attaching the ske
 
 ## `freecad_partdesign_pocket`
 
-Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. The Body must already contain a solid feature such as a Pad.
+Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the profile, then pocket. The Body must already contain a solid feature such as a Pad.
 
 ```json
 {
@@ -5747,7 +5767,7 @@ Create a PartDesign Pocket that removes material from an existing Body solid usi
 
 ## `freecad_partdesign_hole`
 
-Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid.
+Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the circle position and diameter, then create Hole.
 
 ```json
 {
@@ -7744,7 +7764,7 @@ Create a PartDesign Mirrored transform from selected Body features or the whole 
 
 ## `freecad_partdesign_profile_feature_create`
 
-High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid.
+High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -7768,25 +7788,30 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile, valid
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base sketches or independent profiles."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object. For face-local holes/pockets, pass the Body Tip/feature object and attachment_subname='FaceN'. For reusable references, pass a datum/support object."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1 for planar-face sketching."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "create_body_if_missing": {
       "type": "boolean"
@@ -7971,7 +7996,7 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile, valid
 
 ## `freecad_partdesign_sweep_feature_create`
 
-High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid.
+High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -8016,25 +8041,30 @@ High-level recipe that creates Body-attached profile and spine sketches, then cr
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base sweep profile sketches."
     },
     "profile_attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the sweep profile. Use FaceN for face-local placement or a datum/support object for reusable references."
     },
     "profile_attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1 for planar-face sketching."
     },
     "profile_attachment_map_mode": {
       "type": "string"
     },
     "profile_attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "profile_attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "spine_sketch_name": {
       "type": "string"
@@ -8060,25 +8090,30 @@ High-level recipe that creates Body-attached profile and spine sketches, then cr
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base sweep spine sketches."
     },
     "spine_attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the sweep spine. Use FaceN for face-local placement or a datum/support object for reusable references."
     },
     "spine_attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1 for planar-face sketching."
     },
     "spine_attachment_map_mode": {
       "type": "string"
     },
     "spine_attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "spine_attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."
     },
     "spine_subname": {
       "type": "string"
@@ -8218,7 +8253,7 @@ High-level recipe that creates Body-attached profile and spine sketches, then cr
 
 ## `freecad_sketch_create`
 
-Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane or a datum/support object.
+Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane, planar face, datum, or other support. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
 
 ```json
 {
@@ -8242,25 +8277,30 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base sketches or simple independent offsets."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the sketch. Use with attachment_subname='FaceN' for normal planar-face sketching, or with a datum/support object for reusable references."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset from the selected origin plane, planar face, or datum support."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset from the selected origin plane, planar face, or datum support."
     },
     "create_body_if_missing": {
       "type": "boolean"
@@ -8484,7 +8524,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
 
 ```json
 {
@@ -8508,25 +8548,30 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "XY",
         "XZ",
         "YZ"
-      ]
+      ],
+      "description": "Body Origin plane for base profile sketches or simple independent offsets."
     },
     "attachment_object": {
-      "type": "string"
+      "type": "string",
+      "description": "Support object for the profile sketch. Use with attachment_subname='FaceN' for normal planar-face hole/pocket profiles, or with a datum/support object for reusable references."
     },
     "attachment_subname": {
-      "type": "string"
+      "type": "string",
+      "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."
     },
     "attachment_map_mode": {
       "type": "string"
     },
     "attachment_offset": {
-      "type": "number"
+      "type": "number",
+      "description": "Offset from the selected origin plane, planar face, or datum support."
     },
     "attachment_offset_vector": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "description": "XYZ offset from the selected origin plane, planar face, or datum support."
     },
     "create_body_if_missing": {
       "type": "boolean"

@@ -44,6 +44,17 @@ SAVE_PROPS: JsonObject = {
 PIPE_MODE_ENUM = ["standard", "fixed", "frenet", "auxiliary", "binormal"]
 PIPE_TRANSITION_ENUM = ["transformed", "right_corner", "round_corner"]
 PIPE_TRANSFORMATION_ENUM = ["constant", "multisection", "linear", "s_shape", "interpolation"]
+DATUM_USAGE_POLICY = (
+    "FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets "
+    "on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, "
+    "add external/reference geometry from that face's edges or vertices when needed, dimension the "
+    "circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for "
+    "arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for "
+    "multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS "
+    "orientation references. A datum plane is basically redundant for support of one sketch, and a "
+    "datum attached to generated faces has the same topological naming risk as a sketch attached to "
+    "those faces."
+)
 
 PIPE_WORKER_PROPS: JsonObject = {
     "document_id": {"type": "string"},
@@ -424,7 +435,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_partdesign_datum_plane_create",
                 "Worker Create PartDesign Datum Plane",
-                "Create a PartDesign datum plane inside a worker Body, attached to a Body origin plane or another support object with optional offset.",
+                "Create a PartDesign datum plane inside a worker Body, attached to a Body origin plane or another support object with optional offset. " + DATUM_USAGE_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "body_name": {"type": "string"},
@@ -432,12 +443,12 @@ class PersistentToolService:
                     "datum_plane_name": {"type": "string"},
                     "plane_name": {"type": "string"},
                     "result_name": {"type": "string"},
-                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-                    "attachment_object": {"type": "string"},
-                    "attachment_subname": {"type": "string"},
+                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Origin plane to derive this datum from. The Body Origin may be hidden in GUI but is still addressable."},
+                    "attachment_object": {"type": "string", "description": "Optional support object for datum references, including origin plane, planar face, edge, vertex, or another datum."},
+                    "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1."},
                     "attachment_map_mode": {"type": "string"},
-                    "attachment_offset": {"type": "number"},
-                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+                    "attachment_offset": {"type": "number", "description": "Datum offset in the datum's local coordinate system; z is along the datum normal."},
+                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "Datum XYZ offset in the datum's local coordinate system; z is along the datum normal."},
                     "require_valid": {"type": "boolean"},
                     **SAVE_PROPS,
                 },
@@ -469,7 +480,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_partdesign_pocket",
                 "Worker Create PartDesign Pocket",
-                "Create a PartDesign Pocket that removes material from an existing worker Body solid using a Sketcher profile.",
+                "Create a PartDesign Pocket that removes material from an existing worker Body solid using a Sketcher profile. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the profile, then pocket.",
                 {
                     "document_id": {"type": "string"},
                     "body_name": {"type": "string"},
@@ -491,7 +502,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_partdesign_hole",
                 "Worker Create PartDesign Hole",
-                "Create a plain PartDesign Hole from a worker Sketcher circle profile inside an existing Body solid.",
+                "Create a plain PartDesign Hole from a worker Sketcher circle profile inside an existing Body solid. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the circle position and diameter, then create Hole.",
                 {
                     "document_id": {"type": "string"},
                     "body_name": {"type": "string"},
@@ -725,17 +736,17 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_create",
                 "Worker Create Sketch",
-                "Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane.",
+                "Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane, planar face, datum, or other support. " + DATUM_USAGE_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "body_name": {"type": "string"},
-                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-                    "attachment_object": {"type": "string"},
-                    "attachment_subname": {"type": "string"},
+                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base sketches or simple independent offsets."},
+                    "attachment_object": {"type": "string", "description": "Support object for the sketch. Use with attachment_subname='FaceN' for normal planar-face sketching, or with a datum/support object for reusable references."},
+                    "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."},
                     "attachment_map_mode": {"type": "string"},
-                    "attachment_offset": {"type": "number"},
-                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+                    "attachment_offset": {"type": "number", "description": "Offset from the selected origin plane, planar face, or datum support."},
+                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset from the selected origin plane, planar face, or datum support."},
                     "create_body_if_missing": {"type": "boolean"},
                     **SAVE_PROPS,
                 },
@@ -796,17 +807,17 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_create",
                 "Worker Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z].",
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. " + DATUM_USAGE_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "body_name": {"type": "string"},
-                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-                    "attachment_object": {"type": "string"},
-                    "attachment_subname": {"type": "string"},
+                    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base profile sketches or simple independent offsets."},
+                    "attachment_object": {"type": "string", "description": "Support object for the profile sketch. Use with attachment_subname='FaceN' for normal planar-face hole/pocket profiles, or with a datum/support object for reusable references."},
+                    "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."},
                     "attachment_map_mode": {"type": "string"},
-                    "attachment_offset": {"type": "number"},
-                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+                    "attachment_offset": {"type": "number", "description": "Offset from the selected origin plane, planar face, or datum support."},
+                    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset from the selected origin plane, planar face, or datum support."},
                     "create_body_if_missing": {"type": "boolean"},
                     "loops": {"type": "array", "items": {"type": "object"}},
                     "replace_existing": {"type": "boolean"},

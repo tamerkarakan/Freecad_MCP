@@ -11,6 +11,17 @@ from freecad_mcp.tooling import JsonObject, ToolDefinition, ToolInputError
 PIPE_MODE_ENUM = ["standard", "fixed", "frenet", "auxiliary", "binormal"]
 PIPE_TRANSITION_ENUM = ["transformed", "right_corner", "round_corner"]
 PIPE_TRANSFORMATION_ENUM = ["constant", "multisection", "linear", "s_shape", "interpolation"]
+DATUM_USAGE_POLICY = (
+    "FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets "
+    "on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, "
+    "add external/reference geometry from that face's edges or vertices when needed, dimension the "
+    "circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for "
+    "arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for "
+    "multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS "
+    "orientation references. A datum plane is basically redundant for support of one sketch, and a "
+    "datum attached to generated faces has the same topological naming risk as a sketch attached to "
+    "those faces."
+)
 
 PIPE_PROPS = {
     "document_path": {"type": "string"},
@@ -198,12 +209,12 @@ PROFILE_WORKFLOW_PROPS = {
     "document_name": {"type": "string"},
     "body_name": {"type": "string"},
     "sketch_name": {"type": "string"},
-    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-    "attachment_object": {"type": "string"},
-    "attachment_subname": {"type": "string"},
+    "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base sketches or independent profiles."},
+    "attachment_object": {"type": "string", "description": "Support object. For face-local holes/pockets, pass the Body Tip/feature object and attachment_subname='FaceN'. For reusable references, pass a datum/support object."},
+    "attachment_subname": {"type": "string", "description": "Support subelement such as Face1 for planar-face sketching."},
     "attachment_map_mode": {"type": "string"},
-    "attachment_offset": {"type": "number"},
-    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+    "attachment_offset": {"type": "number", "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
+    "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
     "create_body_if_missing": {"type": "boolean"},
     "loops": {"type": "array", "items": {"type": "object"}},
     "lock_mode": {"type": "string", "enum": ["none", "block"]},
@@ -252,22 +263,22 @@ SWEEP_WORKFLOW_PROPS = {
     "profile_name": {"type": "string"},
     "profile": {"type": "object", "description": "Profile helper for freecad_sketch_add_profile, such as a circle."},
     "profile_loops": {"type": "array", "items": {"type": "object"}},
-    "profile_attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-    "profile_attachment_object": {"type": "string"},
-    "profile_attachment_subname": {"type": "string"},
+    "profile_attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base sweep profile sketches."},
+    "profile_attachment_object": {"type": "string", "description": "Support object for the sweep profile. Use FaceN for face-local placement or a datum/support object for reusable references."},
+    "profile_attachment_subname": {"type": "string", "description": "Support subelement such as Face1 for planar-face sketching."},
     "profile_attachment_map_mode": {"type": "string"},
-    "profile_attachment_offset": {"type": "number"},
-    "profile_attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+    "profile_attachment_offset": {"type": "number", "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
+    "profile_attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
     "spine_sketch_name": {"type": "string"},
     "spine_name": {"type": "string"},
     "spine_geometry": {"type": "array", "items": {"type": "object"}},
     "spine_constraints": {"type": "array", "items": {"type": "object"}},
-    "spine_attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]},
-    "spine_attachment_object": {"type": "string"},
-    "spine_attachment_subname": {"type": "string"},
+    "spine_attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base sweep spine sketches."},
+    "spine_attachment_object": {"type": "string", "description": "Support object for the sweep spine. Use FaceN for face-local placement or a datum/support object for reusable references."},
+    "spine_attachment_subname": {"type": "string", "description": "Support subelement such as Face1 for planar-face sketching."},
     "spine_attachment_map_mode": {"type": "string"},
-    "spine_attachment_offset": {"type": "number"},
-    "spine_attachment_offset_vector": {"type": "array", "items": {"type": "number"}},
+    "spine_attachment_offset": {"type": "number", "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
+    "spine_attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
     "spine_subname": {"type": "string"},
     "spine_tangent": {"type": "boolean"},
     "sections": {"type": "array", "items": {"type": ["string", "object"]}},
@@ -303,14 +314,14 @@ class PartDesignCadToolService(CadDomainToolService):
             ToolDefinition(
                 "freecad_partdesign_profile_feature_create",
                 "Create PartDesign Profile Feature Recipe",
-                "High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid.",
+                "High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
                 {"type": "object", "properties": {**PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
                 self.profile_feature_create,
             ),
             ToolDefinition(
                 "freecad_partdesign_sweep_feature_create",
                 "Create PartDesign Sweep Feature Recipe",
-                "High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid.",
+                "High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
                 {"type": "object", "properties": {**SWEEP_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["spine_geometry"]},
                 self.sweep_feature_create,
             ),
@@ -319,10 +330,10 @@ class PartDesignCadToolService(CadDomainToolService):
     def specs(self) -> list[CadToolSpec]:
         return [
             CadToolSpec("freecad_partdesign_body_create", "Create PartDesign Body", "Create or reuse a PartDesign Body with origin planes.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "body_name": {"type": "string"}, "create_body_if_missing": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, [], "partdesign_body_create"),
-            CadToolSpec("freecad_partdesign_datum_plane_create", "Create PartDesign Datum Plane", "Create a PartDesign datum plane inside a Body, attached to a Body origin plane or another support object with optional offset.", {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "body_name": {"type": "string"}, "create_body_if_missing": {"type": "boolean"}, "datum_plane_name": {"type": "string"}, "plane_name": {"type": "string"}, "result_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "attachment_object": {"type": "string"}, "attachment_subname": {"type": "string"}, "attachment_map_mode": {"type": "string"}, "attachment_offset": {"type": "number"}, "attachment_offset_vector": {"type": "array", "items": {"type": "number"}}, "require_valid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, [], "partdesign_datum_plane_create"),
+            CadToolSpec("freecad_partdesign_datum_plane_create", "Create PartDesign Datum Plane", "Create a PartDesign datum plane inside a Body, attached to a Body origin plane or another support object with optional offset. " + DATUM_USAGE_POLICY, {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "body_name": {"type": "string"}, "create_body_if_missing": {"type": "boolean"}, "datum_plane_name": {"type": "string"}, "plane_name": {"type": "string"}, "result_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Origin plane to derive this datum from. The Body Origin may be hidden in GUI but is still addressable."}, "attachment_object": {"type": "string", "description": "Optional support object for datum references, including origin plane, planar face, edge, vertex, or another datum."}, "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1."}, "attachment_map_mode": {"type": "string"}, "attachment_offset": {"type": "number", "description": "Datum offset in the datum's local coordinate system; z is along the datum normal."}, "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "Datum XYZ offset in the datum's local coordinate system; z is along the datum normal."}, "require_valid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, [], "partdesign_datum_plane_create"),
             CadToolSpec("freecad_partdesign_pad", "Create PartDesign Pad", "Create a PartDesign Pad from a Sketcher profile inside a Body, attaching the sketch to an origin plane when needed.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "pad_name": {"type": "string"}, "result_name": {"type": "string"}, "length": {"type": "number"}, "length2": {"type": "number"}, "midplane": {"type": "boolean"}, "reversed": {"type": "boolean"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name"], "partdesign_pad"),
-            CadToolSpec("freecad_partdesign_pocket", "Create PartDesign Pocket", "Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. The Body must already contain a solid feature such as a Pad.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "pocket_name": {"type": "string"}, "result_name": {"type": "string"}, "length": {"type": "number"}, "length2": {"type": "number"}, "midplane": {"type": "boolean"}, "reversed": {"type": "boolean"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name"], "partdesign_pocket"),
-            CadToolSpec("freecad_partdesign_hole", "Create PartDesign Hole", "Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "hole_name": {"type": "string"}, "result_name": {"type": "string"}, "diameter": {"type": "number"}, "depth": {"type": "number"}, "depth_type": {"type": "string", "enum": ["dimension", "through_all"]}, "drill_point": {"type": "string", "enum": ["flat", "angled"]}, "drill_point_angle": {"type": "number"}, "tapered": {"type": "boolean"}, "tapered_angle": {"type": "number"}, "hole_cut_type": {"type": "string", "enum": ["none", "counterbore", "countersink"]}, "hole_cut_diameter": {"type": "number"}, "hole_cut_depth": {"type": "number"}, "hole_cut_countersink_angle": {"type": "number"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name", "diameter"], "partdesign_hole"),
+            CadToolSpec("freecad_partdesign_pocket", "Create PartDesign Pocket", "Create a PartDesign Pocket that removes material from an existing Body solid using a Sketcher profile. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the profile, then pocket. The Body must already contain a solid feature such as a Pad.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "pocket_name": {"type": "string"}, "result_name": {"type": "string"}, "length": {"type": "number"}, "length2": {"type": "number"}, "midplane": {"type": "boolean"}, "reversed": {"type": "boolean"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name"], "partdesign_pocket"),
+            CadToolSpec("freecad_partdesign_hole", "Create PartDesign Hole", "Create a plain PartDesign Hole from a Sketcher circle profile inside an existing Body solid. Common FreeCAD workflow: sketch on the target planar FaceN, reference face edges/vertices with external geometry, dimension the circle position and diameter, then create Hole.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "hole_name": {"type": "string"}, "result_name": {"type": "string"}, "diameter": {"type": "number"}, "depth": {"type": "number"}, "depth_type": {"type": "string", "enum": ["dimension", "through_all"]}, "drill_point": {"type": "string", "enum": ["flat", "angled"]}, "drill_point_angle": {"type": "number"}, "tapered": {"type": "boolean"}, "tapered_angle": {"type": "number"}, "hole_cut_type": {"type": "string", "enum": ["none", "counterbore", "countersink"]}, "hole_cut_diameter": {"type": "number"}, "hole_cut_depth": {"type": "number"}, "hole_cut_countersink_angle": {"type": "number"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name", "diameter"], "partdesign_hole"),
             CadToolSpec("freecad_partdesign_revolution", "Create PartDesign Revolution", "Create an additive PartDesign Revolution from a Sketcher profile around a sketch or document axis.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "revolution_name": {"type": "string"}, "result_name": {"type": "string"}, "reference_axis": {"type": "string", "enum": ["sketch_v_axis", "sketch_h_axis", "x_axis", "y_axis", "z_axis"]}, "reference_axis_object": {"type": "string"}, "reference_axis_subname": {"type": "string"}, "mode": {"type": "string", "enum": ["angle", "through_all", "up_to_last", "up_to_first", "up_to_face", "two_angles"]}, "angle": {"type": "number"}, "angle2": {"type": "number"}, "midplane": {"type": "boolean"}, "reversed": {"type": "boolean"}, "up_to_face_object": {"type": "string"}, "up_to_face_subname": {"type": "string"}, "fuse_order": {"type": "string", "enum": ["base_first", "feature_first"]}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name"], "partdesign_revolution"),
             CadToolSpec("freecad_partdesign_groove", "Create PartDesign Groove", "Create a subtractive PartDesign Groove from a Sketcher profile around a sketch or document axis. The Body must already contain a solid feature such as a Pad.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "sketch_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"]}, "create_body_if_missing": {"type": "boolean"}, "groove_name": {"type": "string"}, "result_name": {"type": "string"}, "reference_axis": {"type": "string", "enum": ["sketch_v_axis", "sketch_h_axis", "x_axis", "y_axis", "z_axis"]}, "reference_axis_object": {"type": "string"}, "reference_axis_subname": {"type": "string"}, "mode": {"type": "string", "enum": ["angle", "through_all", "up_to_first", "up_to_face", "two_angles"]}, "angle": {"type": "number"}, "angle2": {"type": "number"}, "midplane": {"type": "boolean"}, "reversed": {"type": "boolean"}, "up_to_face_object": {"type": "string"}, "up_to_face_subname": {"type": "string"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path", "sketch_name"], "partdesign_groove"),
             CadToolSpec("freecad_partdesign_additive_loft", "Create PartDesign Additive Loft", "Create an additive PartDesign Loft from a profile sketch and one or more section sketches inside a Body.", {"document_path": {"type": "string"}, "body_name": {"type": "string"}, "profile_name": {"type": "string"}, "profile_sketch": {"type": "string"}, "sketch_name": {"type": "string"}, "profile_subname": {"type": "string"}, "profile_subnames": {"type": "array", "items": {"type": "string"}}, "sections": {"type": "array", "items": {"type": ["string", "object"]}}, "section_names": {"type": "array", "items": {"type": "string"}}, "loft_name": {"type": "string"}, "result_name": {"type": "string"}, "ruled": {"type": "boolean"}, "closed": {"type": "boolean"}, "require_solid": {"type": "boolean"}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}}, ["document_path"], "partdesign_additive_loft"),
