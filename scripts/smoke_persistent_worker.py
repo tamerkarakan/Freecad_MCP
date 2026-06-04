@@ -172,6 +172,27 @@ def smoke_worker_sketch_input_ergonomics(service: PersistentToolService) -> None
         if len(worker_rectangle_loop["loops"][0]["added_indices"]) != 4:
             raise RuntimeError(f"worker rectangle loop did not expand to four lines: {worker_rectangle_loop}")
 
+        worker_semantic_rectangle = worker_result(
+            service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerSemanticRectangle",
+                    "loops": [{"name": "outer", "type": "rectangle", "origin": [0, 20], "width": 6, "height": 4}],
+                    "constraint_policy": "semantic",
+                    "require_fully_constrained": True,
+                    "timeout_sec": 30,
+                }
+            ),
+            "worker_semantic_rectangle_profile_create",
+        )
+        semantic_roles = {item["role"] for item in worker_semantic_rectangle["loops"][0].get("semantic_constraints", [])}
+        if worker_semantic_rectangle["validation"]["degrees_of_freedom"] != 0 or worker_semantic_rectangle["validation"]["block_constraints"]:
+            raise RuntimeError(f"worker semantic rectangle did not fully constrain without Block: {worker_semantic_rectangle}")
+        for role in ("width", "height", "origin_x", "origin_y"):
+            if role not in semantic_roles:
+                raise RuntimeError(f"worker semantic rectangle missing {role} constraint: {worker_semantic_rectangle}")
+
         closed = worker_result(
             service.definition_map()["freecad_worker_document_close"].handler(
                 {"session_id": session_id, "document_id": document_id, "timeout_sec": 30}

@@ -128,6 +128,7 @@ def main() -> int:
         connected_sketch_doc = temp / "connected_sketch.FCStd"
         coordinates_2d_doc = temp / "coordinates_2d.FCStd"
         rectangle_loop_doc = temp / "rectangle_loop.FCStd"
+        semantic_rectangle_doc = temp / "semantic_rectangle.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
         parametric_builder_doc = temp / "parametric_builder.FCStd"
         partdesign_doc = temp / "partdesign.FCStd"
@@ -618,30 +619,12 @@ def main() -> int:
                         "origin": [0, 0],
                         "width": 30,
                         "height": 20,
+                        "width_expression": "Params.width",
+                        "height_expression": "Params.height",
                     }
                 ],
-                "driving_constraints": [
-                    {
-                        "type": "DistanceX",
-                        "first": {"loop": "outer", "index": 0},
-                        "first_pos": 1,
-                        "second": {"loop": "outer", "index": 0},
-                        "second_pos": 2,
-                        "value": 30,
-                        "name": "width",
-                        "expression": "Params.width",
-                    },
-                    {
-                        "type": "DistanceY",
-                        "first": {"loop": "outer", "index": 1},
-                        "first_pos": 1,
-                        "second": {"loop": "outer", "index": 1},
-                        "second_pos": 2,
-                        "value": 20,
-                        "name": "height",
-                        "expression": "Params.height",
-                    },
-                ],
+                "constraint_policy": "semantic",
+                "require_fully_constrained": True,
                 "length": 6,
                 "feature_length_expression": "Params.depth",
                 "output_path": str(parametric_builder_doc),
@@ -653,8 +636,12 @@ def main() -> int:
         parametric_payload = parametric_profile["freecad"]
         if not parametric_payload.get("ok"):
             raise RuntimeError(f"parametric builder failed: {parametric_profile}")
-        if parametric_profile["workflow"]["constraints"]["added_count"] != 2:
-            raise RuntimeError(f"parametric builder did not add both driving constraints: {parametric_profile}")
+        workflow = parametric_profile["workflow"]
+        if not workflow["final_validation"] or workflow["final_validation"]["degrees_of_freedom"] != 0:
+            raise RuntimeError(f"parametric builder did not pass final full-constraint validation: {parametric_profile}")
+        binding_roles = {item.get("role") for item in workflow["constraints"]["bindings"]}
+        if not {"width", "height"}.issubset(binding_roles):
+            raise RuntimeError(f"parametric builder did not auto-bind semantic width/height: {parametric_profile}")
         if parametric_payload["object"]["shape"]["solids"] != 1:
             raise RuntimeError(f"parametric builder final feature is not a solid: {parametric_profile}")
         feature_expression_paths = {
@@ -1025,6 +1012,27 @@ def main() -> int:
             raise RuntimeError(f"rectangle loop profile was not pad-ready: {rectangle_loop_profile}")
         if len(rectangle_loop_profile["loops"][0]["added_indices"]) != 4:
             raise RuntimeError(f"rectangle loop profile did not expand to four lines: {rectangle_loop_profile}")
+
+        semantic_rectangle = assert_ok(
+            service.definition_map()["freecad_sketch_profile_create"].handler(
+                {
+                    "document_name": "SemanticRectangleSmoke",
+                    "sketch_name": "SemanticRectangleSketch",
+                    "loops": [{"name": "outer", "type": "rectangle", "origin": [0, 0], "width": 6, "height": 4}],
+                    "constraint_policy": "semantic",
+                    "require_fully_constrained": True,
+                    "output_path": str(semantic_rectangle_doc),
+                    "overwrite": True,
+                }
+            ),
+            "semantic rectangle sketch profile create",
+        )
+        semantic_roles = {item["role"] for item in semantic_rectangle["loops"][0].get("semantic_constraints", [])}
+        if semantic_rectangle["validation"]["degrees_of_freedom"] != 0 or semantic_rectangle["validation"]["block_constraints"]:
+            raise RuntimeError(f"semantic rectangle did not fully constrain without Block: {semantic_rectangle}")
+        for role in ("width", "height", "origin_x", "origin_y"):
+            if role not in semantic_roles:
+                raise RuntimeError(f"semantic rectangle missing {role} constraint: {semantic_rectangle}")
 
         profile_builder = assert_ok(
             service.definition_map()["freecad_sketch_profile_create"].handler(

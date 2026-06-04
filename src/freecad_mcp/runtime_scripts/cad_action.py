@@ -3363,6 +3363,7 @@ def validate_sketch_profile(sketch, args):
     forbid_micro_offsets = bool(args.get("forbid_micro_offsets", True))
     require_pad_ready = bool(args.get("require_pad_ready", True))
     require_fully_constrained = bool(args.get("require_fully_constrained", False))
+    forbid_block_constraints = bool(args.get("forbid_block_constraints", False)) or profile_constraint_policy({}, args) == "semantic"
     include_construction = bool(args.get("include_construction", False))
 
     solve_code = sketch.solve()
@@ -3414,6 +3415,11 @@ def validate_sketch_profile(sketch, args):
     conflicting = list(getattr(sketch, "ConflictingConstraints", []))
     redundant = list(getattr(sketch, "RedundantConstraints", []))
     malformed = list(getattr(sketch, "MalformedConstraints", []))
+    block_constraints = [
+        constraint_summary(constraint, index)
+        for index, constraint in enumerate(getattr(sketch, "Constraints", []) or [])
+        if str(getattr(constraint, "Type", "")) == "Block"
+    ]
     dof = getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None))
     pad_ready = (
         not open_vertices
@@ -3434,6 +3440,8 @@ def validate_sketch_profile(sketch, args):
         issues.append({"code": "conflicting_constraints", "indices": conflicting})
     if malformed:
         issues.append({"code": "malformed_constraints", "indices": malformed})
+    if forbid_block_constraints and block_constraints:
+        issues.append({"code": "block_constraints_forbidden", "indices": [item["index"] for item in block_constraints]})
     if require_pad_ready and not pad_ready:
         issues.append({"code": "not_pad_ready", "face_validation": face_validation})
     if require_fully_constrained and dof != 0:
@@ -3474,6 +3482,7 @@ def validate_sketch_profile(sketch, args):
         "conflicting_constraints": conflicting,
         "redundant_constraints": redundant,
         "malformed_constraints": malformed,
+        "block_constraints": block_constraints,
         "face_validation": face_validation,
     }
 
@@ -3544,6 +3553,138 @@ def profile_loop_segments(loop):
     return []
 
 
+def profile_constraint_policy(loop, params):
+    if bool(loop.get("semantic_constraints", False)) or bool(params.get("semantic_constraints", False)):
+        return "semantic"
+    value = loop.get("constraint_policy", params.get("constraint_policy", "none"))
+    if value is None:
+        return "none"
+    normalized = str(value).lower().replace("-", "_")
+    aliases = {
+        "off": "none",
+        "false": "none",
+        "minimal": "none",
+        "shape_only": "shape",
+        "parametric": "semantic",
+        "strict": "semantic",
+        "strict_parametric": "semantic",
+        "semantic_parametric": "semantic",
+    }
+    normalized = aliases.get(normalized, normalized)
+    if normalized not in {"none", "shape", "semantic"}:
+        raise ValueError("unsupported constraint_policy: " + str(value))
+    return normalized
+
+
+def sanitized_constraint_name(value):
+    text = re.sub(r"[^0-9A-Za-z_]+", "_", str(value or "")).strip("_")
+    if not text:
+        return ""
+    if text[0].isdigit():
+        text = "_" + text
+    return text
+
+
+def semantic_constraint_name(loop, role, default_loop_name):
+    for key in (role + "_constraint_name", role + "_name"):
+        if loop.get(key):
+            return sanitized_constraint_name(loop[key])
+    prefix = sanitized_constraint_name(loop.get("name") or default_loop_name or "loop")
+    return sanitized_constraint_name(prefix + "_" + role)
+
+
+def add_semantic_constraint(sketch, constraint, *, role, loop, loop_name, expression=None):
+    index = sketch.addConstraint(constraint)
+    name = semantic_constraint_name(loop, role, loop_name)
+    if name:
+        try:
+            sketch.renameConstraint(index, name)
+        except Exception:
+            name = ""
+    report = {
+        "index": index,
+        "type": str(getattr(constraint, "Type", "")),
+        "role": role,
+    }
+    if name:
+        report["name"] = name
+    if expression:
+        report["expression"] = str(expression)
+    return index, report
+
+
+def add_rectangle_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    import Sketcher
+
+    policy = profile_constraint_policy(loop, params)
+    if policy == "none":
+        return []
+    if len(added) < 4:
+        return []
+    kind = str(loop.get("type") or "").lower()
+    if kind not in PROFILE_RECTANGLE_TYPES:
+        return []
+
+    semantic = []
+    axis_aligned = kind not in {"rectangle_3_point", "rectangle_three_points"}
+    if axis_aligned:
+        for role, constraint in (
+            ("horizontal_bottom", Sketcher.Constraint("Horizontal", added[0])),
+            ("vertical_right", Sketcher.Constraint("Vertical", added[1])),
+            ("horizontal_top", Sketcher.Constraint("Horizontal", added[2])),
+            ("vertical_left", Sketcher.Constraint("Vertical", added[3])),
+        ):
+            _, report = add_semantic_constraint(sketch, constraint, role=role, loop=loop, loop_name=loop_name)
+            semantic.append(report)
+    else:
+        for role, constraint in (
+            ("parallel_width", Sketcher.Constraint("Parallel", added[0], added[2])),
+            ("parallel_height", Sketcher.Constraint("Parallel", added[1], added[3])),
+            ("perpendicular_corner", Sketcher.Constraint("Perpendicular", added[0], added[1])),
+        ):
+            _, report = add_semantic_constraint(sketch, constraint, role=role, loop=loop, loop_name=loop_name)
+            semantic.append(report)
+
+    if policy != "semantic" or not axis_aligned:
+        return semantic
+
+    points = rectangle_loop_points(loop)
+    width = abs(points[1].x - points[0].x)
+    height = abs(points[2].y - points[1].y)
+    for role, expression, constraint in (
+        ("width", loop.get("width_expression"), Sketcher.Constraint("DistanceX", added[0], 1, added[0], 2, width)),
+        ("height", loop.get("height_expression"), Sketcher.Constraint("DistanceY", added[1], 1, added[1], 2, height)),
+    ):
+        _, report = add_semantic_constraint(
+            sketch,
+            constraint,
+            role=role,
+            loop=loop,
+            loop_name=loop_name,
+            expression=expression,
+        )
+        semantic.append(report)
+
+    anchor_default = loop.get("origin") is not None or loop.get("corner1") is not None
+    anchor = bool(loop.get("anchor", params.get("anchor", anchor_default)))
+    if anchor:
+        origin = points[0]
+        for role, expression, constraint in (
+            ("origin_x", loop.get("origin_x_expression"), Sketcher.Constraint("DistanceX", added[0], 1, -2, 1, -float(origin.x))),
+            ("origin_y", loop.get("origin_y_expression"), Sketcher.Constraint("DistanceY", added[0], 1, -1, 1, -float(origin.y))),
+        ):
+            _, report = add_semantic_constraint(
+                sketch,
+                constraint,
+                role=role,
+                loop=loop,
+                loop_name=loop_name,
+                expression=expression,
+            )
+            semantic.append(report)
+    return semantic
+
+
 def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_tolerance):
     import Sketcher
 
@@ -3589,10 +3730,13 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
         for index in range(len(added) - 1):
             constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[index], 2, added[index + 1], 1)))
         constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[-1], 2, added[0], 1)))
+    semantic_constraints = add_rectangle_semantic_constraints(sketch, loop, params, loop_name=name, added=added)
+    constraint_indices.extend([item["index"] for item in semantic_constraints])
     return {
         "name": name,
         "added_indices": added,
         "constraint_indices": constraint_indices,
+        "semantic_constraints": semantic_constraints,
         "segment_count": len(flat),
         "curve_contract": curve_contract,
         "segment_intents": segment_intents,

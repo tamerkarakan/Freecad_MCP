@@ -227,6 +227,8 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("sketch_expressions", parametric_recipe_props)
         self.assertIn("feature_expressions", parametric_recipe_props)
         self.assertIn("feature_length_expression", parametric_recipe_props)
+        self.assertIn("constraint_policy", parametric_recipe_props)
+        self.assertIn("final_validate", parametric_recipe_props)
         self.assertIn("include_steps", parametric_recipe_props)
         sweep_recipe_props = tools["freecad_partdesign_sweep_feature_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("profile", sweep_recipe_props)
@@ -320,6 +322,8 @@ class ToolSchemaTests(unittest.TestCase):
             "forbid_polyline_fallback",
             "forbid_all_line_loops",
             "attachment_object",
+            "constraint_policy",
+            "forbid_block_constraints",
         ]:
             self.assertIn(name, props)
         validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
@@ -328,6 +332,8 @@ class ToolSchemaTests(unittest.TestCase):
             "required_segment_types",
             "minimum_curve_segments",
             "forbid_intent_mismatch",
+            "constraint_policy",
+            "forbid_block_constraints",
         ]:
             self.assertIn(name, validate_props)
         self.assertIn("points", tools["freecad_curve_fit_analyze"].to_mcp()["inputSchema"]["properties"])

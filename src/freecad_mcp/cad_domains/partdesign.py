@@ -232,6 +232,13 @@ PROFILE_WORKFLOW_PROPS = {
     "forbid_branch_points": {"type": "boolean"},
     "forbid_micro_offsets": {"type": "boolean"},
     "micro_offset_tolerance": {"type": "number"},
+    "constraint_policy": {
+        "type": "string",
+        "enum": ["none", "shape", "semantic"],
+        "description": "Sketch profile constraint policy. semantic adds shape-preserving and named driving dimensions for supported profile helpers instead of relying on Block constraints.",
+    },
+    "semantic_constraints": {"type": "boolean", "description": "Alias for constraint_policy='semantic'."},
+    "forbid_block_constraints": {"type": "boolean", "description": "Reject Sketcher Block constraints during profile validation; implied by semantic constraint policy."},
     "feature_kind": {"type": "string", "enum": ["pad", "pocket", "revolution", "groove"], "default": "pad"},
     "feature_name": {"type": "string"},
     "result_name": {"type": "string"},
@@ -283,6 +290,8 @@ PARAMETRIC_PROFILE_WORKFLOW_PROPS = {
     "feature_length_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Length."},
     "feature_length2_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Length2."},
     "feature_angle_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Angle."},
+    "final_validate": {"type": "boolean", "description": "Run sketch profile validation after driving constraints and expression bindings. Defaults true for parametric recipes."},
+    "profile_require_fully_constrained": {"type": "boolean", "description": "Force the initial profile creation step to require DoF=0 before driving constraints are added. Defaults to false when final validation is required."},
     "include_steps": {"type": "boolean", "description": "Include full intermediate tool results. Defaults false to keep responses compact."},
 }
 
@@ -464,6 +473,24 @@ class PartDesignCadToolService(CadDomainToolService):
                 }
         return {}
 
+    def _semantic_expression_bindings(self, profile_payload: JsonObject) -> list[JsonObject]:
+        bindings: list[JsonObject] = []
+        for loop in profile_payload.get("loops") or []:
+            for item in loop.get("semantic_constraints") or []:
+                expression = item.get("expression")
+                if expression is None or str(expression).strip() == "":
+                    continue
+                bindings.append(
+                    {
+                        "constraint_index": int(item["index"]),
+                        "constraint_name": item.get("name"),
+                        "role": item.get("role"),
+                        "path": f"Constraints[{int(item['index'])}]",
+                        "expression": str(expression),
+                    }
+                )
+        return bindings
+
     def _feature_result_key(self, feature_kind: str) -> str:
         return {
             "pad": "pad",
@@ -502,6 +529,12 @@ class PartDesignCadToolService(CadDomainToolService):
         steps: dict[str, JsonObject] = {}
         step_sequence: list[str] = []
         working_path = args.get("document_path")
+        raw_constraints = list(args.get("driving_constraints") or args.get("constraints") or [])
+        final_validate = bool(args.get("final_validate", True))
+        final_require_fully_constrained = bool(args.get("require_fully_constrained", False))
+        profile_require_fully_constrained = args.get("profile_require_fully_constrained")
+        if profile_require_fully_constrained is None:
+            profile_require_fully_constrained = final_require_fully_constrained and not raw_constraints
 
         if args.get("spreadsheet_rows") or args.get("spreadsheet_cells"):
             sheet_args: JsonObject = {
@@ -531,6 +564,7 @@ class PartDesignCadToolService(CadDomainToolService):
             "attachment_plane": args.get("attachment_plane") or "XY",
             "require_valid": args.get("require_valid", True),
             "require_pad_ready": args.get("require_pad_ready", True),
+            "require_fully_constrained": bool(profile_require_fully_constrained),
         }
         if working_path:
             profile_args["document_path"] = working_path
@@ -555,6 +589,9 @@ class PartDesignCadToolService(CadDomainToolService):
             "forbid_branch_points",
             "forbid_micro_offsets",
             "micro_offset_tolerance",
+            "constraint_policy",
+            "semantic_constraints",
+            "forbid_block_constraints",
         ):
             if key in args:
                 profile_args[key] = args[key]
@@ -566,14 +603,15 @@ class PartDesignCadToolService(CadDomainToolService):
         step_sequence.append("sketch_profile_create")
 
         loop_indices = self._profile_loop_indices(profile_payload)
-        raw_constraints = list(args.get("driving_constraints") or args.get("constraints") or [])
         resolved_constraints = [self._resolve_constraint_refs(dict(item), loop_indices) for item in raw_constraints]
         sketch_expressions: dict[str, str] = {
             str(path): str(expression)
             for path, expression in (args.get("sketch_expressions") or {}).items()
             if expression is not None and str(expression).strip()
         }
-        constraint_bindings = []
+        constraint_bindings = self._semantic_expression_bindings(profile_payload)
+        for binding in constraint_bindings:
+            sketch_expressions[str(binding["path"])] = str(binding["expression"])
         if resolved_constraints:
             constraints_args = {
                 "document_path": working_path,
@@ -622,6 +660,42 @@ class PartDesignCadToolService(CadDomainToolService):
             working_path = self._working_path(args, sketch_expression_payload)
             steps["sketch_expressions"] = sketch_expression_result
             step_sequence.append("object_expression_set:sketch")
+
+        final_validation: JsonObject | None = None
+        if final_validate:
+            validate_args: JsonObject = {
+                "document_path": working_path,
+                "sketch_name": sketch_name,
+                "require_pad_ready": args.get("require_pad_ready", True),
+                "require_fully_constrained": final_require_fully_constrained,
+            }
+            for key in (
+                "required_segment_types",
+                "required_curve_types",
+                "minimum_curve_segments",
+                "forbid_polyline_fallback",
+                "forbid_all_line_loops",
+                "forbid_isolated_points",
+                "forbid_branch_points",
+                "forbid_micro_offsets",
+                "micro_offset_tolerance",
+                "constraint_policy",
+                "semantic_constraints",
+                "forbid_block_constraints",
+            ):
+                if key in args:
+                    validate_args[key] = args[key]
+            validate_result = self.runner.run(
+                "sketch_profile_validate",
+                self._with_runtime(args, validate_args),
+                ["document_path", "sketch_name"],
+            )
+            validate_payload = self._ensure_ok(validate_result, "final sketch validation")
+            final_validation = validate_payload.get("validation") or {}
+            steps["final_validation"] = validate_result
+            step_sequence.append("sketch_profile_validate:final")
+            if bool(args.get("require_valid", True)) and not bool(final_validation.get("ok", False)):
+                raise ToolInputError(f"final sketch validation failed: {final_validation.get('issues')}")
 
         feature_args: JsonObject = {
             "document_path": working_path,
@@ -714,6 +788,7 @@ class PartDesignCadToolService(CadDomainToolService):
                 "added_count": len(resolved_constraints),
                 "bindings": constraint_bindings,
             },
+            "final_validation": final_validation,
             "sketch_expression_count": len(sketch_expressions),
             "feature_expression_count": len(feature_expressions),
         }

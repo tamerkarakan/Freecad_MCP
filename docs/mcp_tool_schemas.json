@@ -3341,6 +3341,23 @@
               "block"
             ]
           },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."
+          },
+          "semantic_constraints": {
+            "type": "boolean",
+            "description": "Alias for constraint_policy='semantic'."
+          },
+          "forbid_block_constraints": {
+            "type": "boolean",
+            "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."
+          },
           "endpoint_tolerance": {
             "type": "number"
           },
@@ -3447,6 +3464,21 @@
             "type": "boolean"
           },
           "require_fully_constrained": {
+            "type": "boolean"
+          },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "Validation policy; semantic rejects Block-constraint shortcuts."
+          },
+          "semantic_constraints": {
+            "type": "boolean"
+          },
+          "forbid_block_constraints": {
             "type": "boolean"
           },
           "forbid_isolated_points": {
@@ -7942,6 +7974,23 @@
           "micro_offset_tolerance": {
             "type": "number"
           },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "Sketch profile constraint policy. semantic adds shape-preserving and named driving dimensions for supported profile helpers instead of relying on Block constraints."
+          },
+          "semantic_constraints": {
+            "type": "boolean",
+            "description": "Alias for constraint_policy='semantic'."
+          },
+          "forbid_block_constraints": {
+            "type": "boolean",
+            "description": "Reject Sketcher Block constraints during profile validation; implied by semantic constraint policy."
+          },
           "feature_kind": {
             "type": "string",
             "enum": [
@@ -8172,6 +8221,23 @@
           "micro_offset_tolerance": {
             "type": "number"
           },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "Sketch profile constraint policy. semantic adds shape-preserving and named driving dimensions for supported profile helpers instead of relying on Block constraints."
+          },
+          "semantic_constraints": {
+            "type": "boolean",
+            "description": "Alias for constraint_policy='semantic'."
+          },
+          "forbid_block_constraints": {
+            "type": "boolean",
+            "description": "Reject Sketcher Block constraints during profile validation; implied by semantic constraint policy."
+          },
           "feature_kind": {
             "type": "string",
             "enum": [
@@ -8317,6 +8383,14 @@
           "feature_angle_expression": {
             "type": "string",
             "description": "Convenience alias for feature_expressions.Angle."
+          },
+          "final_validate": {
+            "type": "boolean",
+            "description": "Run sketch profile validation after driving constraints and expression bindings. Defaults true for parametric recipes."
+          },
+          "profile_require_fully_constrained": {
+            "type": "boolean",
+            "description": "Force the initial profile creation step to require DoF=0 before driving constraints are added. Defaults to false when final validation is required."
           },
           "include_steps": {
             "type": "boolean",
@@ -8936,6 +9010,23 @@
               "block"
             ]
           },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."
+          },
+          "semantic_constraints": {
+            "type": "boolean",
+            "description": "Alias for constraint_policy='semantic'."
+          },
+          "forbid_block_constraints": {
+            "type": "boolean",
+            "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."
+          },
           "endpoint_tolerance": {
             "type": "number"
           },
@@ -9040,6 +9131,21 @@
             "type": "boolean"
           },
           "require_fully_constrained": {
+            "type": "boolean"
+          },
+          "constraint_policy": {
+            "type": "string",
+            "enum": [
+              "none",
+              "shape",
+              "semantic"
+            ],
+            "description": "Validation policy; semantic rejects Block-constraint shortcuts."
+          },
+          "semantic_constraints": {
+            "type": "boolean"
+          },
+          "forbid_block_constraints": {
             "type": "boolean"
           },
           "forbid_isolated_points": {

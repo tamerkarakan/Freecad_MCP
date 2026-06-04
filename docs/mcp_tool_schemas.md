@@ -3432,6 +3432,23 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "block"
       ]
     },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."
+    },
+    "semantic_constraints": {
+      "type": "boolean",
+      "description": "Alias for constraint_policy='semantic'."
+    },
+    "forbid_block_constraints": {
+      "type": "boolean",
+      "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."
+    },
     "endpoint_tolerance": {
       "type": "number"
     },
@@ -3540,6 +3557,21 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
       "type": "boolean"
     },
     "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "Validation policy; semantic rejects Block-constraint shortcuts."
+    },
+    "semantic_constraints": {
+      "type": "boolean"
+    },
+    "forbid_block_constraints": {
       "type": "boolean"
     },
     "forbid_isolated_points": {
@@ -8147,6 +8179,23 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile, valid
     "micro_offset_tolerance": {
       "type": "number"
     },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "Sketch profile constraint policy. semantic adds shape-preserving and named driving dimensions for supported profile helpers instead of relying on Block constraints."
+    },
+    "semantic_constraints": {
+      "type": "boolean",
+      "description": "Alias for constraint_policy='semantic'."
+    },
+    "forbid_block_constraints": {
+      "type": "boolean",
+      "description": "Reject Sketcher Block constraints during profile validation; implied by semantic constraint policy."
+    },
     "feature_kind": {
       "type": "string",
       "enum": [
@@ -8379,6 +8428,23 @@ Compact high-level recipe that creates Spreadsheet parameters, a Body-attached S
     "micro_offset_tolerance": {
       "type": "number"
     },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "Sketch profile constraint policy. semantic adds shape-preserving and named driving dimensions for supported profile helpers instead of relying on Block constraints."
+    },
+    "semantic_constraints": {
+      "type": "boolean",
+      "description": "Alias for constraint_policy='semantic'."
+    },
+    "forbid_block_constraints": {
+      "type": "boolean",
+      "description": "Reject Sketcher Block constraints during profile validation; implied by semantic constraint policy."
+    },
     "feature_kind": {
       "type": "string",
       "enum": [
@@ -8524,6 +8590,14 @@ Compact high-level recipe that creates Spreadsheet parameters, a Body-attached S
     "feature_angle_expression": {
       "type": "string",
       "description": "Convenience alias for feature_expressions.Angle."
+    },
+    "final_validate": {
+      "type": "boolean",
+      "description": "Run sketch profile validation after driving constraints and expression bindings. Defaults true for parametric recipes."
+    },
+    "profile_require_fully_constrained": {
+      "type": "boolean",
+      "description": "Force the initial profile creation step to require DoF=0 before driving constraints are added. Defaults to false when final validation is required."
     },
     "include_steps": {
       "type": "boolean",
@@ -9155,6 +9229,23 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "block"
       ]
     },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."
+    },
+    "semantic_constraints": {
+      "type": "boolean",
+      "description": "Alias for constraint_policy='semantic'."
+    },
+    "forbid_block_constraints": {
+      "type": "boolean",
+      "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."
+    },
     "endpoint_tolerance": {
       "type": "number"
     },
@@ -9261,6 +9352,21 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
       "type": "boolean"
     },
     "require_fully_constrained": {
+      "type": "boolean"
+    },
+    "constraint_policy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "shape",
+        "semantic"
+      ],
+      "description": "Validation policy; semantic rejects Block-constraint shortcuts."
+    },
+    "semantic_constraints": {
+      "type": "boolean"
+    },
+    "forbid_block_constraints": {
       "type": "boolean"
     },
     "forbid_isolated_points": {

@@ -142,6 +142,7 @@ The highest-value engineering path in this project is Sketcher + PartDesign. The
 High-level recipe tools:
 
 - `freecad_partdesign_profile_feature_create`: creates and validates a Body-attached profile sketch, then creates Pad, Pocket, Revolution, or Groove.
+- `freecad_partdesign_parametric_profile_feature_create`: creates Spreadsheet parameters, semantic Sketcher profile constraints, expression bindings, final profile validation, and the PartDesign feature in one compact flow. For rectangle loops, `constraint_policy="semantic"` plus `width_expression`/`height_expression` keeps width and height as driven Sketcher dimensions and rejects `Block` shortcuts.
 - `freecad_partdesign_sweep_feature_create`: creates Body-attached profile and spine sketches, then creates Additive or Subtractive Pipe.
 
 Lower-level tools remain available when the sketch, support objects, or selected subelements already exist.
