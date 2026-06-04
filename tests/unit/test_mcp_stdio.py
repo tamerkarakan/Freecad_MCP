@@ -189,6 +189,7 @@ class ResourceTests(unittest.TestCase):
         self.assertIn("freecad://docs/workbench-bridge", uris)
         self.assertIn("freecad://docs/gui-1-1-1-research", uris)
         self.assertIn("freecad://docs/partdesign-attachment-policy", uris)
+        self.assertIn("freecad://docs/freecad-wiki-research", uris)
         self.assertIn("freecad://docs/product-modules", uris)
         self.assertIn("freecad://docs/product-bundles", uris)
         self.assertIn("freecad://product/bundles", uris)
@@ -241,6 +242,14 @@ class ResourceTests(unittest.TestCase):
         self.assertIn("Planar generated face", contents["text"])
         self.assertIn("add_external", contents["text"])
 
+    def test_read_freecad_wiki_research_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://docs/freecad-wiki-research")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "text/markdown")
+        self.assertIn("External Projection", contents["text"])
+        self.assertIn("Topological_naming_problem", contents["text"])
+
     def test_read_unknown_resource_returns_none(self) -> None:
         self.assertIsNone(read_resource(ROOT, "freecad://docs/does-not-exist"))
 
@@ -261,6 +270,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("make a cube", text)
         self.assertIn("FaceN", text)
         self.assertIn("Hole or Pocket", text)
+        self.assertIn("External Projection", text)
+        self.assertIn("add_external", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

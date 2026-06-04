@@ -90,6 +90,13 @@ RESOURCE_DESCRIPTORS: list[JsonObject] = [
         "mimeType": "text/markdown",
     },
     {
+        "uri": "freecad://docs/freecad-wiki-research",
+        "name": "freecad_wiki_research",
+        "title": "FreeCAD Wiki Research Notes",
+        "description": "Compact source index and agent takeaways from the local FreeCAD documentation snapshot.",
+        "mimeType": "text/markdown",
+    },
+    {
         "uri": "freecad://docs/gui-attach-plan",
         "name": "gui_attach_plan",
         "title": "GUI Attach Plan",
@@ -324,7 +331,9 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "PartDesign workflow: use Body Origin planes for base sketches; for holes or pockets "
                             "on existing top/side faces, attach the sketch to the selected planar FaceN, add "
                             "external/reference geometry from face edges or vertices when dimensions need local "
-                            "references, dimension the circle/profile, then call Hole or Pocket. Use datum planes, "
+                            "references, dimension the circle/profile, then call Hole or Pocket. In FreeCAD 1.1 GUI "
+                            "language, external geometry is usually External Projection or External Intersection; "
+                            "the typed MCP sketch edit operation is currently add_external. Use datum planes, "
                             "datum lines, datum points, or LCS only when a reusable/named reference, offset/angled "
                             "support, mirror/revolution axis, loft/sweep section, visible guide, or explicit user "
                             "datum is needed; a datum plane is redundant for one sketch and has the same TNP risk "
@@ -365,6 +374,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
         "freecad://docs/partdesign-attachment-policy": repo_root / "docs" / "PARTDESIGN_ATTACHMENT_POLICY.md",
+        "freecad://docs/freecad-wiki-research": repo_root / "docs" / "FREECAD_WIKI_RESEARCH.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
         "freecad://docs/gui-1-1-1-research": repo_root / "docs" / "GUI_1_1_1_RESEARCH.md",
         "freecad://docs/vision-debug-pipeline": repo_root / "docs" / "VISION_DEBUG_PIPELINE.md",
