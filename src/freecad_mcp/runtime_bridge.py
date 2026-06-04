@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -12,6 +13,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from freecad_mcp.logging_config import log_event
 
 
 FREECAD_JSON_PREFIX = "__FREECAD_MCP_JSON__"
@@ -220,7 +223,7 @@ class FreeCadCmdBridge:
                 check=False,
             )
             duration_ms = int((time.perf_counter() - started) * 1000)
-            return FreeCadExecutionResult(
+            result = FreeCadExecutionResult(
                 executable=self.executable,
                 argv=argv,
                 timeout_sec=timeout_sec,
@@ -230,11 +233,13 @@ class FreeCadCmdBridge:
                 stderr=completed.stderr,
                 timed_out=False,
             )
+            log_freecadcmd_execution(result)
+            return result
         except subprocess.TimeoutExpired as exc:
             duration_ms = int((time.perf_counter() - started) * 1000)
             stdout = exc.stdout if isinstance(exc.stdout, str) else ""
             stderr = exc.stderr if isinstance(exc.stderr, str) else ""
-            return FreeCadExecutionResult(
+            result = FreeCadExecutionResult(
                 executable=self.executable,
                 argv=argv,
                 timeout_sec=timeout_sec,
@@ -244,9 +249,11 @@ class FreeCadCmdBridge:
                 stderr=stderr,
                 timed_out=True,
             )
+            log_freecadcmd_execution(result)
+            return result
         except OSError as exc:
             duration_ms = int((time.perf_counter() - started) * 1000)
-            return FreeCadExecutionResult(
+            result = FreeCadExecutionResult(
                 executable=self.executable,
                 argv=argv,
                 timeout_sec=timeout_sec,
@@ -257,6 +264,8 @@ class FreeCadCmdBridge:
                 timed_out=False,
                 launch_error=str(exc),
             )
+            log_freecadcmd_execution(result)
+            return result
         finally:
             if script_path is not None:
                 try:
@@ -294,6 +303,27 @@ def parse_prefixed_json(text: str) -> dict[str, Any] | None:
                 return None
             return parsed if isinstance(parsed, dict) else None
     return None
+
+
+def log_freecadcmd_execution(result: FreeCadExecutionResult) -> None:
+    """Log process-per-call FreeCADCmd timings without argv/code/stdout values."""
+    level = logging.INFO if result.ok else logging.WARNING
+    fields: dict[str, Any] = {
+        "ok": result.ok,
+        "executable": str(result.executable),
+        "argv_count": len(result.argv),
+        "timeout_sec": result.timeout_sec,
+        "duration_ms": result.duration_ms,
+        "returncode": result.returncode,
+        "timed_out": result.timed_out,
+        "stdout_total_chars": len(result.stdout),
+        "stdout_sha256": hashlib.sha256(result.stdout.encode("utf-8")).hexdigest(),
+        "stderr_total_chars": len(result.stderr),
+        "stderr_sha256": hashlib.sha256(result.stderr.encode("utf-8")).hexdigest(),
+    }
+    if result.launch_error is not None:
+        fields["launch_error_type"] = "OSError"
+    log_event(level, "freecadcmd_exec", **fields)
 
 
 def truncate_text(value: str, max_chars: int) -> tuple[str, bool]:

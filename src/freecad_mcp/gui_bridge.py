@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
-from urllib import error, request
+from urllib import error, parse, request
 
+from freecad_mcp.logging_config import log_event, summarize_payload
 from freecad_mcp.tooling import JsonObject, ToolInputError
 
 
@@ -40,6 +42,15 @@ def gui_bridge_error_message(detail: str, *, http_code: int | None = None) -> st
     if http_code is not None:
         return f"GUI bridge HTTP {http_code}: {message}"
     return message
+
+
+def safe_url_fields(url: str) -> JsonObject:
+    parsed = parse.urlsplit(url)
+    return {
+        "url_scheme": parsed.scheme,
+        "url_host": parsed.hostname,
+        "url_port": parsed.port,
+    }
 
 
 @dataclass
@@ -75,30 +86,91 @@ class GuiBridgeClient:
         token: str | None = None,
         timeout_sec: int = 10,
     ) -> JsonObject:
+        started = time.perf_counter()
         endpoint = url.rstrip("/") + "/rpc"
         body = json.dumps({"method": method, "params": params or {}}, separators=(",", ":")).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         rpc_request = request.Request(endpoint, data=body, headers=headers, method="POST")
+        base_fields = {
+            "method": method,
+            "timeout_sec": timeout_sec,
+            "token_configured": token is not None,
+            **safe_url_fields(url),
+            **summarize_payload(params or {}, prefix="gui_request"),
+        }
         try:
             with request.urlopen(rpc_request, timeout=timeout_sec) as response:
                 raw = response.read().decode("utf-8", errors="replace")
         except error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
+            log_event(
+                logging.WARNING,
+                "gui_bridge_rpc",
+                ok=False,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                http_code=exc.code,
+                error_type=type(exc).__name__,
+                **base_fields,
+            )
             raise ToolInputError(gui_bridge_error_message(detail, http_code=exc.code)) from exc
         except OSError as exc:
+            log_event(
+                logging.WARNING,
+                "gui_bridge_rpc",
+                ok=False,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                error_type=type(exc).__name__,
+                **base_fields,
+            )
             raise ToolInputError(f"GUI bridge is not reachable at {url}: {exc}") from exc
         try:
             payload = json.loads(raw)
         except json.JSONDecodeError as exc:
+            log_event(
+                logging.WARNING,
+                "gui_bridge_rpc",
+                ok=False,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                error_type=type(exc).__name__,
+                **base_fields,
+            )
             raise ToolInputError(f"GUI bridge returned invalid JSON: {exc}") from exc
         if not isinstance(payload, dict):
+            log_event(
+                logging.WARNING,
+                "gui_bridge_rpc",
+                ok=False,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                error_type="NonObjectResponse",
+                **base_fields,
+                **summarize_payload(payload, prefix="gui_response"),
+            )
             raise ToolInputError("GUI bridge returned a non-object response")
         if not payload.get("ok", False):
+            log_event(
+                logging.WARNING,
+                "gui_bridge_rpc",
+                ok=False,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                bridge_ok=False,
+                **base_fields,
+                **summarize_payload(payload, prefix="gui_response"),
+            )
             raise ToolInputError(gui_bridge_error_message(str(payload.get("error") or "GUI bridge call failed")))
         result = payload.get("result")
-        return result if isinstance(result, dict) else {"result": result}
+        returned = result if isinstance(result, dict) else {"result": result}
+        log_event(
+            logging.INFO,
+            "gui_bridge_rpc",
+            ok=True,
+            duration_ms=int((time.perf_counter() - started) * 1000),
+            bridge_ok=True,
+            **base_fields,
+            **summarize_payload(returned, prefix="gui_response"),
+        )
+        return returned
 
 
 class GuiBridgeManager:

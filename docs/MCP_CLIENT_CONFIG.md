@@ -28,6 +28,22 @@ Static source tools can use:
 
 Typed CAD write tools use `FREECAD_MCP_WORKSPACE_ROOT` as the default write boundary. Absolute output paths outside that root require `allow_external_paths=true`.
 
+Optional structured logging:
+
+- `FREECAD_MCP_LOG_LEVEL`: set to `INFO` for normal request/response timing, or `DEBUG` when future debug-only records are added. Unset or `OFF` keeps logging disabled.
+- `FREECAD_MCP_LOG_FILE`: JSONL output path. If omitted while logging is enabled, records go to stderr, never stdout.
+- `FREECAD_MCP_AGENT_ID`: stable caller label such as `codex-desktop`, `claude-desktop`, or `claude-code`.
+
+Example:
+
+```powershell
+$env:FREECAD_MCP_LOG_LEVEL = "INFO"
+$env:FREECAD_MCP_LOG_FILE = "C:\Users\tamer\Codex_Projects\Freecad_MCP\runs\freecad-mcp-codex.jsonl"
+$env:FREECAD_MCP_AGENT_ID = "codex-desktop"
+```
+
+The JSONL records include MCP request id/client info when the SDK exposes them, `call_id`, tool names, outcome, duration, response key/size/hash summaries, process-per-call `FreeCADCmd` timings, persistent-worker RPC timings, and GUI bridge RPC timings. Raw argument values, raw response values, bearer tokens, and Python code payloads are deliberately not logged.
+
 Optional product-style filtering:
 
 ```powershell
@@ -62,6 +78,7 @@ args = ['C:\Users\tamer\Codex_Projects\Freecad_MCP\server.py']
 FREECAD_MCP_FREECAD_ROOT = 'C:\Users\tamer\Codex_Projects\Freecad_MCP\upstream\FreeCAD'
 FREECAD_MCP_FREECAD_HOME = 'E:\Downloads\zip\FreeCAD_1.1.1-Windows-x86_64-py311'
 FREECAD_MCP_WORKSPACE_ROOT = 'C:\Users\tamer\Codex_Projects\Freecad_MCP'
+FREECAD_MCP_AGENT_ID = 'codex-desktop'
 ```
 
 Equivalent CLI add command:
@@ -71,6 +88,7 @@ codex mcp add freecad `
   --env FREECAD_MCP_FREECAD_ROOT=C:\Users\tamer\Codex_Projects\Freecad_MCP\upstream\FreeCAD `
   --env FREECAD_MCP_FREECAD_HOME=E:\Downloads\zip\FreeCAD_1.1.1-Windows-x86_64-py311 `
   --env FREECAD_MCP_WORKSPACE_ROOT=C:\Users\tamer\Codex_Projects\Freecad_MCP `
+  --env FREECAD_MCP_AGENT_ID=codex-desktop `
   -- C:\Users\tamer\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe C:\Users\tamer\Codex_Projects\Freecad_MCP\server.py
 ```
 
@@ -93,6 +111,7 @@ claude mcp add freecad `
   -e FREECAD_MCP_FREECAD_ROOT=C:\Users\tamer\Codex_Projects\Freecad_MCP\upstream\FreeCAD `
   -e FREECAD_MCP_FREECAD_HOME=E:\Downloads\zip\FreeCAD_1.1.1-Windows-x86_64-py311 `
   -e FREECAD_MCP_WORKSPACE_ROOT=C:\Users\tamer\Codex_Projects\Freecad_MCP `
+  -e FREECAD_MCP_AGENT_ID=claude-code `
   -- C:\Users\tamer\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe C:\Users\tamer\Codex_Projects\Freecad_MCP\server.py
 ```
 
@@ -117,7 +136,8 @@ Clients that expect the common JSON config shape can use:
         "FREECAD_MCP_FREECAD_ROOT": "C:/Users/tamer/Codex_Projects/Freecad_MCP/upstream/FreeCAD",
         "FREECAD_MCP_FREECAD_HOME": "E:/Downloads/zip/FreeCAD_1.1.1-Windows-x86_64-py311",
         "FREECAD_MCP_WORKSPACE_ROOT": "C:/Users/tamer/Codex_Projects/Freecad_MCP",
-        "FREECAD_MCP_MODULES": "all"
+        "FREECAD_MCP_MODULES": "all",
+        "FREECAD_MCP_AGENT_ID": "claude-desktop"
       }
     }
   }

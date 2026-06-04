@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import atexit
 import json
+import logging
 import os
 import queue
 import subprocess
@@ -16,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from freecad_mcp.logging_config import log_event, summarize_payload
 from freecad_mcp.runtime_bridge import FreeCadDiscovery, FreeCadDiscoveryResult, MAX_INLINE_CODE_CHARS, truncate_text
 from freecad_mcp.tooling import JsonObject, ToolInputError, load_runtime_script
 
@@ -81,10 +83,12 @@ class FreeCadWorkerSession:
     def start(self, *, timeout_sec: int = 30) -> JsonObject:
         if self.process is not None and self.is_running:
             return self.to_dict()
+        started = time.perf_counter()
         self._cleanup_script_file()
         env = os.environ.copy()
         env["FREECAD_MCP_WORKSPACE_ROOT"] = str(self.workspace_root)
         script_path: Path | None = None
+        script_mode = "inline"
         if len(self.worker_script) > MAX_INLINE_CODE_CHARS:
             handle = tempfile.NamedTemporaryFile("w", suffix=".py", encoding="utf-8", delete=False)
             try:
@@ -93,6 +97,7 @@ class FreeCadWorkerSession:
             finally:
                 handle.close()
             argv = [str(self.executable), str(script_path)]
+            script_mode = "temp_script"
         else:
             argv = [str(self.executable), "-c", self.worker_script]
         try:
@@ -113,8 +118,32 @@ class FreeCadWorkerSession:
             if self.process.stderr is not None:
                 threading.Thread(target=self._drain_stderr, daemon=True).start()
             ready = self._wait_for_message(timeout_sec=timeout_sec, expected_id=None, expected_type="ready")
-            return {"session": self.to_dict(), "ready": ready}
-        except Exception:
+            result = {"session": self.to_dict(), "ready": ready}
+            log_event(
+                logging.INFO,
+                "worker_session_start",
+                ok=True,
+                session_id=self.session_id,
+                executable=str(self.executable),
+                pid=self.process.pid if self.process is not None else None,
+                timeout_sec=timeout_sec,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                script_mode=script_mode,
+                **summarize_payload(ready, prefix="worker_ready"),
+            )
+            return result
+        except Exception as exc:
+            log_event(
+                logging.WARNING,
+                "worker_session_start",
+                ok=False,
+                session_id=self.session_id,
+                executable=str(self.executable),
+                timeout_sec=timeout_sec,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                script_mode=script_mode,
+                error_type=type(exc).__name__,
+            )
             if self.process is not None and self.process.poll() is None:
                 try:
                     self.process.terminate()
@@ -134,27 +163,60 @@ class FreeCadWorkerSession:
         return self.process is not None and self.process.poll() is None
 
     def request(self, method: str, params: JsonObject | None = None, *, timeout_sec: int = 30) -> WorkerResponse:
+        started = time.perf_counter()
+        request_id: str | None = None
         if not self.is_running or self.process is None or self.process.stdin is None:
             raise ToolInputError(f"worker session is not running: {self.session_id}")
-        with self._lock:
-            self._next_request_id += 1
-            request_id = str(self._next_request_id)
-            payload = {"id": request_id, "method": method, "params": params or {}}
-            self.process.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
-            self.process.stdin.flush()
-            self.request_count += 1
-            raw = self._wait_for_message(timeout_sec=timeout_sec, expected_id=request_id)
-        ok = bool(raw.get("ok"))
-        result = raw.get("result") if isinstance(raw.get("result"), dict) else None
-        return WorkerResponse(
-            ok=ok,
-            result=result,
-            error=str(raw.get("error")) if raw.get("error") is not None else None,
-            traceback=str(raw.get("traceback")) if raw.get("traceback") is not None else None,
-            raw=raw,
-        )
+        try:
+            with self._lock:
+                self._next_request_id += 1
+                request_id = str(self._next_request_id)
+                payload = {"id": request_id, "method": method, "params": params or {}}
+                self.process.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
+                self.process.stdin.flush()
+                self.request_count += 1
+                raw = self._wait_for_message(timeout_sec=timeout_sec, expected_id=request_id)
+            ok = bool(raw.get("ok"))
+            result = raw.get("result") if isinstance(raw.get("result"), dict) else None
+            response = WorkerResponse(
+                ok=ok,
+                result=result,
+                error=str(raw.get("error")) if raw.get("error") is not None else None,
+                traceback=str(raw.get("traceback")) if raw.get("traceback") is not None else None,
+                raw=raw,
+            )
+            log_event(
+                logging.INFO if response.ok else logging.WARNING,
+                "worker_rpc",
+                ok=response.ok,
+                session_id=self.session_id,
+                worker_request_id=request_id,
+                method=method,
+                timeout_sec=timeout_sec,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                request_count=self.request_count,
+                **summarize_payload(params or {}, prefix="worker_request"),
+                **summarize_payload(raw, prefix="worker_response"),
+            )
+            return response
+        except Exception as exc:
+            log_event(
+                logging.WARNING,
+                "worker_rpc",
+                ok=False,
+                session_id=self.session_id,
+                worker_request_id=request_id,
+                method=method,
+                timeout_sec=timeout_sec,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                request_count=self.request_count,
+                error_type=type(exc).__name__,
+                **summarize_payload(params or {}, prefix="worker_request"),
+            )
+            raise
 
     def close(self, *, timeout_sec: int = 5) -> JsonObject:
+        started = time.perf_counter()
         response: JsonObject | None = None
         if self.is_running:
             try:
@@ -169,7 +231,18 @@ class FreeCadWorkerSession:
                     self.process.wait(timeout=timeout_sec)
         self._close_pipes()
         self._cleanup_script_file()
-        return {"session": self.to_dict(), "shutdown": response}
+        payload = {"session": self.to_dict(), "shutdown": response}
+        shutdown_ok = bool(response.get("ok")) if isinstance(response, dict) else response is None
+        log_event(
+            logging.INFO if shutdown_ok else logging.WARNING,
+            "worker_session_close",
+            ok=shutdown_ok,
+            session_id=self.session_id,
+            timeout_sec=timeout_sec,
+            duration_ms=int((time.perf_counter() - started) * 1000),
+            shutdown_ok=shutdown_ok,
+        )
+        return payload
 
     def console_snapshot(self, *, max_lines: int = 200) -> JsonObject:
         """Return captured FreeCAD console output without a worker round-trip.

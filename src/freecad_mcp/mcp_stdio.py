@@ -25,7 +25,14 @@ from freecad_mcp.gui_tools import GuiToolService
 from freecad_mcp.module_registry import ModuleSelection, is_hidden_mcp_tool, parse_module_selection
 from freecad_mcp.persistent_tools import PersistentToolService
 from freecad_mcp.runtime_tools import RuntimeToolService
-from freecad_mcp.logging_config import configure_logging, log_event, log_tool_call
+from freecad_mcp.logging_config import (
+    configure_logging,
+    log_event,
+    log_timed_operation,
+    log_tool_call,
+    summarize_payload,
+    summarize_response,
+)
 from freecad_mcp.static_tools import InventoryStore, StaticToolService
 from freecad_mcp.tooling import ToolInputError
 
@@ -195,6 +202,45 @@ PROMPT_DESCRIPTORS: list[JsonObject] = [
 ]
 
 
+def _model_dump_keys(value: Any) -> list[str]:
+    dump = getattr(value, "model_dump", None)
+    if not callable(dump):
+        return []
+    try:
+        payload = dump(by_alias=True, exclude_none=True)
+    except TypeError:
+        payload = dump()
+    return sorted(str(key) for key in payload) if isinstance(payload, dict) else []
+
+
+def _mcp_request_fields(server: Server) -> dict[str, Any]:
+    """Best-effort SDK request/client fields for correlation-safe logs."""
+    fields: dict[str, Any] = {}
+    try:
+        context = server.request_context
+    except LookupError:
+        return fields
+    fields["mcp_request_id"] = str(context.request_id)
+    if context.meta is not None:
+        fields["mcp_meta_keys"] = _model_dump_keys(context.meta)
+
+    client_params = getattr(context.session, "client_params", None)
+    client_info = getattr(client_params, "clientInfo", None) if client_params is not None else None
+    if client_info is not None:
+        name = getattr(client_info, "name", None)
+        title = getattr(client_info, "title", None)
+        version = getattr(client_info, "version", None)
+        if name:
+            fields["client_name"] = name
+            if not os.environ.get("FREECAD_MCP_AGENT_ID", "").strip():
+                fields.setdefault("agent_id", name)
+        if title:
+            fields["client_title"] = title
+        if version:
+            fields["client_version"] = version
+    return fields
+
+
 class CompositeToolService:
     """Combine multiple services that expose ToolDefinition objects."""
 
@@ -354,86 +400,139 @@ def create_mcp_server(repo_root: Path | None = None, *, enabled_modules: str | s
 
     @server.list_tools()
     async def _list_tools() -> list[types.Tool]:
-        return [
-            types.Tool(
-                name=definition.name,
-                title=definition.title,
-                description=definition.description,
-                inputSchema=definition.input_schema,
-            )
-            for definition in tool_service.definitions()
-        ]
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="tools/list",
+            **_mcp_request_fields(server),
+        ) as log_fields:
+            result = [
+                types.Tool(
+                    name=definition.name,
+                    title=definition.title,
+                    description=definition.description,
+                    inputSchema=definition.input_schema,
+                )
+                for definition in tool_service.definitions()
+            ]
+            log_fields["response_count"] = len(result)
+            return result
 
     # validate_input=False keeps argument validation inside each tool handler, as
     # before the SDK migration, so tool behavior is unchanged.
     @server.call_tool(validate_input=False)
     async def _call_tool(name: str, arguments: JsonObject):
-        tool = tools.get(name)
-        if tool is None:
-            raise ToolInputError(f"Unknown tool: {name}")
         # A returned dict becomes structuredContent + JSON-text content; a raised
         # exception becomes an isError result. Both match MCP semantics. The
         # log_tool_call context times the call and records the outcome without
-        # logging any argument values.
-        with log_tool_call(name, arguments):
-            return tool.handler(arguments or {})
+        # logging any argument or response values.
+        with log_tool_call(name, arguments, request_fields=_mcp_request_fields(server)) as log_fields:
+            tool = tools.get(name)
+            if tool is None:
+                raise ToolInputError(f"Unknown tool: {name}")
+            result = tool.handler(arguments or {})
+            log_fields.update(summarize_response(result))
+            return result
 
     @server.list_resources()
     async def _list_resources() -> list[types.Resource]:
-        return [
-            types.Resource(
-                uri=descriptor["uri"],
-                name=descriptor["name"],
-                title=descriptor["title"],
-                description=descriptor["description"],
-                mimeType=descriptor["mimeType"],
-            )
-            for descriptor in RESOURCE_DESCRIPTORS
-        ]
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="resources/list",
+            **_mcp_request_fields(server),
+        ) as log_fields:
+            result = [
+                types.Resource(
+                    uri=descriptor["uri"],
+                    name=descriptor["name"],
+                    title=descriptor["title"],
+                    description=descriptor["description"],
+                    mimeType=descriptor["mimeType"],
+                )
+                for descriptor in RESOURCE_DESCRIPTORS
+            ]
+            log_fields["response_count"] = len(result)
+            return result
 
     @server.list_resource_templates()
     async def _list_resource_templates() -> list:
-        return []
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="resources/templates/list",
+            **_mcp_request_fields(server),
+        ) as log_fields:
+            log_fields["response_count"] = 0
+            return []
 
     @server.read_resource()
     async def _read_resource(uri) -> list[ReadResourceContents]:
-        contents = read_resource(root, str(uri))
-        if contents is None:
-            raise ToolInputError(f"Unknown resource: {uri}")
-        return [ReadResourceContents(content=contents["text"], mime_type=contents["mimeType"])]
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="resources/read",
+            resource_uri=str(uri),
+            **_mcp_request_fields(server),
+        ) as log_fields:
+            contents = read_resource(root, str(uri))
+            if contents is None:
+                raise ToolInputError(f"Unknown resource: {uri}")
+            result = [ReadResourceContents(content=contents["text"], mime_type=contents["mimeType"])]
+            log_fields["response_count"] = len(result)
+            log_fields["resource_mime_type"] = contents["mimeType"]
+            return result
 
     @server.list_prompts()
     async def _list_prompts() -> list[types.Prompt]:
-        return [
-            types.Prompt(
-                name=descriptor["name"],
-                title=descriptor["title"],
-                description=descriptor["description"],
-                arguments=[
-                    types.PromptArgument(
-                        name=argument["name"],
-                        description=argument["description"],
-                        required=argument.get("required", False),
-                    )
-                    for argument in descriptor["arguments"]
-                ],
-            )
-            for descriptor in PROMPT_DESCRIPTORS
-        ]
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="prompts/list",
+            **_mcp_request_fields(server),
+        ) as log_fields:
+            result = [
+                types.Prompt(
+                    name=descriptor["name"],
+                    title=descriptor["title"],
+                    description=descriptor["description"],
+                    arguments=[
+                        types.PromptArgument(
+                            name=argument["name"],
+                            description=argument["description"],
+                            required=argument.get("required", False),
+                        )
+                        for argument in descriptor["arguments"]
+                    ],
+                )
+                for descriptor in PROMPT_DESCRIPTORS
+            ]
+            log_fields["response_count"] = len(result)
+            return result
 
     @server.get_prompt()
     async def _get_prompt(name: str, arguments: JsonObject | None) -> types.GetPromptResult:
-        rendered = render_prompt(name, arguments or {})
-        return types.GetPromptResult(
-            description=rendered["description"],
-            messages=[
-                types.PromptMessage(
-                    role=message["role"],
-                    content=types.TextContent(type="text", text=message["content"]["text"]),
-                )
-                for message in rendered["messages"]
-            ],
-        )
+        with log_timed_operation(
+            "mcp_request",
+            start_event=True,
+            request_name="prompts/get",
+            prompt_name=name,
+            **_mcp_request_fields(server),
+            **summarize_payload(arguments or {}, prefix="arg"),
+        ) as log_fields:
+            rendered = render_prompt(name, arguments or {})
+            result = types.GetPromptResult(
+                description=rendered["description"],
+                messages=[
+                    types.PromptMessage(
+                        role=message["role"],
+                        content=types.TextContent(type="text", text=message["content"]["text"]),
+                    )
+                    for message in rendered["messages"]
+                ],
+            )
+            log_fields["response_count"] = len(result.messages)
+            return result
 
     return server, tool_service
 
