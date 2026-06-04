@@ -68,6 +68,8 @@ class WorkerScriptTests(unittest.TestCase):
         self.assertIn(WORKER_PREFIX, FREECAD_WORKER_SCRIPT)
         self.assertIn("ACTIONS", FREECAD_WORKER_SCRIPT)
         self.assertIn('"is_null": True', FREECAD_WORKER_SCRIPT)
+        self.assertIn("def ensure_settable_property(", FREECAD_WORKER_SCRIPT)
+        self.assertNotIn("and not hasattr(obj, key)", FREECAD_WORKER_SCRIPT)
         compile(FREECAD_WORKER_SCRIPT, "<worker_script>", "exec")
 
 

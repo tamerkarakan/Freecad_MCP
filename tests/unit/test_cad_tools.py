@@ -36,6 +36,8 @@ class CadActionScriptTests(unittest.TestCase):
         self.assertIn("__ARGS_B64__", CAD_ACTION_SCRIPT)
         self.assertIn("def emit(", CAD_ACTION_SCRIPT)
         self.assertIn('"is_null": True', CAD_ACTION_SCRIPT)
+        self.assertIn("def ensure_settable_property(", CAD_ACTION_SCRIPT)
+        self.assertNotIn("and not hasattr(obj, key)", CAD_ACTION_SCRIPT)
         compile(CAD_ACTION_SCRIPT, "<cad_action_script>", "exec")
 
 

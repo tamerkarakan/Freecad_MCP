@@ -720,6 +720,46 @@ def resolve_property_value(doc, value):
     return value
 
 
+def property_status_tokens(obj, property_name):
+    getter = getattr(obj, "getPropertyStatus", None)
+    if getter is None:
+        return []
+    try:
+        status = getter(property_name)
+    except Exception:
+        return []
+    if status is None:
+        return []
+    if isinstance(status, str):
+        values = [status]
+    else:
+        try:
+            values = list(status)
+        except TypeError:
+            values = [status]
+    return [str(item) for item in values if str(item)]
+
+
+def normalized_property_status(value):
+    return "".join(ch for ch in str(value).lower() if ch.isalnum())
+
+
+def ensure_settable_property(obj, property_name):
+    prop = str(property_name or "").strip()
+    if not prop:
+        raise ValueError("invalid property name: " + str(property_name))
+    if prop.startswith("_"):
+        raise ValueError("invalid property name: " + prop)
+    if prop not in list(getattr(obj, "PropertiesList", []) or []):
+        raise ValueError("unknown FreeCAD property: " + prop)
+    statuses = property_status_tokens(obj, prop)
+    blocked = {"readonly", "immutable"}
+    blocked_statuses = [status for status in statuses if normalized_property_status(status) in blocked]
+    if blocked_statuses:
+        raise ValueError("property is not writable: " + prop + " status=" + ",".join(blocked_statuses))
+    return prop
+
+
 def partdesign_summary(obj):
     type_id = getattr(obj, "TypeId", "")
     if not str(type_id).startswith("PartDesign::"):
@@ -1645,11 +1685,10 @@ def action_object_set_properties(args):
     changed = {}
     try:
         for key, value in (args.get("properties") or {}).items():
-            if key not in obj.PropertiesList and not hasattr(obj, key):
-                raise ValueError("unknown property: " + key)
+            prop = ensure_settable_property(obj, key)
             resolved = resolve_property_value(doc, value)
-            setattr(obj, key, resolved)
-            changed[key] = property_value_summary(resolved)
+            setattr(obj, prop, resolved)
+            changed[prop] = property_value_summary(resolved)
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
