@@ -14,7 +14,7 @@ Use three normal attachment paths:
 2. **Planar generated face**
    - This is a common FreeCAD workflow for holes and pockets on an existing cube/top/side face.
    - Attach the sketch to the selected planar face with `attachment_object=<Body Tip or feature>` and `attachment_subname="FaceN"`.
-   - Add external/reference geometry from face edges or vertices when the sketch needs local distances. In the FreeCAD 1.1 GUI this is usually External Projection or External Intersection. With typed MCP tools, use `freecad_sketch_edit_geometry` operation `add_external` with `object_name` and `sub_name` such as `Edge1`, `Vertex1`, or a selected reference.
+   - Add external/reference geometry from face edges or vertices when the sketch needs local distances. In the FreeCAD 1.1 GUI this is usually External Projection or External Intersection. With typed MCP tools, prefer `freecad_sketch_external_projection` or `freecad_sketch_external_intersection` with `object_name` and `sub_name` such as `Edge1`, `Vertex1`, or a selected reference. The lower-level `freecad_sketch_edit_geometry` operation `add_external` remains available for compatibility.
    - Dimension the circle/profile, then call `freecad_partdesign_hole` or `freecad_partdesign_pocket`.
    - Use face attachment when the user explicitly selected that face or the design intent is local to that face. For robust parametric models, prefer Body Origin planes, master sketches, or datums attached to origin planes when those can express the same intent.
 
@@ -27,7 +27,7 @@ Use three normal attachment paths:
 
 ## External References
 
-FreeCAD 1.1 split the older Sketcher External command into External Projection and External Intersection. The MCP typed operation is currently named `add_external`; treat that as the API-level operation for adding external/reference geometry, not as a claim that the old GUI command is still present.
+FreeCAD 1.1 split the older Sketcher External command into External Projection and External Intersection. MCP exposes those names directly as `freecad_sketch_external_projection` and `freecad_sketch_external_intersection`; the older typed operation `add_external` still exists as the API-level compatibility operation.
 
 Prefer references to sketches or master sketches when possible. Generated solid faces and edges are sometimes the correct practical choice, but they are less stable under large topology changes.
 

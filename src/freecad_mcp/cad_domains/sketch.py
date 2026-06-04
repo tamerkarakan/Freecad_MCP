@@ -14,6 +14,30 @@ SKETCH_ATTACHMENT_POLICY = (
 )
 
 
+SKETCH_EXTERNAL_REFERENCE_PROPS = {
+    "document_path": {"type": "string"},
+    "sketch_name": {"type": "string"},
+    "object_name": {"type": "string", "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."},
+    "sub_name": {"type": "string", "description": "Referenced subelement such as Edge1, Face1, or Vertex1."},
+    "sub_names": {"type": "array", "items": {"type": "string"}, "description": "Multiple subelements on the same object."},
+    "references": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "object_name": {"type": "string"},
+                "sub_name": {"type": "string"},
+            },
+        },
+        "description": "Multiple object/subelement references. Use this when references come from different objects.",
+    },
+    "defining": {"type": "boolean", "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."},
+    "output_path": {"type": "string"},
+    "overwrite": {"type": "boolean"},
+    "save": {"type": "boolean"},
+}
+
+
 class SketchCadToolService(CadDomainToolService):
     domain = "sketcher"
 
@@ -83,6 +107,22 @@ class SketchCadToolService(CadDomainToolService):
                 {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "operations"],
                 "sketch_edit_geometry",
+            ),
+            CadToolSpec(
+                "freecad_sketch_external_projection",
+                "Add Sketch External Projection",
+                "Add FreeCAD 1.1 Sketcher External Projection references to a sketch from selected faces, edges, vertices, master sketches, or datum/support geometry. This is the named typed alias for `freecad_sketch_edit_geometry` operation `add_external` with `intersection=false`.",
+                SKETCH_EXTERNAL_REFERENCE_PROPS,
+                ["document_path", "sketch_name"],
+                "sketch_external_projection",
+            ),
+            CadToolSpec(
+                "freecad_sketch_external_intersection",
+                "Add Sketch External Intersection",
+                "Add FreeCAD 1.1 Sketcher External Intersection references to a sketch from selected faces, edges, vertices, master sketches, or datum/support geometry. This is the named typed alias for `freecad_sketch_edit_geometry` operation `add_external` with `intersection=true`.",
+                SKETCH_EXTERNAL_REFERENCE_PROPS,
+                ["document_path", "sketch_name"],
+                "sketch_external_intersection",
             ),
             CadToolSpec(
                 "freecad_sketch_edit_constraints",

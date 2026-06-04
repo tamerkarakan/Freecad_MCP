@@ -77,6 +77,8 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_sketch_profile_validate",
             "freecad_worker_sketch_add_geometry",
             "freecad_worker_sketch_add_constraint",
+            "freecad_worker_sketch_external_projection",
+            "freecad_worker_sketch_external_intersection",
             "freecad_worker_sketch_validate",
             "freecad_worker_mesh_import",
             "freecad_worker_mesh_repair",
@@ -230,6 +232,24 @@ class ToolSchemaTests(unittest.TestCase):
         datum_description = tools["freecad_partdesign_datum_plane_create"].to_mcp()["description"]
         self.assertIn("basically redundant for support of one sketch", datum_description)
         self.assertIn("topological naming risk", datum_description)
+
+    def test_sketch_external_reference_aliases_are_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        for name in [
+            "freecad_sketch_external_projection",
+            "freecad_sketch_external_intersection",
+        ]:
+            self.assertIn(name, tools)
+            props = tools[name].to_mcp()["inputSchema"]["properties"]
+            self.assertIn("references", props)
+            self.assertIn("object_name", props)
+            self.assertIn("sub_name", props)
+            self.assertIn("sub_names", props)
+
+        worker_tools = PersistentToolService().definition_map()
+        self.assertIn("freecad_worker_sketch_external_projection", worker_tools)
+        self.assertIn("freecad_worker_sketch_external_intersection", worker_tools)
 
     def test_object_label_rename_tool_is_exposed(self) -> None:
         tools = CadToolService().definition_map()

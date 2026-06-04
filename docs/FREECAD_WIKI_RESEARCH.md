@@ -16,7 +16,7 @@ Reviewed scope: English root `wiki/*.wikitext` pages for Sketcher, PartDesign, A
    A face-attached sketch is a real FreeCAD workflow for local pockets, pads, and holes on existing faces. It is also vulnerable to topological naming if the upstream feature changes and the referenced face/edge/vertex is renamed. The agent should treat a selected face as user intent, but for robust parametric design it should prefer Body Origin planes, master sketches, or datums attached to origin planes.
 
 4. **External geometry has GUI names and typed-tool names.**
-   In FreeCAD 1.1 the old Sketcher External command is obsolete. GUI users see External Projection and External Intersection. The current MCP typed operation is still `freecad_sketch_edit_geometry` with `add_external`, so docs should translate between the GUI name and the typed operation.
+   In FreeCAD 1.1 the old Sketcher External command is obsolete. GUI users see External Projection and External Intersection. MCP now exposes explicit `freecad_sketch_external_projection` and `freecad_sketch_external_intersection` aliases while keeping the lower-level `freecad_sketch_edit_geometry` `add_external` operation for compatibility.
 
 5. **Prefer sketch/master references over generated solid references when practical.**
    The wiki repeatedly warns that generated solid faces/edges are less stable. Sketch references, master sketches, ShapeBinders/SubShapeBinders from stable sketch geometry, Body Origin references, and datums attached to origin planes are better for models expected to survive large parameter edits.
@@ -66,7 +66,7 @@ Reviewed scope: English root `wiki/*.wikitext` pages for Sketcher, PartDesign, A
 
 - Keep typed PartDesign routes centered on Sketcher plus PartDesign features, not standalone Part primitives.
 - Keep face attachment available because it is normal FreeCAD usage and matches user selection intent.
-- Add clearer future aliases for FreeCAD 1.1 GUI names: `external_projection` and `external_intersection`, backed by existing or expanded typed external-reference operations.
+- Use `freecad_sketch_external_projection` and `freecad_sketch_external_intersection` when an agent is mapping from the FreeCAD 1.1 GUI names. Keep `freecad_sketch_edit_geometry` `add_external` as the lower-level compatibility path.
 - When the user asks for a robust parametric model, the agent should favor master sketches, named constraints, Body Origin attachments, and datums attached to origin planes.
 - When the user asks to modify a selected face, the agent may use face attachment but should capture exact `FaceN`/`EdgeN` evidence from GUI selection or shape inspection.
 - When a feature appears to do nothing, inspect normal direction and `reversed` before assuming sketch failure.

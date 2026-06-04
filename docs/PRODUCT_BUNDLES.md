@@ -5,9 +5,9 @@ Generated sellable bundle manifest for the current MCP tool surface.
 | Bundle | Profile | Kind | Tools | Modules | Position |
 | --- | --- | --- | ---: | --- | --- |
 | FreeCAD MCP Free | `free` | base | 20 | `core`, `headless` | Static command inventory, runtime discovery, and process-per-call document/object/parameter/import-export operations. |
-| FreeCAD MCP Pro | `pro` | paid | 85 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher dimension, PartDesign datum/feature, mesh, and Assembly typed tools. |
-| FreeCAD MCP Studio | `studio` | paid | 155 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
-| FreeCAD MCP Team | `team` | paid | 158 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
+| FreeCAD MCP Pro | `pro` | paid | 87 | `assembly`, `core`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher` | Adds GUI attach plus Sketcher dimension, PartDesign datum/feature, mesh, and Assembly typed tools. |
+| FreeCAD MCP Studio | `studio` | paid | 159 | `assembly`, `cam`, `core`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Adds persistent FreeCADCmd worker sessions plus TechDraw, CAM, and FEM first slices. |
+| FreeCAD MCP Team | `team` | paid | 162 | `assembly`, `cam`, `core`, `developer`, `fem`, `gui`, `headless`, `mesh`, `partdesign`, `sketcher`, `techdraw`, `worker` | Studio surface plus source-intelligence tools for implementation research and support. |
 | Source Intelligence Add-on | `source` | add-on | 5 | `developer` | Command inventory plus source search/open/symbol index. |
 | Unsafe Python Exec Add-on | `unsafe` | add-on | 1 | `unsafe` | Exposes only the broad `freecad_python_exec` escape hatch. |
 
@@ -51,7 +51,7 @@ Tools:
 - Audience: Design users who need Sketcher, PartDesign, mesh, assembly, and live GUI selection workflows.
 - Limits: No persistent worker sessions, TechDraw, CAM, FEM, source-code intelligence, or unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `85`
+- Tool count: `87`
 - Upgrade path: `studio`
 
 Tools:
@@ -102,6 +102,8 @@ Tools:
 - `freecad_curve_fit_analyze`
 - `freecad_sketch_geometry_method_catalog`
 - `freecad_sketch_edit_geometry`
+- `freecad_sketch_external_projection`
+- `freecad_sketch_external_intersection`
 - `freecad_sketch_edit_constraints`
 - `freecad_sketch_transform`
 - `freecad_sketch_auto_constrain`
@@ -148,7 +150,7 @@ Tools:
 - Audience: Power users and small studios that need persistent sessions and advanced workbench coverage.
 - Limits: No source-code intelligence and no unsafe Python exec.
 - Unsafe Python exec included: `false`
-- Tool count: `155`
+- Tool count: `159`
 - Upgrade path: `team`
 
 Tools:
@@ -196,6 +198,8 @@ Tools:
 - `freecad_worker_sketch_profile_create`
 - `freecad_worker_sketch_profile_validate`
 - `freecad_worker_sketch_edit_geometry`
+- `freecad_worker_sketch_external_projection`
+- `freecad_worker_sketch_external_intersection`
 - `freecad_worker_sketch_edit_constraints`
 - `freecad_worker_sketch_transform`
 - `freecad_worker_sketch_auto_constrain`
@@ -258,6 +262,8 @@ Tools:
 - `freecad_curve_fit_analyze`
 - `freecad_sketch_geometry_method_catalog`
 - `freecad_sketch_edit_geometry`
+- `freecad_sketch_external_projection`
+- `freecad_sketch_external_intersection`
 - `freecad_sketch_edit_constraints`
 - `freecad_sketch_transform`
 - `freecad_sketch_auto_constrain`
@@ -315,7 +321,7 @@ Tools:
 - Audience: Teams building or auditing FreeCAD automation who need source-backed implementation evidence.
 - Limits: No unsafe Python exec by default.
 - Unsafe Python exec included: `false`
-- Tool count: `158`
+- Tool count: `162`
 
 Tools:
 
@@ -365,6 +371,8 @@ Tools:
 - `freecad_worker_sketch_profile_create`
 - `freecad_worker_sketch_profile_validate`
 - `freecad_worker_sketch_edit_geometry`
+- `freecad_worker_sketch_external_projection`
+- `freecad_worker_sketch_external_intersection`
 - `freecad_worker_sketch_edit_constraints`
 - `freecad_worker_sketch_transform`
 - `freecad_worker_sketch_auto_constrain`
@@ -427,6 +435,8 @@ Tools:
 - `freecad_curve_fit_analyze`
 - `freecad_sketch_geometry_method_catalog`
 - `freecad_sketch_edit_geometry`
+- `freecad_sketch_external_projection`
+- `freecad_sketch_external_intersection`
 - `freecad_sketch_edit_constraints`
 - `freecad_sketch_transform`
 - `freecad_sketch_auto_constrain`

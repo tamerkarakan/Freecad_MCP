@@ -3610,6 +3610,67 @@ def action_sketch_edit_geometry(params):
     return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
 
 
+def sketch_external_references(params):
+    references = []
+    for item in params.get("references") or []:
+        object_name = item.get("object_name") or params.get("object_name")
+        sub_name = item.get("sub_name") or item.get("subname")
+        if not object_name or not sub_name:
+            raise ValueError("each external reference requires object_name and sub_name")
+        references.append({"object_name": str(object_name), "sub_name": str(sub_name)})
+
+    object_name = params.get("object_name")
+    sub_names = list(params.get("sub_names") or [])
+    if params.get("sub_name") is not None:
+        sub_names.append(params.get("sub_name"))
+    for sub_name in sub_names:
+        if not object_name:
+            raise ValueError("object_name is required when using sub_name/sub_names")
+        references.append({"object_name": str(object_name), "sub_name": str(sub_name)})
+
+    if not references:
+        raise ValueError("at least one external reference is required")
+    return references
+
+
+def action_sketch_external_reference(params, *, intersection):
+    doc = get_doc(params)
+    sketch = get_object(doc, params.get("sketch_name") or "")
+    references = sketch_external_references(params)
+    reports = []
+    doc.openTransaction("MCP worker add sketch external reference")
+    try:
+        for reference in references:
+            sketch.addExternal(
+                reference["object_name"],
+                reference["sub_name"],
+                bool(params.get("defining", False)),
+                bool(intersection),
+            )
+            reports.append({"object_name": reference["object_name"], "sub_name": reference["sub_name"]})
+        doc.commitTransaction()
+    except Exception:
+        doc.abortTransaction()
+        raise
+    doc.recompute()
+    saved = save_doc(doc, params)
+    return {
+        "saved_path": saved,
+        "mode": "intersection" if intersection else "projection",
+        "reports": reports,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
+
+
+def action_sketch_external_projection(params):
+    return action_sketch_external_reference(params, intersection=False)
+
+
+def action_sketch_external_intersection(params):
+    return action_sketch_external_reference(params, intersection=True)
+
+
 def action_sketch_edit_constraints(params):
     doc = get_doc(params)
     sketch = get_object(doc, params.get("sketch_name") or "")
@@ -4108,6 +4169,8 @@ ACTIONS = {
     "sketch_profile_create": action_sketch_profile_create,
     "sketch_profile_validate": action_sketch_profile_validate,
     "sketch_edit_geometry": action_sketch_edit_geometry,
+    "sketch_external_projection": action_sketch_external_projection,
+    "sketch_external_intersection": action_sketch_external_intersection,
     "sketch_edit_constraints": action_sketch_edit_constraints,
     "sketch_transform": action_sketch_transform,
     "sketch_auto_constrain": action_sketch_auto_constrain,

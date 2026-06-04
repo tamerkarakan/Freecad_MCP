@@ -4438,6 +4438,63 @@ def action_sketch_edit_geometry(args):
     return {"saved_path": saved, "reports": reports, "sketch": object_summary(sketch), "document": document_summary(doc)}
 
 
+def sketch_external_references(args):
+    references = []
+    for item in args.get("references") or []:
+        object_name = item.get("object_name") or args.get("object_name")
+        sub_name = item.get("sub_name") or item.get("subname")
+        if not object_name or not sub_name:
+            raise ValueError("each external reference requires object_name and sub_name")
+        references.append({"object_name": str(object_name), "sub_name": str(sub_name)})
+
+    object_name = args.get("object_name")
+    sub_names = list(args.get("sub_names") or [])
+    if args.get("sub_name") is not None:
+        sub_names.append(args.get("sub_name"))
+    for sub_name in sub_names:
+        if not object_name:
+            raise ValueError("object_name is required when using sub_name/sub_names")
+        references.append({"object_name": str(object_name), "sub_name": str(sub_name)})
+
+    if not references:
+        raise ValueError("at least one external reference is required")
+    return references
+
+
+def action_sketch_external_reference(args, *, intersection):
+    doc = App.openDocument(args["document_path"])
+    sketch = get_object(doc, args["sketch_name"])
+    references = sketch_external_references(args)
+    reports = []
+    doc.openTransaction("MCP add sketch external reference")
+    for reference in references:
+        sketch.addExternal(
+            reference["object_name"],
+            reference["sub_name"],
+            bool(args.get("defining", False)),
+            bool(intersection),
+        )
+        reports.append({"object_name": reference["object_name"], "sub_name": reference["sub_name"]})
+    doc.commitTransaction()
+    doc.recompute()
+    saved = save_if_requested(doc, args)
+    return {
+        "saved_path": saved,
+        "mode": "intersection" if intersection else "projection",
+        "reports": reports,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
+
+
+def action_sketch_external_projection(args):
+    return action_sketch_external_reference(args, intersection=False)
+
+
+def action_sketch_external_intersection(args):
+    return action_sketch_external_reference(args, intersection=True)
+
+
 def action_sketch_edit_constraints(args):
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
@@ -5221,6 +5278,8 @@ DISPATCH = {
     "curve_fit_analyze": action_curve_fit_analyze,
     "sketch_geometry_method_catalog": action_sketch_geometry_method_catalog,
     "sketch_edit_geometry": action_sketch_edit_geometry,
+    "sketch_external_projection": action_sketch_external_projection,
+    "sketch_external_intersection": action_sketch_external_intersection,
     "sketch_edit_constraints": action_sketch_edit_constraints,
     "sketch_transform": action_sketch_transform,
     "sketch_auto_constrain": action_sketch_auto_constrain,

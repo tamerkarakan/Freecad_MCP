@@ -114,7 +114,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 85,
+      "tool_count": 87,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -162,6 +162,8 @@
         "freecad_curve_fit_analyze",
         "freecad_sketch_geometry_method_catalog",
         "freecad_sketch_edit_geometry",
+        "freecad_sketch_external_projection",
+        "freecad_sketch_external_intersection",
         "freecad_sketch_edit_constraints",
         "freecad_sketch_transform",
         "freecad_sketch_auto_constrain",
@@ -248,7 +250,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 155,
+      "tool_count": 159,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -293,6 +295,8 @@
         "freecad_worker_sketch_profile_create",
         "freecad_worker_sketch_profile_validate",
         "freecad_worker_sketch_edit_geometry",
+        "freecad_worker_sketch_external_projection",
+        "freecad_worker_sketch_external_intersection",
         "freecad_worker_sketch_edit_constraints",
         "freecad_worker_sketch_transform",
         "freecad_worker_sketch_auto_constrain",
@@ -355,6 +359,8 @@
         "freecad_curve_fit_analyze",
         "freecad_sketch_geometry_method_catalog",
         "freecad_sketch_edit_geometry",
+        "freecad_sketch_external_projection",
+        "freecad_sketch_external_intersection",
         "freecad_sketch_edit_constraints",
         "freecad_sketch_transform",
         "freecad_sketch_auto_constrain",
@@ -454,7 +460,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 158,
+      "tool_count": 162,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -502,6 +508,8 @@
         "freecad_worker_sketch_profile_create",
         "freecad_worker_sketch_profile_validate",
         "freecad_worker_sketch_edit_geometry",
+        "freecad_worker_sketch_external_projection",
+        "freecad_worker_sketch_external_intersection",
         "freecad_worker_sketch_edit_constraints",
         "freecad_worker_sketch_transform",
         "freecad_worker_sketch_auto_constrain",
@@ -564,6 +572,8 @@
         "freecad_curve_fit_analyze",
         "freecad_sketch_geometry_method_catalog",
         "freecad_sketch_edit_geometry",
+        "freecad_sketch_external_projection",
+        "freecad_sketch_external_intersection",
         "freecad_sketch_edit_constraints",
         "freecad_sketch_transform",
         "freecad_sketch_auto_constrain",

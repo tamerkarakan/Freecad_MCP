@@ -231,6 +231,27 @@ MIRRORED_WORKER_PROPS: JsonObject = {
     "mirror_name": {"type": "string"},
 }
 
+WORKER_SKETCH_EXTERNAL_REFERENCE_PROPS: JsonObject = {
+    "document_id": {"type": "string"},
+    "sketch_name": {"type": "string"},
+    "object_name": {"type": "string", "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."},
+    "sub_name": {"type": "string", "description": "Referenced subelement such as Edge1, Face1, or Vertex1."},
+    "sub_names": {"type": "array", "items": {"type": "string"}, "description": "Multiple subelements on the same object."},
+    "references": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "object_name": {"type": "string"},
+                "sub_name": {"type": "string"},
+            },
+        },
+        "description": "Multiple object/subelement references. Use this when references come from different objects.",
+    },
+    "defining": {"type": "boolean", "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."},
+    **SAVE_PROPS,
+}
+
 
 class PersistentToolService:
     """Stateful FreeCADCmd worker tools.
@@ -879,6 +900,22 @@ class PersistentToolService:
                 },
                 ["document_id", "sketch_name", "operations"],
                 "sketch_edit_geometry",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_external_projection",
+                "Worker Add Sketch External Projection",
+                "Add FreeCAD 1.1 Sketcher External Projection references to a worker sketch from selected faces, edges, vertices, master sketches, or datum/support geometry.",
+                WORKER_SKETCH_EXTERNAL_REFERENCE_PROPS,
+                ["document_id", "sketch_name"],
+                "sketch_external_projection",
+            ),
+            self._worker_tool(
+                "freecad_worker_sketch_external_intersection",
+                "Worker Add Sketch External Intersection",
+                "Add FreeCAD 1.1 Sketcher External Intersection references to a worker sketch from selected faces, edges, vertices, master sketches, or datum/support geometry.",
+                WORKER_SKETCH_EXTERNAL_REFERENCE_PROPS,
+                ["document_id", "sketch_name"],
+                "sketch_external_intersection",
             ),
             self._worker_tool(
                 "freecad_worker_sketch_edit_constraints",

@@ -3622,6 +3622,180 @@ Delete, move, toggle construction, or manage external Sketcher geometry.
 }
 ```
 
+## `freecad_worker_sketch_external_projection`
+
+Add FreeCAD 1.1 Sketcher External Projection references to a worker sketch from selected faces, edges, vertices, master sketches, or datum/support geometry.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string",
+      "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."
+    },
+    "sub_name": {
+      "type": "string",
+      "description": "Referenced subelement such as Edge1, Face1, or Vertex1."
+    },
+    "sub_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple subelements on the same object."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object_name": {
+            "type": "string"
+          },
+          "sub_name": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Multiple object/subelement references. Use this when references come from different objects."
+    },
+    "defining": {
+      "type": "boolean",
+      "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
+## `freecad_worker_sketch_external_intersection`
+
+Add FreeCAD 1.1 Sketcher External Intersection references to a worker sketch from selected faces, edges, vertices, master sketches, or datum/support geometry.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string",
+      "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."
+    },
+    "sub_name": {
+      "type": "string",
+      "description": "Referenced subelement such as Edge1, Face1, or Vertex1."
+    },
+    "sub_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple subelements on the same object."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object_name": {
+            "type": "string"
+          },
+          "sub_name": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Multiple object/subelement references. Use this when references come from different objects."
+    },
+    "defining": {
+      "type": "boolean",
+      "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow writes outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id",
+    "sketch_name"
+  ]
+}
+```
+
 ## `freecad_worker_sketch_edit_constraints`
 
 Delete, rename, set datum, toggle driving/active/virtual, and validate constraints.
@@ -8916,6 +9090,178 @@ Delete, move, toggle construction state, add external geometry, carbon-copy, and
     "document_path",
     "sketch_name",
     "operations"
+  ]
+}
+```
+
+## `freecad_sketch_external_projection`
+
+Add FreeCAD 1.1 Sketcher External Projection references to a sketch from selected faces, edges, vertices, master sketches, or datum/support geometry. This is the named typed alias for `freecad_sketch_edit_geometry` operation `add_external` with `intersection=false`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string",
+      "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."
+    },
+    "sub_name": {
+      "type": "string",
+      "description": "Referenced subelement such as Edge1, Face1, or Vertex1."
+    },
+    "sub_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple subelements on the same object."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object_name": {
+            "type": "string"
+          },
+          "sub_name": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Multiple object/subelement references. Use this when references come from different objects."
+    },
+    "defining": {
+      "type": "boolean",
+      "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
+  ]
+}
+```
+
+## `freecad_sketch_external_intersection`
+
+Add FreeCAD 1.1 Sketcher External Intersection references to a sketch from selected faces, edges, vertices, master sketches, or datum/support geometry. This is the named typed alias for `freecad_sketch_edit_geometry` operation `add_external` with `intersection=true`.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "sketch_name": {
+      "type": "string"
+    },
+    "object_name": {
+      "type": "string",
+      "description": "Referenced object or feature name, such as a Body Tip feature, master sketch, or datum/support object."
+    },
+    "sub_name": {
+      "type": "string",
+      "description": "Referenced subelement such as Edge1, Face1, or Vertex1."
+    },
+    "sub_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Multiple subelements on the same object."
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object_name": {
+            "type": "string"
+          },
+          "sub_name": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Multiple object/subelement references. Use this when references come from different objects."
+    },
+    "defining": {
+      "type": "boolean",
+      "description": "Create defining external geometry where FreeCAD supports it; false creates normal reference geometry."
+    },
+    "output_path": {
+      "type": "string"
+    },
+    "overwrite": {
+      "type": "boolean"
+    },
+    "save": {
+      "type": "boolean"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path",
+    "sketch_name"
   ]
 }
 ```
