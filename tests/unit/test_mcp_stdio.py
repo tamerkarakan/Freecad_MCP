@@ -63,6 +63,7 @@ class BuildServerTests(unittest.TestCase):
             "freecad_partdesign_polar_pattern",
             "freecad_partdesign_mirrored",
             "freecad_partdesign_profile_feature_create",
+            "freecad_partdesign_parametric_profile_feature_create",
             "freecad_partdesign_sweep_feature_create",
             "freecad_spreadsheet_create",
             "freecad_object_expression_set",
@@ -119,6 +120,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_partdesign_polar_pattern", tools)
         self.assertIn("freecad_partdesign_mirrored", tools)
         self.assertIn("freecad_partdesign_profile_feature_create", tools)
+        self.assertIn("freecad_partdesign_parametric_profile_feature_create", tools)
         self.assertIn("freecad_partdesign_sweep_feature_create", tools)
         self.assertIn("freecad_object_rename_label", tools)
         self.assertIn("freecad_spreadsheet_create", tools)

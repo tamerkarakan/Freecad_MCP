@@ -8056,6 +8056,300 @@
       }
     },
     {
+      "name": "freecad_partdesign_parametric_profile_feature_create",
+      "title": "Create Parametric PartDesign Profile Feature",
+      "description": "Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "document_path": {
+            "type": "string"
+          },
+          "document_name": {
+            "type": "string"
+          },
+          "body_name": {
+            "type": "string"
+          },
+          "sketch_name": {
+            "type": "string"
+          },
+          "attachment_plane": {
+            "type": "string",
+            "enum": [
+              "XY",
+              "XZ",
+              "YZ"
+            ],
+            "description": "Body Origin plane for base sketches or independent profiles."
+          },
+          "attachment_object": {
+            "type": "string",
+            "description": "Support object. For face-local holes/pockets, pass the Body Tip/feature object and attachment_subname='FaceN'. For reusable references, pass a datum/support object."
+          },
+          "attachment_subname": {
+            "type": "string",
+            "description": "Support subelement such as Face1 for planar-face sketching."
+          },
+          "attachment_map_mode": {
+            "type": "string"
+          },
+          "attachment_offset": {
+            "type": "number",
+            "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."
+          },
+          "attachment_offset_vector": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."
+          },
+          "create_body_if_missing": {
+            "type": "boolean"
+          },
+          "loops": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "lock_mode": {
+            "type": "string",
+            "enum": [
+              "none",
+              "block"
+            ]
+          },
+          "endpoint_tolerance": {
+            "type": "number"
+          },
+          "required_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "required_curve_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_segment_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "minimum_curve_segments": {
+            "type": "integer"
+          },
+          "forbid_polyline_fallback": {
+            "type": "boolean"
+          },
+          "forbid_all_line_loops": {
+            "type": "boolean"
+          },
+          "require_valid": {
+            "type": "boolean"
+          },
+          "require_pad_ready": {
+            "type": "boolean"
+          },
+          "require_fully_constrained": {
+            "type": "boolean"
+          },
+          "forbid_isolated_points": {
+            "type": "boolean"
+          },
+          "forbid_branch_points": {
+            "type": "boolean"
+          },
+          "forbid_micro_offsets": {
+            "type": "boolean"
+          },
+          "micro_offset_tolerance": {
+            "type": "number"
+          },
+          "feature_kind": {
+            "type": "string",
+            "enum": [
+              "pad",
+              "pocket",
+              "revolution",
+              "groove"
+            ],
+            "default": "pad"
+          },
+          "feature_name": {
+            "type": "string"
+          },
+          "result_name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "number"
+          },
+          "length2": {
+            "type": "number"
+          },
+          "midplane": {
+            "type": "boolean"
+          },
+          "reversed": {
+            "type": "boolean"
+          },
+          "reference_axis": {
+            "type": "string",
+            "enum": [
+              "sketch_v_axis",
+              "sketch_h_axis",
+              "x_axis",
+              "y_axis",
+              "z_axis"
+            ]
+          },
+          "reference_axis_object": {
+            "type": "string"
+          },
+          "reference_axis_subname": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "angle",
+              "through_all",
+              "up_to_last",
+              "up_to_first",
+              "up_to_face",
+              "two_angles"
+            ]
+          },
+          "angle": {
+            "type": "number"
+          },
+          "angle2": {
+            "type": "number"
+          },
+          "up_to_face_object": {
+            "type": "string"
+          },
+          "up_to_face_subname": {
+            "type": "string"
+          },
+          "fuse_order": {
+            "type": "string",
+            "enum": [
+              "base_first",
+              "feature_first"
+            ]
+          },
+          "require_solid": {
+            "type": "boolean"
+          },
+          "output_path": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean"
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "sheet_name": {
+            "type": "string",
+            "description": "Spreadsheet object name used by expression bindings, for example Params."
+          },
+          "spreadsheet_rows": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Rows passed to freecad_spreadsheet_create before sketch creation. Use unit/default_unit/require_units for physical dimensions."
+          },
+          "spreadsheet_cells": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Explicit cells passed to freecad_spreadsheet_create before sketch creation."
+          },
+          "default_unit": {
+            "type": "string",
+            "description": "Default unit for bare numeric spreadsheet value cells, for example mm."
+          },
+          "require_units": {
+            "type": "boolean",
+            "description": "Reject ambiguous bare numeric spreadsheet values unless unit/default_unit or unitless=true is supplied."
+          },
+          "driving_constraints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Sketcher dimensional constraints added after profile creation. Constraint fields may reference profile geometry with {'loop':'outer','index':0} or {'loop_name':'outer','geometry_offset':0}. Include name and expression to bind via Constraints[N]."
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "Alias for driving_constraints."
+          },
+          "sketch_expressions": {
+            "type": "object",
+            "description": "Additional expression bindings applied to the profile sketch."
+          },
+          "feature_expressions": {
+            "type": "object",
+            "description": "Expression bindings applied to the created PartDesign feature, such as {'Length':'Params.depth'}."
+          },
+          "feature_length_expression": {
+            "type": "string",
+            "description": "Convenience alias for feature_expressions.Length."
+          },
+          "feature_length2_expression": {
+            "type": "string",
+            "description": "Convenience alias for feature_expressions.Length2."
+          },
+          "feature_angle_expression": {
+            "type": "string",
+            "description": "Convenience alias for feature_expressions.Angle."
+          },
+          "include_steps": {
+            "type": "boolean",
+            "description": "Include full intermediate tool results. Defaults false to keep responses compact."
+          },
+          "executable": {
+            "type": "string",
+            "description": "Optional explicit FreeCADCmd path."
+          },
+          "freecad_home": {
+            "type": "string",
+            "description": "Optional portable FreeCAD directory."
+          },
+          "timeout_sec": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 180
+          },
+          "compact_execution": {
+            "type": "boolean",
+            "description": "Return compact execution metadata without stdout/stderr/argv text."
+          },
+          "allow_external_paths": {
+            "type": "boolean",
+            "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+          }
+        },
+        "required": [
+          "loops"
+        ]
+      }
+    },
+    {
       "name": "freecad_partdesign_sweep_feature_create",
       "title": "Create PartDesign Sweep Feature Recipe",
       "description": "High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.",

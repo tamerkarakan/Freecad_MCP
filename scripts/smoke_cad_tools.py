@@ -129,6 +129,7 @@ def main() -> int:
         coordinates_2d_doc = temp / "coordinates_2d.FCStd"
         rectangle_loop_doc = temp / "rectangle_loop.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
+        parametric_builder_doc = temp / "parametric_builder.FCStd"
         partdesign_doc = temp / "partdesign.FCStd"
         slot_pad_doc = temp / "slot_pad.FCStd"
         keyhole_pocket_doc = temp / "keyhole_pocket.FCStd"
@@ -595,6 +596,73 @@ def main() -> int:
             sketch_expressions.get(".Constraints.width"),
         }:
             raise RuntimeError(f"sketch dimension expression was not reported: {sketch_expression}")
+
+        parametric_profile = service.definition_map()["freecad_partdesign_parametric_profile_feature_create"].handler(
+            {
+                "document_name": "ParametricBuilderSmoke",
+                "body_name": "Body",
+                "sketch_name": "ParametricProfileSketch",
+                "feature_kind": "pad",
+                "feature_name": "ParametricPad",
+                "sheet_name": "Params",
+                "spreadsheet_rows": [
+                    {"label": "width", "value": 30, "alias": "width", "unit": "mm"},
+                    {"label": "height", "value": 20, "alias": "height", "unit": "mm"},
+                    {"label": "depth", "value": 6, "alias": "depth", "unit": "mm"},
+                ],
+                "require_units": True,
+                "loops": [
+                    {
+                        "name": "outer",
+                        "type": "rectangle",
+                        "origin": [0, 0],
+                        "width": 30,
+                        "height": 20,
+                    }
+                ],
+                "driving_constraints": [
+                    {
+                        "type": "DistanceX",
+                        "first": {"loop": "outer", "index": 0},
+                        "first_pos": 1,
+                        "second": {"loop": "outer", "index": 0},
+                        "second_pos": 2,
+                        "value": 30,
+                        "name": "width",
+                        "expression": "Params.width",
+                    },
+                    {
+                        "type": "DistanceY",
+                        "first": {"loop": "outer", "index": 1},
+                        "first_pos": 1,
+                        "second": {"loop": "outer", "index": 1},
+                        "second_pos": 2,
+                        "value": 20,
+                        "name": "height",
+                        "expression": "Params.height",
+                    },
+                ],
+                "length": 6,
+                "feature_length_expression": "Params.depth",
+                "output_path": str(parametric_builder_doc),
+                "overwrite": True,
+            }
+        )
+        if "steps" in parametric_profile:
+            raise RuntimeError(f"parametric builder returned verbose steps by default: {parametric_profile}")
+        parametric_payload = parametric_profile["freecad"]
+        if not parametric_payload.get("ok"):
+            raise RuntimeError(f"parametric builder failed: {parametric_profile}")
+        if parametric_profile["workflow"]["constraints"]["added_count"] != 2:
+            raise RuntimeError(f"parametric builder did not add both driving constraints: {parametric_profile}")
+        if parametric_payload["object"]["shape"]["solids"] != 1:
+            raise RuntimeError(f"parametric builder final feature is not a solid: {parametric_profile}")
+        feature_expression_paths = {
+            item["path"]: item["expression"]
+            for item in parametric_payload.get("after", [])
+        }
+        if feature_expression_paths.get("Length") != "Params.depth":
+            raise RuntimeError(f"parametric builder did not bind Pad Length expression: {parametric_profile}")
 
         open_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

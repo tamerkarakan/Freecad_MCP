@@ -23,12 +23,15 @@ The typed Sketcher MCP surface targets headless `Sketcher::SketchObject` APIs th
 | `freecad_sketch_validate` | Solve and report geometry/constraint counts, DoF, open vertices, conflicts, redundants, malformed constraints, missing constraints, dependent geometry, and optional constraint errors. |
 | `freecad_object_expression_set` | Bind expressions into Sketcher dimension constraints such as `Constraints[0]`, usually from a Spreadsheet alias like `params.width`. |
 | `freecad_object_expression_list` | Read expression bindings back from Sketcher objects. FreeCAD may report a named dimension constraint canonically, e.g. `.Constraints.width`. |
+| `freecad_partdesign_parametric_profile_feature_create` | Compact Sketcher + PartDesign recipe for parametric work: create Spreadsheet rows, Body-attached profile loops, named driving dimension constraints, sketch/feature expression bindings, and a Pad/Pocket/Revolution/Groove in one MCP call. |
 
 ## Constraint Notes
 
 `freecad_sketch_add_constraint` keeps the FreeCAD constructor expressive by accepting either `values` or named fields (`first`, `first_pos`, `second`, `second_pos`, `third`, `third_pos`, `value`). Datum/angle values may be passed as numbers, `{"degrees": 90}`, `{"radians": 1.5708}`, or `{"quantity": "90 deg"}`.
 
 Sketch dimensions are the actual parametric drivers. Spreadsheet cells are useful as named parameters, but they should feed constraints/properties through expressions rather than replacing Sketcher dimensions. A typical typed flow is `freecad_spreadsheet_create` with an alias such as `width`, then `freecad_object_expression_set` on the sketch with `{"Constraints[0]": "params.width"}`. If the constraint has a name, FreeCAD may report the stored expression path as `.Constraints.width`.
+
+For a new parametric PartDesign feature, prefer `freecad_partdesign_parametric_profile_feature_create` when the agent would otherwise need several calls to create Spreadsheet rows, add named Sketcher dimensions, bind expressions, and create Pad/Pocket/Revolution/Groove. The builder accepts profile-loop references such as `{"loop":"outer","index":0}` inside `driving_constraints`, resolves them to real Sketcher geometry indices after profile creation, and binds constraint expressions through the resulting `Constraints[N]` paths.
 
 `Group` and `Text` constraints are intentionally not given a high-level wrapper yet. In the current FreeCAD 1.1.1 runtime, direct constructor attempts can terminate `FreeCADCmd`, so typed tools block those raw constraint types and smoke-test the safe failure path before a future wrapper is considered.
 

@@ -8,6 +8,7 @@
 - Tester-reported repair gaps for Body Tip `$ref` setting, current-Tip delete fallback, slot redundant-constraint avoidance, keyhole-style circle+slot single-loop profiles, and compact worker responses are implemented and smoke-covered; no separate backlog item remains for those exact cases.
 - FreeCAD 1.1 Sketcher External Projection/External Intersection are exposed as explicit process and worker aliases; the lower-level `freecad_sketch_edit_geometry` `add_external` operation remains as compatibility surface.
 - Visible geometry validation is available as `freecad_geometry_check` and `freecad_worker_geometry_check`, while hidden standalone Part primitive tools stay implemented but unadvertised.
+- Compact parametric profile creation is available as `freecad_partdesign_parametric_profile_feature_create`: it can create Spreadsheet parameters, Body-attached profile geometry, named driving constraints, sketch/feature expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call with compact output by default.
 
 ## Next Expansion Candidates
 
@@ -23,7 +24,6 @@
 - Generalize overlapping-profile repair beyond the implemented keyhole/circle+slot helper only after a fixture-backed 2D boolean-to-Sketcher contract exists. Do not promise arbitrary overlapping circle/slot/arc/profile union until the extracted loop ordering, native curve preservation, and PartDesign Pocket behavior are smoke-covered.
 - Add persistent-worker parity for the process-per-call parameter tools: Spreadsheet creation/reading and object/Sketcher expression set/list, with worker smoke proving a Spreadsheet alias can drive a Sketcher dimension constraint.
 - Extend the Spreadsheet unit policy to every direct numeric CAD length/angle input surface, including direct PartDesign feature lengths, Sketcher dimension constraints, and future worker Spreadsheet/expression parity. `freecad_spreadsheet_create` now has `default_unit`/`require_units`; the next step is making the same "ask the user for a unit or mark unitless" contract consistent across all physical-dimension tool schemas.
-- Add a compact parametric Sketcher/PartDesign profile builder that creates multi-profile geometry with named driving constraints and Spreadsheet expression bindings in one call. The immediate tester case is socket/hex arrays where Pad/Pocket lengths are expression-driven but many Sketcher points remain numeric because current helpers do not emit named constraints for every profile coordinate.
 - Add a guarded GUI command catalog and runner: command list/describe by workbench, active state, tooltip/menu text, source evidence, and allowlisted `freecad_gui_command_run` only after preconditions, transaction/recompute policy, and smoke coverage are clear.
 - Bound `StaticToolService.source_search` rglob traversal with a file-count/time limit and early termination so a large FreeCAD source tree cannot hang or time out the tool.
 - Push/enable the existing POSIX CI workflow once credentials include the `workflow` OAuth scope, so the `safe_source_path` symlink-escape unit test runs instead of skipping.

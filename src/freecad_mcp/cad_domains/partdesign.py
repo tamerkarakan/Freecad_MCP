@@ -254,6 +254,38 @@ PROFILE_WORKFLOW_PROPS = {
     "save": {"type": "boolean"},
 }
 
+PARAMETRIC_PROFILE_WORKFLOW_PROPS = {
+    **PROFILE_WORKFLOW_PROPS,
+    "sheet_name": {"type": "string", "description": "Spreadsheet object name used by expression bindings, for example Params."},
+    "spreadsheet_rows": {
+        "type": "array",
+        "items": {"type": "object"},
+        "description": "Rows passed to freecad_spreadsheet_create before sketch creation. Use unit/default_unit/require_units for physical dimensions.",
+    },
+    "spreadsheet_cells": {
+        "type": "array",
+        "items": {"type": "object"},
+        "description": "Explicit cells passed to freecad_spreadsheet_create before sketch creation.",
+    },
+    "default_unit": {"type": "string", "description": "Default unit for bare numeric spreadsheet value cells, for example mm."},
+    "require_units": {"type": "boolean", "description": "Reject ambiguous bare numeric spreadsheet values unless unit/default_unit or unitless=true is supplied."},
+    "driving_constraints": {
+        "type": "array",
+        "items": {"type": "object"},
+        "description": (
+            "Sketcher dimensional constraints added after profile creation. Constraint fields may reference profile geometry with "
+            "{'loop':'outer','index':0} or {'loop_name':'outer','geometry_offset':0}. Include name and expression to bind via Constraints[N]."
+        ),
+    },
+    "constraints": {"type": "array", "items": {"type": "object"}, "description": "Alias for driving_constraints."},
+    "sketch_expressions": {"type": "object", "description": "Additional expression bindings applied to the profile sketch."},
+    "feature_expressions": {"type": "object", "description": "Expression bindings applied to the created PartDesign feature, such as {'Length':'Params.depth'}."},
+    "feature_length_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Length."},
+    "feature_length2_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Length2."},
+    "feature_angle_expression": {"type": "string", "description": "Convenience alias for feature_expressions.Angle."},
+    "include_steps": {"type": "boolean", "description": "Include full intermediate tool results. Defaults false to keep responses compact."},
+}
+
 SWEEP_WORKFLOW_PROPS = {
     "document_path": {"type": "string"},
     "document_name": {"type": "string"},
@@ -319,6 +351,17 @@ class PartDesignCadToolService(CadDomainToolService):
                 self.profile_feature_create,
             ),
             ToolDefinition(
+                "freecad_partdesign_parametric_profile_feature_create",
+                "Create Parametric PartDesign Profile Feature",
+                (
+                    "Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving "
+                    "dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. "
+                    "Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric."
+                ),
+                {"type": "object", "properties": {**PARAMETRIC_PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
+                self.parametric_profile_feature_create,
+            ),
+            ToolDefinition(
                 "freecad_partdesign_sweep_feature_create",
                 "Create PartDesign Sweep Feature Recipe",
                 "High-level recipe that creates Body-attached profile and spine sketches, then creates an Additive/Subtractive Pipe sweep. Subtractive Pipe requires document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
@@ -371,6 +414,318 @@ class PartDesignCadToolService(CadDomainToolService):
         if not isinstance(path, str) or not path:
             raise ToolInputError("document_path or output_path is required for multi-step PartDesign workflow tools")
         return path
+
+    def _profile_loop_indices(self, profile_payload: JsonObject) -> dict[str, list[int]]:
+        indices: dict[str, list[int]] = {}
+        for loop in profile_payload.get("loop_reports") or profile_payload.get("loops") or []:
+            if not isinstance(loop, dict):
+                continue
+            name = loop.get("name")
+            if name is None:
+                continue
+            indices[str(name)] = [int(value) for value in loop.get("added_indices") or []]
+        return indices
+
+    def _resolve_profile_geometry_ref(self, value: object, loop_indices: dict[str, list[int]]) -> object:
+        if not isinstance(value, dict):
+            return value
+        loop_name = value.get("loop_name") or value.get("loop")
+        if loop_name is None:
+            return value
+        key = str(loop_name)
+        if key not in loop_indices:
+            raise ToolInputError(f"unknown profile loop reference: {key}")
+        offset = value.get("geometry_offset", value.get("index", 0))
+        try:
+            return loop_indices[key][int(offset)]
+        except (IndexError, ValueError) as exc:
+            raise ToolInputError(f"invalid geometry reference for loop {key}: {offset}") from exc
+
+    def _resolve_constraint_refs(self, constraint: JsonObject, loop_indices: dict[str, list[int]]) -> JsonObject:
+        resolved = dict(constraint)
+        for key in ("first", "second", "third"):
+            if key in resolved:
+                resolved[key] = self._resolve_profile_geometry_ref(resolved[key], loop_indices)
+        if isinstance(resolved.get("values"), list):
+            resolved["values"] = [self._resolve_profile_geometry_ref(value, loop_indices) for value in resolved["values"]]
+        if "driving" not in resolved:
+            resolved["driving"] = True
+        return resolved
+
+    def _constraint_name_to_index(self, sketch_payload: JsonObject) -> dict[str, int]:
+        sketch = sketch_payload.get("sketch")
+        if isinstance(sketch, dict):
+            sketch_data = sketch.get("sketch")
+            if isinstance(sketch_data, dict):
+                return {
+                    str(item.get("name")): int(item.get("index"))
+                    for item in sketch_data.get("constraints") or []
+                    if isinstance(item, dict) and item.get("name") not in (None, "") and item.get("index") is not None
+                }
+        return {}
+
+    def _feature_result_key(self, feature_kind: str) -> str:
+        return {
+            "pad": "pad",
+            "pocket": "pocket",
+            "revolution": "revolution",
+            "groove": "groove",
+        }[feature_kind]
+
+    def _feature_object_name(self, feature_payload: JsonObject, feature_kind: str) -> str:
+        feature = feature_payload.get(self._feature_result_key(feature_kind))
+        if not isinstance(feature, dict) or not feature.get("name"):
+            raise ToolInputError("created feature name was not reported by FreeCAD")
+        return str(feature["name"])
+
+    def _action_by_feature_kind(self, feature_kind: str) -> tuple[str, str]:
+        actions = {
+            "pad": ("partdesign_pad", "pad_name"),
+            "pocket": ("partdesign_pocket", "pocket_name"),
+            "revolution": ("partdesign_revolution", "revolution_name"),
+            "groove": ("partdesign_groove", "groove_name"),
+        }
+        if feature_kind not in actions:
+            raise ToolInputError("feature_kind must be one of pad, pocket, revolution, groove")
+        return actions[feature_kind]
+
+    def parametric_profile_feature_create(self, args: JsonObject) -> JsonObject:
+        if not args.get("document_path") and not args.get("output_path"):
+            raise ToolInputError("document_path or output_path is required")
+        feature_kind = str(args.get("feature_kind") or "pad")
+        feature_action, feature_name_key = self._action_by_feature_kind(feature_kind)
+        if feature_kind in {"pocket", "groove"} and not args.get("document_path"):
+            raise ToolInputError(f"{feature_kind} parametric recipe requires document_path with an existing Body solid")
+
+        body_name = str(args.get("body_name") or "Body")
+        sketch_name = str(args.get("sketch_name") or f"{feature_kind.title()}ParametricSketch")
+        steps: dict[str, JsonObject] = {}
+        step_sequence: list[str] = []
+        working_path = args.get("document_path")
+
+        if args.get("spreadsheet_rows") or args.get("spreadsheet_cells"):
+            sheet_args: JsonObject = {
+                "sheet_name": args.get("sheet_name") or "Params",
+                "rows": args.get("spreadsheet_rows") or [],
+                "cells": args.get("spreadsheet_cells") or [],
+            }
+            if working_path:
+                sheet_args["document_path"] = working_path
+            elif args.get("document_name"):
+                sheet_args["document_name"] = args["document_name"]
+            for key in ("default_unit", "require_units", "start_row", "label_column", "value_column"):
+                if key in args:
+                    sheet_args[key] = args[key]
+            sheet_args.update(self._persistence_args(args, first_write=working_path is None))
+            sheet_result = self.runner.run("spreadsheet_create", self._with_runtime(args, sheet_args), [])
+            sheet_payload = self._ensure_ok(sheet_result, "spreadsheet parameter creation")
+            working_path = self._working_path(args, sheet_payload)
+            steps["spreadsheet"] = sheet_result
+            step_sequence.append("spreadsheet_create")
+
+        profile_args: JsonObject = {
+            "sketch_name": sketch_name,
+            "body_name": body_name,
+            "loops": args["loops"],
+            "create_body_if_missing": args.get("create_body_if_missing", True),
+            "attachment_plane": args.get("attachment_plane") or "XY",
+            "require_valid": args.get("require_valid", True),
+            "require_pad_ready": args.get("require_pad_ready", True),
+        }
+        if working_path:
+            profile_args["document_path"] = working_path
+        elif args.get("document_name"):
+            profile_args["document_name"] = args["document_name"]
+        for key in (
+            "attachment_object",
+            "attachment_subname",
+            "attachment_map_mode",
+            "attachment_offset",
+            "attachment_offset_vector",
+            "lock_mode",
+            "endpoint_tolerance",
+            "required_segment_types",
+            "required_curve_types",
+            "allowed_segment_types",
+            "minimum_curve_segments",
+            "forbid_polyline_fallback",
+            "forbid_all_line_loops",
+            "require_fully_constrained",
+            "forbid_isolated_points",
+            "forbid_branch_points",
+            "forbid_micro_offsets",
+            "micro_offset_tolerance",
+        ):
+            if key in args:
+                profile_args[key] = args[key]
+        profile_args.update(self._persistence_args(args, first_write=working_path is None))
+        profile_result = self.runner.run("sketch_profile_create", self._with_runtime(args, profile_args), ["loops"])
+        profile_payload = self._ensure_ok(profile_result, "profile sketch creation")
+        working_path = self._working_path(args, profile_payload)
+        steps["profile"] = profile_result
+        step_sequence.append("sketch_profile_create")
+
+        loop_indices = self._profile_loop_indices(profile_payload)
+        raw_constraints = list(args.get("driving_constraints") or args.get("constraints") or [])
+        resolved_constraints = [self._resolve_constraint_refs(dict(item), loop_indices) for item in raw_constraints]
+        sketch_expressions: dict[str, str] = {
+            str(path): str(expression)
+            for path, expression in (args.get("sketch_expressions") or {}).items()
+            if expression is not None and str(expression).strip()
+        }
+        constraint_bindings = []
+        if resolved_constraints:
+            constraints_args = {
+                "document_path": working_path,
+                "sketch_name": sketch_name,
+                "constraints": resolved_constraints,
+                **self._persistence_args(args, first_write=False),
+            }
+            constraints_result = self.runner.run(
+                "sketch_add_constraint",
+                self._with_runtime(args, constraints_args),
+                ["document_path", "sketch_name", "constraints"],
+            )
+            constraints_payload = self._ensure_ok(constraints_result, "driving constraint creation")
+            working_path = self._working_path(args, constraints_payload)
+            steps["constraints"] = constraints_result
+            step_sequence.append("sketch_add_constraint")
+            added_indices = list(constraints_payload.get("added_indices") or [])
+            for spec, index in zip(resolved_constraints, added_indices):
+                expression = spec.get("expression")
+                if expression is None or str(expression).strip() == "":
+                    continue
+                expression_path = str(spec.get("expression_path") or f"Constraints[{int(index)}]")
+                sketch_expressions[expression_path] = str(expression)
+                constraint_bindings.append(
+                    {
+                        "constraint_index": int(index),
+                        "constraint_name": spec.get("name"),
+                        "path": expression_path,
+                        "expression": str(expression),
+                    }
+                )
+
+        if sketch_expressions:
+            sketch_expression_args = {
+                "document_path": working_path,
+                "object_name": sketch_name,
+                "expressions": sketch_expressions,
+                **self._persistence_args(args, first_write=False),
+            }
+            sketch_expression_result = self.runner.run(
+                "object_expression_set",
+                self._with_runtime(args, sketch_expression_args),
+                ["document_path", "object_name", "expressions"],
+            )
+            sketch_expression_payload = self._ensure_ok(sketch_expression_result, "sketch expression binding")
+            working_path = self._working_path(args, sketch_expression_payload)
+            steps["sketch_expressions"] = sketch_expression_result
+            step_sequence.append("object_expression_set:sketch")
+
+        feature_args: JsonObject = {
+            "document_path": working_path,
+            "body_name": body_name,
+            "sketch_name": sketch_name,
+            "attachment_plane": args.get("attachment_plane") or "XY",
+            "create_body_if_missing": args.get("create_body_if_missing", True),
+            "require_solid": args.get("require_solid", True),
+        }
+        if args.get("feature_name"):
+            feature_args[feature_name_key] = args["feature_name"]
+        for key in (
+            "result_name",
+            "length",
+            "length2",
+            "midplane",
+            "reversed",
+            "reference_axis",
+            "reference_axis_object",
+            "reference_axis_subname",
+            "mode",
+            "angle",
+            "angle2",
+            "up_to_face_object",
+            "up_to_face_subname",
+            "fuse_order",
+        ):
+            if key in args:
+                feature_args[key] = args[key]
+        feature_args.update(self._persistence_args(args, first_write=False))
+        feature_result = self.runner.run(feature_action, self._with_runtime(args, feature_args), ["document_path", "sketch_name"])
+        feature_payload = self._ensure_ok(feature_result, feature_kind)
+        working_path = self._working_path(args, feature_payload)
+        steps["feature"] = feature_result
+        step_sequence.append(feature_action)
+
+        feature_expressions: dict[str, str] = {
+            str(path): str(expression)
+            for path, expression in (args.get("feature_expressions") or {}).items()
+            if expression is not None and str(expression).strip()
+        }
+        for source, target in (
+            ("feature_length_expression", "Length"),
+            ("feature_length2_expression", "Length2"),
+            ("feature_angle_expression", "Angle"),
+        ):
+            if args.get(source):
+                feature_expressions[target] = str(args[source])
+        final_result = feature_result
+        final_payload = feature_payload
+        feature_name = self._feature_object_name(feature_payload, feature_kind)
+        if feature_expressions:
+            feature_expression_args = {
+                "document_path": working_path,
+                "object_name": feature_name,
+                "expressions": feature_expressions,
+                **self._persistence_args(args, first_write=False),
+            }
+            feature_expression_result = self.runner.run(
+                "object_expression_set",
+                self._with_runtime(args, feature_expression_args),
+                ["document_path", "object_name", "expressions"],
+            )
+            feature_expression_payload = self._ensure_ok(feature_expression_result, "feature expression binding")
+            working_path = self._working_path(args, feature_expression_payload)
+            steps["feature_expressions"] = feature_expression_result
+            step_sequence.append("object_expression_set:feature")
+            final_result = feature_expression_result
+            final_payload = feature_expression_payload
+
+        workflow: JsonObject = {
+            "ok": True,
+            "kind": "partdesign_parametric_profile_feature",
+            "feature_kind": feature_kind,
+            "body_name": body_name,
+            "sketch_name": sketch_name,
+            "feature_name": feature_name,
+            "document_path": working_path,
+            "steps": step_sequence,
+            "spreadsheet": {
+                "sheet_name": args.get("sheet_name") or "Params",
+                "row_count": len(args.get("spreadsheet_rows") or []),
+                "cell_count": len(args.get("spreadsheet_cells") or []),
+            },
+            "profile": {
+                "loop_count": len(args.get("loops") or []),
+                "loop_geometry_indices": loop_indices,
+            },
+            "constraints": {
+                "added_count": len(resolved_constraints),
+                "bindings": constraint_bindings,
+            },
+            "sketch_expression_count": len(sketch_expressions),
+            "feature_expression_count": len(feature_expressions),
+        }
+        response: JsonObject = {
+            "discovery": final_result.get("discovery"),
+            "execution": final_result.get("execution"),
+            "freecad": final_payload,
+            "workflow": workflow,
+        }
+        if bool(args.get("include_steps", False)):
+            response["steps"] = steps
+        return response
 
     def profile_feature_create(self, args: JsonObject) -> JsonObject:
         if not args.get("document_path") and not args.get("output_path"):

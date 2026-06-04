@@ -419,9 +419,10 @@
         "freecad_partdesign_polar_pattern",
         "freecad_partdesign_mirrored",
         "freecad_partdesign_profile_feature_create",
+        "freecad_partdesign_parametric_profile_feature_create",
         "freecad_partdesign_sweep_feature_create"
       ],
-      "evidence": "PartDesign module exposes 41 scanned commands and requires Body Origin, planar face/subelement, or datum/support attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence for agents that do not know the GUI workflow."
+      "evidence": "PartDesign module exposes 41 scanned commands and requires Body Origin, planar face/subelement, or datum/support attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence and the compact Spreadsheet + named-constraint parametric sequence for agents that do not know the GUI workflow."
     },
     {
       "family": "freecad.sketcher",

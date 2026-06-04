@@ -220,6 +220,13 @@ class ToolSchemaTests(unittest.TestCase):
         profile_recipe_props = tools["freecad_partdesign_profile_feature_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("feature_kind", profile_recipe_props)
         self.assertIn("loops", profile_recipe_props)
+        parametric_recipe_props = tools["freecad_partdesign_parametric_profile_feature_create"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("spreadsheet_rows", parametric_recipe_props)
+        self.assertIn("driving_constraints", parametric_recipe_props)
+        self.assertIn("sketch_expressions", parametric_recipe_props)
+        self.assertIn("feature_expressions", parametric_recipe_props)
+        self.assertIn("feature_length_expression", parametric_recipe_props)
+        self.assertIn("include_steps", parametric_recipe_props)
         sweep_recipe_props = tools["freecad_partdesign_sweep_feature_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("profile", sweep_recipe_props)
         self.assertIn("profile_loops", sweep_recipe_props)
