@@ -248,6 +248,11 @@ class ToolSchemaTests(unittest.TestCase):
         spreadsheet_props = tools["freecad_spreadsheet_create"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("rows", spreadsheet_props)
         self.assertIn("cells", spreadsheet_props)
+        self.assertIn("default_unit", spreadsheet_props)
+        self.assertIn("require_units", spreadsheet_props)
+        row_props = spreadsheet_props["rows"]["items"]["properties"]
+        for prop in ("unit", "display_unit", "unitless"):
+            self.assertIn(prop, row_props)
         expression_props = tools["freecad_object_expression_set"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("expressions", expression_props)
 

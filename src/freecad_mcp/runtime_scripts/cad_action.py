@@ -455,7 +455,11 @@ def expression_summary(obj):
 
 CELL_RE = re.compile(r"^[A-Z]{1,3}[1-9][0-9]*$")
 ALIAS_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+NUMERIC_TEXT = r"[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+BARE_NUMERIC_TEXT_RE = re.compile(r"^" + NUMERIC_TEXT + r"$")
+QUANTITY_TEXT_RE = re.compile(r"^(" + NUMERIC_TEXT + r")\s*([A-Za-z_][A-Za-z0-9_*/^.-]*)$")
 NEGATIVE_NUMERIC_TEXT_RE = re.compile(r"^-\s*(?:\d+(?:\.\d*)?|\.\d+)(?:\s*[A-Za-z_][A-Za-z0-9_*/^.-]*)?$")
+UNIT_TEXT_RE = re.compile(r"^[A-Za-z0-9_./*^()-]+$")
 
 
 def normalize_cell(value):
@@ -481,6 +485,39 @@ def normalize_alias(value):
     return alias
 
 
+def normalize_unit(value, *, field_name="unit"):
+    unit = str(value or "").strip()
+    if not unit:
+        return ""
+    if not UNIT_TEXT_RE.match(unit):
+        raise ValueError(f"invalid spreadsheet {field_name}: {unit}")
+    return unit
+
+
+def numeric_text(value):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and not math.isfinite(value):
+            raise ValueError("spreadsheet numeric value must be finite")
+        return str(value)
+    if isinstance(value, str):
+        text = value.strip()
+        if BARE_NUMERIC_TEXT_RE.match(text):
+            return text
+    return None
+
+
+def simple_quantity_parts(value):
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    match = QUANTITY_TEXT_RE.match(text)
+    if not match:
+        return None
+    return match.group(1).strip(), normalize_unit(match.group(2))
+
+
 def spreadsheet_value_text(value, *, coerce_negative_numeric=False):
     if value is None:
         return ""
@@ -496,6 +533,68 @@ def spreadsheet_value_text(value, *, coerce_negative_numeric=False):
     if coerce_negative_numeric and text and not text.startswith(("=", "'")) and NEGATIVE_NUMERIC_TEXT_RE.match(text):
         return "=" + text
     return text
+
+
+def spreadsheet_cell_value_result(value, *, default_unit="", require_units=False, spec=None, context="spreadsheet value"):
+    spec = spec or {}
+    unit = normalize_unit(spec.get("unit") or spec.get("display_unit") or default_unit)
+    unitless = bool(spec.get("unitless") or spec.get("dimensionless"))
+    warning = None
+
+    if isinstance(value, dict):
+        nested_spec = {
+            "unit": value.get("unit") or value.get("display_unit") or unit,
+            "unitless": unitless or bool(value.get("unitless") or value.get("dimensionless")),
+        }
+        if "formula" in value:
+            formula = str(value["formula"]).strip()
+            text = formula if formula.startswith("=") else "=" + formula
+            display_unit = normalize_unit(value.get("display_unit") or unit)
+            return {"text": text, "display_unit": display_unit, "warning": None}
+        if "quantity" in value:
+            return spreadsheet_cell_value_result(
+                value["quantity"],
+                default_unit=default_unit,
+                require_units=True,
+                spec=nested_spec,
+                context=context,
+            )
+        if "value" in value:
+            return spreadsheet_cell_value_result(
+                value["value"],
+                default_unit=default_unit,
+                require_units=require_units,
+                spec=nested_spec,
+                context=context,
+            )
+
+    bare_number = numeric_text(value)
+    if bare_number is not None:
+        if unitless:
+            return {"text": bare_number, "display_unit": "", "warning": None}
+        if unit:
+            return {"text": f"={bare_number} {unit}", "display_unit": unit, "warning": None}
+        message = (
+            f"{context} is a bare numeric value without a unit. "
+            "Ask the user which unit to use, pass unit/default_unit such as 'mm', "
+            "or set unitless=true for counts and ratios."
+        )
+        if require_units:
+            raise ValueError(message)
+        warning = message
+
+    raw_quantity = simple_quantity_parts(value)
+    text = spreadsheet_value_text(value, coerce_negative_numeric=True)
+    display_unit = normalize_unit(spec.get("display_unit") or "")
+    quantity = simple_quantity_parts(text) or raw_quantity
+    if quantity:
+        _, detected_unit = quantity
+        display_unit = display_unit or detected_unit
+        if not text.startswith(("=", "'")):
+            text = "=" + text
+    elif unit and not display_unit:
+        display_unit = unit
+    return {"text": text, "display_unit": display_unit, "warning": warning}
 
 
 def get_spreadsheet(doc, sheet_name):
@@ -1582,8 +1681,11 @@ def action_spreadsheet_create(args):
     start_row = int(args.get("start_row") or 1)
     label_column = normalize_column(args.get("label_column"), "A")
     value_column = normalize_column(args.get("value_column"), "B")
+    default_unit = normalize_unit(args.get("default_unit"), field_name="default_unit")
+    require_units = bool(args.get("require_units", False))
     changed = []
     aliases = {}
+    warnings = []
     doc.openTransaction("MCP update spreadsheet")
     try:
         for index, row in enumerate(args.get("rows") or []):
@@ -1594,18 +1696,44 @@ def action_spreadsheet_create(args):
                 label_text = spreadsheet_value_text(row.get("label"))
                 sheet.set(label_cell, label_text)
                 changed.append({"cell": label_cell, "value": label_text})
-            value_text = spreadsheet_value_text(row.get("value"), coerce_negative_numeric=True)
+            value_result = spreadsheet_cell_value_result(
+                row.get("value"),
+                default_unit=default_unit,
+                require_units=require_units,
+                spec=row,
+                context=f"Spreadsheet row {row_number} value cell {value_cell}",
+            )
+            value_text = value_result["text"]
             sheet.set(value_cell, value_text)
-            changed.append({"cell": value_cell, "value": value_text})
+            changed_item = {"cell": value_cell, "value": value_text}
+            if value_result.get("display_unit"):
+                sheet.setDisplayUnit(value_cell, value_result["display_unit"])
+                changed_item["display_unit"] = value_result["display_unit"]
+            if value_result.get("warning"):
+                warnings.append(value_result["warning"])
+            changed.append(changed_item)
             alias = normalize_alias(row.get("alias"))
             if alias:
                 sheet.setAlias(value_cell, alias)
                 aliases[alias] = value_cell
         for cell_spec in args.get("cells") or []:
             cell = normalize_cell(cell_spec.get("cell"))
-            value_text = spreadsheet_value_text(cell_spec.get("value"), coerce_negative_numeric=True)
+            value_result = spreadsheet_cell_value_result(
+                cell_spec.get("value"),
+                default_unit=default_unit,
+                require_units=require_units,
+                spec=cell_spec,
+                context=f"Spreadsheet cell {cell}",
+            )
+            value_text = value_result["text"]
             sheet.set(cell, value_text)
-            changed.append({"cell": cell, "value": value_text})
+            changed_item = {"cell": cell, "value": value_text}
+            if value_result.get("display_unit"):
+                sheet.setDisplayUnit(cell, value_result["display_unit"])
+                changed_item["display_unit"] = value_result["display_unit"]
+            if value_result.get("warning"):
+                warnings.append(value_result["warning"])
+            changed.append(changed_item)
             alias = normalize_alias(cell_spec.get("alias"))
             if alias:
                 sheet.setAlias(cell, alias)
@@ -1621,6 +1749,7 @@ def action_spreadsheet_create(args):
         "created": created,
         "changed": changed,
         "aliases": aliases,
+        "warnings": warnings,
         "sheet": spreadsheet_summary(sheet, cells=[item["cell"] for item in changed], aliases=list(aliases)),
         "document": document_summary(doc),
     }

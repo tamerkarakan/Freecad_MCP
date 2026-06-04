@@ -4973,7 +4973,7 @@
     {
       "name": "freecad_spreadsheet_create",
       "title": "Create FreeCAD Spreadsheet Parameters",
-      "description": "Create or update a Spreadsheet::Sheet with explicit cells or label/value/alias rows.",
+      "description": "Create or update a Spreadsheet::Sheet with explicit cells or label/value/alias rows. For physical CAD dimensions, pass a unit or default_unit such as 'mm'; with require_units=true, bare numeric values are rejected so the agent must ask the user which unit to use. Use unitless=true only for counts, ratios, or other dimensionless values.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4986,19 +4986,84 @@
           "sheet_name": {
             "type": "string"
           },
+          "default_unit": {
+            "type": "string",
+            "description": "Default FreeCAD unit for bare numeric value cells, for example 'mm', 'cm', 'in', or 'deg'."
+          },
+          "require_units": {
+            "type": "boolean",
+            "description": "Reject bare numeric value cells unless a unit/default_unit is supplied or the row/cell sets unitless=true."
+          },
           "rows": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "label": {},
+                "value": {
+                  "description": "Cell value. Use {'quantity':'92 mm'} or value+unit for physical dimensions."
+                },
+                "alias": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Unit for this value cell when value is numeric."
+                },
+                "display_unit": {
+                  "type": "string",
+                  "description": "Optional Spreadsheet display unit."
+                },
+                "unitless": {
+                  "type": "boolean",
+                  "description": "Set true only for counts, ratios, or other dimensionless numeric values."
+                },
+                "label_cell": {
+                  "type": "string"
+                },
+                "value_cell": {
+                  "type": "string"
+                },
+                "cell": {
+                  "type": "string"
+                }
+              }
             },
-            "description": "Rows with label, value, and optional alias. Defaults to A/B columns."
+            "description": "Rows with label, value, optional alias, and optional unit/unitless. Defaults to A/B columns."
           },
           "cells": {
             "type": "array",
             "items": {
-              "type": "object"
+              "type": "object",
+              "properties": {
+                "cell": {
+                  "type": "string"
+                },
+                "value": {
+                  "description": "Cell value. Use {'quantity':'92 mm'} or value+unit for physical dimensions."
+                },
+                "alias": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Unit for this value cell when value is numeric."
+                },
+                "display_unit": {
+                  "type": "string",
+                  "description": "Optional Spreadsheet display unit."
+                },
+                "unitless": {
+                  "type": "boolean",
+                  "description": "Set true only for counts, ratios, or other dimensionless numeric values."
+                }
+              }
             },
-            "description": "Explicit cell writes with cell, value, and optional alias."
+            "description": "Explicit cell writes with cell, value, optional alias, and optional unit/unitless."
           },
           "start_row": {
             "type": "integer",

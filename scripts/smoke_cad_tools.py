@@ -181,11 +181,30 @@ def main() -> int:
         if renamed_lookup["object"]["name"] != "Box":
             raise RuntimeError(f"renamed label lookup did not resolve stable object name: {renamed_lookup}")
 
+        ambiguous_units = assert_tool_failed(
+            service.definition_map()["freecad_spreadsheet_create"].handler(
+                {
+                    "document_path": str(document),
+                    "sheet_name": "params",
+                    "require_units": True,
+                    "rows": [{"label": "ambiguous_length", "value": 6.0, "alias": "ambiguous_length"}],
+                    "output_path": str(document),
+                    "overwrite": True,
+                }
+            ),
+            "spreadsheet_create strict ambiguous units",
+        )
+        ambiguous_error = str((ambiguous_units.get("freecad") or {}).get("error", ""))
+        if "Ask the user which unit to use" not in ambiguous_error:
+            raise RuntimeError(f"strict unit error did not guide the agent to ask the user: {ambiguous_units}")
+
         box_params = assert_ok(
             service.definition_map()["freecad_spreadsheet_create"].handler(
                 {
                     "document_path": str(document),
                     "sheet_name": "params",
+                    "default_unit": "mm",
+                    "require_units": True,
                     "rows": [
                         {"label": "box_length", "value": 6.0, "alias": "box_length"},
                         {"label": "box_offset", "value": "-2 mm", "alias": "box_offset"},
@@ -198,6 +217,11 @@ def main() -> int:
         )
         if box_params["sheet"]["aliases"].get("box_length", {}).get("cell") != "B1":
             raise RuntimeError(f"spreadsheet alias was not created: {box_params}")
+        if box_params["sheet"]["aliases"].get("box_length", {}).get("value") != "6.0 mm":
+            raise RuntimeError(f"default_unit did not create a length Quantity: {box_params}")
+        box_param_units = {item["cell"]: item.get("display_unit") for item in box_params["changed"]}
+        if box_param_units.get("B1") != "mm" or box_param_units.get("B2") != "mm":
+            raise RuntimeError(f"spreadsheet display units were not recorded: {box_params}")
         box_expression = assert_ok(
             service.definition_map()["freecad_object_expression_set"].handler(
                 {
