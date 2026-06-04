@@ -7,6 +7,7 @@
 - FreeCAD GUI's regular-polygon Sketcher signature (`center` plus `corner`) has been folded into typed process and worker profile helpers with construction-circle constraints; no separate backlog item is open for that helper.
 - Tester-reported repair gaps for Body Tip `$ref` setting, current-Tip delete fallback, slot redundant-constraint avoidance, keyhole-style circle+slot single-loop profiles, and compact worker responses are implemented and smoke-covered; no separate backlog item remains for those exact cases.
 - FreeCAD 1.1 Sketcher External Projection/External Intersection are exposed as explicit process and worker aliases; the lower-level `freecad_sketch_edit_geometry` `add_external` operation remains as compatibility surface.
+- Visible geometry validation is available as `freecad_geometry_check` and `freecad_worker_geometry_check`, while hidden standalone Part primitive tools stay implemented but unadvertised.
 
 ## Next Expansion Candidates
 
@@ -23,7 +24,6 @@
 - Add persistent-worker parity for the process-per-call parameter tools: Spreadsheet creation/reading and object/Sketcher expression set/list, with worker smoke proving a Spreadsheet alias can drive a Sketcher dimension constraint.
 - Extend the Spreadsheet unit policy to every direct numeric CAD length/angle input surface, including direct PartDesign feature lengths, Sketcher dimension constraints, and future worker Spreadsheet/expression parity. `freecad_spreadsheet_create` now has `default_unit`/`require_units`; the next step is making the same "ask the user for a unit or mark unitless" contract consistent across all physical-dimension tool schemas.
 - Add a compact parametric Sketcher/PartDesign profile builder that creates multi-profile geometry with named driving constraints and Spreadsheet expression bindings in one call. The immediate tester case is socket/hex arrays where Pad/Pocket lengths are expression-driven but many Sketcher points remain numeric because current helpers do not emit named constraints for every profile coordinate.
-- Expose a dedicated geometry-check tool that remains visible even while Part primitive tools are hidden from MCP `tools/list`, so agents can run BRep validation without falling back to Body shape summaries.
 - Add a guarded GUI command catalog and runner: command list/describe by workbench, active state, tooltip/menu text, source evidence, and allowlisted `freecad_gui_command_run` only after preconditions, transaction/recompute policy, and smoke coverage are clear.
 - Bound `StaticToolService.source_search` rglob traversal with a file-count/time limit and early termination so a large FreeCAD source tree cannot hang or time out the tool.
 - Push/enable the existing POSIX CI workflow once credentials include the `workflow` OAuth scope, so the `safe_source_path` symlink-escape unit test runs instead of skipping.

@@ -71,6 +71,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_partdesign_polar_pattern",
             "freecad_worker_partdesign_mirrored",
             "freecad_worker_part_check_geometry",
+            "freecad_worker_geometry_check",
             "freecad_worker_sketch_create",
             "freecad_worker_sketch_add_profile",
             "freecad_worker_sketch_profile_create",
@@ -232,6 +233,18 @@ class ToolSchemaTests(unittest.TestCase):
         datum_description = tools["freecad_partdesign_datum_plane_create"].to_mcp()["description"]
         self.assertIn("basically redundant for support of one sketch", datum_description)
         self.assertIn("topological naming risk", datum_description)
+
+    def test_visible_geometry_check_alias_is_exposed(self) -> None:
+        tools = CadToolService().definition_map()
+
+        self.assertIn("freecad_geometry_check", tools)
+        props = tools["freecad_geometry_check"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("document_path", props)
+        self.assertIn("object_names", props)
+        self.assertIn("run_bop_check", props)
+
+        worker_tools = PersistentToolService().definition_map()
+        self.assertIn("freecad_worker_geometry_check", worker_tools)
 
     def test_sketch_external_reference_aliases_are_exposed(self) -> None:
         tools = CadToolService().definition_map()

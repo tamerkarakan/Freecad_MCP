@@ -2080,10 +2080,10 @@ def main() -> int:
                 raise RuntimeError(f"worker boolean fuse is not a solid: {boolean}")
 
             checks = worker_result(
-                service.definition_map()["freecad_worker_part_check_geometry"].handler(
+                service.definition_map()["freecad_worker_geometry_check"].handler(
                     {"session_id": session_id, "document_id": document_id, "object_names": ["WorkerFuse"]}
                 ),
-                "worker_part_check_geometry",
+                "worker_geometry_check",
             )
             if not checks["checks"] or not checks["checks"][0]["is_valid"]:
                 raise RuntimeError(f"worker geometry check failed: {checks}")

@@ -30,6 +30,7 @@ Current checks:
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
 - Unit guard for `FREECAD_MCP_MODULES` product aliases, full advertised-surface local developer aliases, GUI-only filtering, worker-module gating, hidden Part tool policy, and source-intelligence add-on behavior (`test_mcp_stdio.py`).
 - Unit guard for FreeCAD 1.1 Sketcher External Projection/External Intersection process and worker aliases, including object/subelement reference schema fields (`test_tool_schemas.py`).
+- Unit guard for visible geometry-check aliases (`freecad_geometry_check`, `freecad_worker_geometry_check`) while keeping `freecad_part_*`/`freecad_worker_part_*` primitive tools hidden from advertised MCP surfaces (`test_tool_schemas.py`, `test_mcp_stdio.py`).
 - Unit guard for generated sellable bundle descriptors, unsafe add-on separation, and upgrade-ladder tool counts (`test_product_bundles.py`).
 - Unit guard for distribution profile descriptors, generated MCP config skeleton shape, and `pyproject.toml` packaging declarations (`test_distribution_profiles.py`).
 - Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).

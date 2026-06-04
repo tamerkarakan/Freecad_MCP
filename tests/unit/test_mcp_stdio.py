@@ -66,6 +66,7 @@ class BuildServerTests(unittest.TestCase):
             "freecad_partdesign_sweep_feature_create",
             "freecad_spreadsheet_create",
             "freecad_object_expression_set",
+            "freecad_geometry_check",
         ):
             self.assertIn(name, tools)
         self.assertNotIn("freecad_part_create_primitive", tools)
@@ -123,6 +124,7 @@ class BuildServerTests(unittest.TestCase):
         self.assertIn("freecad_spreadsheet_create", tools)
         self.assertIn("freecad_object_expression_set", tools)
         self.assertIn("freecad_sketch_profile_create", tools)
+        self.assertIn("freecad_geometry_check", tools)
         self.assertNotIn("freecad_part_create_primitive", tools)
         self.assertNotIn("freecad_worker_part_create_primitive", tools)
         self.assertNotIn("freecad_cam_path_create", tools)
@@ -172,11 +174,15 @@ class BuildServerTests(unittest.TestCase):
     def test_tool_module_tags_cover_worker_domain_tools(self) -> None:
         self.assertIn("sketcher", tool_modules("freecad_worker_sketch_profile_create"))
         self.assertIn("headless", tool_modules("freecad_worker_part_create_primitive"))
+        self.assertIn("headless", tool_modules("freecad_geometry_check"))
+        self.assertIn("headless", tool_modules("freecad_worker_geometry_check"))
         self.assertIn("headless", tool_modules("freecad_spreadsheet_create"))
         self.assertIn("headless", tool_modules("freecad_object_expression_set"))
         self.assertIn("gui", tool_modules("freecad_gui_status"))
         self.assertTrue(is_hidden_mcp_tool("freecad_part_create_primitive"))
         self.assertTrue(is_hidden_mcp_tool("freecad_worker_part_create_primitive"))
+        self.assertFalse(is_hidden_mcp_tool("freecad_geometry_check"))
+        self.assertFalse(is_hidden_mcp_tool("freecad_worker_geometry_check"))
         self.assertFalse(is_hidden_mcp_tool("freecad_partdesign_pad"))
         self.assertFalse(is_hidden_mcp_tool("freecad_worker_partdesign_pad"))
 

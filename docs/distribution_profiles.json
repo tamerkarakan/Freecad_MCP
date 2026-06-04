@@ -46,7 +46,7 @@
         }
       },
       "workbench_artifact": null,
-      "tool_count": 20,
+      "tool_count": 21,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -65,6 +65,7 @@
         "freecad_spreadsheet_get",
         "freecad_object_expression_set",
         "freecad_object_expression_list",
+        "freecad_geometry_check",
         "freecad_import_file",
         "freecad_export_file",
         "freecad_supported_formats"
@@ -114,7 +115,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 87,
+      "tool_count": 88,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -133,6 +134,7 @@
         "freecad_spreadsheet_get",
         "freecad_object_expression_set",
         "freecad_object_expression_list",
+        "freecad_geometry_check",
         "freecad_partdesign_body_create",
         "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
@@ -250,7 +252,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 159,
+      "tool_count": 161,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -288,6 +290,7 @@
         "freecad_worker_partdesign_linear_pattern",
         "freecad_worker_partdesign_polar_pattern",
         "freecad_worker_partdesign_mirrored",
+        "freecad_worker_geometry_check",
         "freecad_worker_sketch_create",
         "freecad_worker_sketch_add_geometry",
         "freecad_worker_sketch_add_constraint",
@@ -330,6 +333,7 @@
         "freecad_spreadsheet_get",
         "freecad_object_expression_set",
         "freecad_object_expression_list",
+        "freecad_geometry_check",
         "freecad_partdesign_body_create",
         "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",
@@ -460,7 +464,7 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 162,
+      "tool_count": 164,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
@@ -501,6 +505,7 @@
         "freecad_worker_partdesign_linear_pattern",
         "freecad_worker_partdesign_polar_pattern",
         "freecad_worker_partdesign_mirrored",
+        "freecad_worker_geometry_check",
         "freecad_worker_sketch_create",
         "freecad_worker_sketch_add_geometry",
         "freecad_worker_sketch_add_constraint",
@@ -543,6 +548,7 @@
         "freecad_spreadsheet_get",
         "freecad_object_expression_set",
         "freecad_object_expression_list",
+        "freecad_geometry_check",
         "freecad_partdesign_body_create",
         "freecad_partdesign_datum_plane_create",
         "freecad_partdesign_pad",

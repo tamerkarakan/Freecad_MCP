@@ -93,6 +93,8 @@ def tool_modules(tool_name: str) -> set[str]:
 
     if tool_name.startswith("freecad_document_") or tool_name.startswith("freecad_object_"):
         modules.add("headless")
+    if tool_name.startswith("freecad_geometry_"):
+        modules.add("headless")
     if tool_name.startswith("freecad_spreadsheet_"):
         modules.add("headless")
     if tool_name in {"freecad_import_file", "freecad_export_file"}:
@@ -124,6 +126,8 @@ def tool_modules(tool_name: str) -> set[str]:
     if tool_name.startswith("freecad_worker_assembly_"):
         modules.add("assembly")
     if tool_name.startswith("freecad_worker_part_"):
+        modules.add("headless")
+    if tool_name.startswith("freecad_worker_geometry_"):
         modules.add("headless")
     if tool_name.startswith("freecad_worker_document_") or tool_name.startswith("freecad_worker_object_"):
         modules.add("headless")

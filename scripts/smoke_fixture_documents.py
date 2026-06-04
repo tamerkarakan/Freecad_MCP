@@ -208,7 +208,7 @@ def main() -> int:
             raise RuntimeError(f"fixture object get metadata mismatch: {obj}")
 
         check = assert_ok(
-            service.definition_map()["freecad_part_check_geometry"].handler(
+            service.definition_map()["freecad_geometry_check"].handler(
                 {"document_path": str(fixture_doc), "object_names": ["FixtureFuse", "FixtureSlotSolid"]}
             ),
             "fixture geometry check",

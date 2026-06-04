@@ -755,6 +755,18 @@ class PersistentToolService:
                 "part_check_geometry",
             ),
             self._worker_tool(
+                "freecad_worker_geometry_check",
+                "Worker Check Geometry",
+                "Run visible BRep/shape geometry validity checks inside an in-memory worker document without exposing standalone Part primitive creation tools.",
+                {
+                    "document_id": {"type": "string"},
+                    "object_names": {"type": "array", "items": {"type": "string"}},
+                    "run_bop_check": {"type": "boolean"},
+                },
+                ["document_id"],
+                "part_check_geometry",
+            ),
+            self._worker_tool(
                 "freecad_worker_sketch_create",
                 "Worker Create Sketch",
                 "Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane, planar face, datum, or other support. " + DATUM_USAGE_POLICY,

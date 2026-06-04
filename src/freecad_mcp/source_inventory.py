@@ -431,6 +431,15 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
             "evidence": "MCP clients need deterministic object inspection, expression bindings, and user-visible naming instead of blind command execution.",
         },
         {
+            "family": "freecad.geometry",
+            "priority": "P0",
+            "tools": [
+                "freecad_geometry_check",
+                "freecad_worker_geometry_check",
+            ],
+            "evidence": "BRep/shape validation must remain visible even while standalone Part primitive creation tools are hidden from the advertised MCP surface.",
+        },
+        {
             "family": "freecad.parameters",
             "priority": "P0",
             "tools": [

@@ -358,7 +358,7 @@ def main() -> int:
             raise RuntimeError(f"boolean fuse did not create a single solid: {boolean}")
 
         boolean_check = assert_ok(
-            service.definition_map()["freecad_part_check_geometry"].handler(
+            service.definition_map()["freecad_geometry_check"].handler(
                 {"document_path": str(boolean_doc), "object_names": ["BooleanFuse"], "run_bop_check": True}
             ),
             "boolean geometry check",

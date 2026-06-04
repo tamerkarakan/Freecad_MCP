@@ -3033,6 +3033,51 @@ Create a PartDesign Mirrored transform in an in-memory worker document.
 }
 ```
 
+## `freecad_worker_geometry_check`
+
+Run visible BRep/shape geometry validity checks inside an in-memory worker document without exposing standalone Part primitive creation tools.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Persistent FreeCAD worker session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "document_id": {
+      "type": "string"
+    },
+    "object_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "run_bop_check": {
+      "type": "boolean"
+    },
+    "compact_response": {
+      "type": "boolean",
+      "description": "Return a compact worker response that omits repeated full document object dumps."
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Alias for compact_response on worker tools."
+    }
+  },
+  "required": [
+    "session_id",
+    "document_id"
+  ]
+}
+```
+
 ## `freecad_worker_sketch_create`
 
 Create a Sketcher object inside an in-memory worker document, optionally inside a PartDesign Body attached to XY/XZ/YZ origin plane, planar face, datum, or other support. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
@@ -5585,6 +5630,54 @@ List expression bindings for one or more document objects, including Sketcher di
       "items": {
         "type": "string"
       }
+    },
+    "executable": {
+      "type": "string",
+      "description": "Optional explicit FreeCADCmd path."
+    },
+    "freecad_home": {
+      "type": "string",
+      "description": "Optional portable FreeCAD directory."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 180
+    },
+    "compact_execution": {
+      "type": "boolean",
+      "description": "Return compact execution metadata without stdout/stderr/argv text."
+    },
+    "allow_external_paths": {
+      "type": "boolean",
+      "description": "Allow absolute output paths outside FREECAD_MCP_WORKSPACE_ROOT/server workspace."
+    }
+  },
+  "required": [
+    "document_path"
+  ]
+}
+```
+
+## `freecad_geometry_check`
+
+Run visible BRep/shape geometry validity checks for selected objects without exposing standalone Part primitive creation tools.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "document_path": {
+      "type": "string"
+    },
+    "object_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "run_bop_check": {
+      "type": "boolean"
     },
     "executable": {
       "type": "string",
