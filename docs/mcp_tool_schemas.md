@@ -11262,6 +11262,34 @@ Forget a GUI bridge session without closing FreeCAD GUI.
 }
 ```
 
+## `freecad_gui_watchdog_status`
+
+Report local GUI bridge session health and optionally run a short status heartbeat probe with recovery guidance.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "Attached FreeCAD GUI bridge session id."
+    },
+    "timeout_sec": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "probe": {
+      "type": "boolean",
+      "description": "Run a short live status heartbeat probe before reporting health."
+    }
+  },
+  "required": [
+    "session_id"
+  ]
+}
+```
+
 ## `freecad_gui_status`
 
 Report GUI bridge health, active document, and active view.

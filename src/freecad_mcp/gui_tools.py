@@ -54,6 +54,20 @@ class GuiToolService:
                 input_schema={"type": "object", "properties": dict(SESSION_PROPS), "required": ["session_id"]},
                 handler=self.detach,
             ),
+            ToolDefinition(
+                name="freecad_gui_watchdog_status",
+                title="GUI Bridge Watchdog Status",
+                description="Report local GUI bridge session health and optionally run a short status heartbeat probe with recovery guidance.",
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        **SESSION_PROPS,
+                        "probe": {"type": "boolean", "description": "Run a short live status heartbeat probe before reporting health."},
+                    },
+                    "required": ["session_id"],
+                },
+                handler=self.watchdog_status,
+            ),
             self._gui_tool("freecad_gui_status", "GUI Bridge Status", "Report GUI bridge health, active document, and active view.", {}, [], "status"),
             self._gui_tool("freecad_gui_active_document_get", "Get Active GUI Document", "Return the active GUI document summary.", {}, [], "active_document_get"),
             self._gui_tool(
@@ -315,6 +329,14 @@ class GuiToolService:
     def detach(self, args: JsonObject) -> JsonObject:
         session_id = required_string(args, "session_id")
         return self.manager.detach(session_id)
+
+    def watchdog_status(self, args: JsonObject) -> JsonObject:
+        session_id = required_string(args, "session_id")
+        probe = args.get("probe", False)
+        if not isinstance(probe, bool):
+            raise ToolInputError("probe must be a boolean")
+        timeout_sec = bounded_int(args, "timeout_sec", default=3, minimum=1, maximum=60)
+        return self.manager.watchdog_status(session_id, probe=probe, timeout_sec=timeout_sec)
 
     def _gui_tool(
         self,

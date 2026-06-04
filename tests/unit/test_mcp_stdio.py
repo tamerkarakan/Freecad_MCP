@@ -78,6 +78,7 @@ class BuildServerTests(unittest.TestCase):
 
         self.assertIn("freecad_gui_attach", tools)
         self.assertIn("freecad_gui_document_open", tools)
+        self.assertIn("freecad_gui_watchdog_status", tools)
         self.assertIn("freecad_gui_primitive_create", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_view_orientation_set", tools)

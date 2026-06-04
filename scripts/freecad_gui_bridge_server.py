@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import queue
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -22,11 +23,17 @@ from typing import Any
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 48777
-BRIDGE_API_VERSION = 3
+BRIDGE_API_VERSION = 4
 
 _SERVER: ThreadingHTTPServer | None = None
 _TOKEN: str | None = None
 _GUI_INVOKER: Any | None = None
+_STARTED_AT = time.time()
+_RPC_COUNT = 0
+_IN_FLIGHT = 0
+_LAST_RPC_AT: float | None = None
+_LAST_RPC_METHOD: str | None = None
+_STATS_LOCK = threading.Lock()
 
 
 def qt_core() -> Any:
@@ -68,7 +75,7 @@ def gui_invoker(QtCore: Any) -> Any:
     return _GUI_INVOKER
 
 
-def run_on_gui_thread(func: Any, *args: Any) -> Any:
+def run_on_gui_thread(func: Any, *args: Any, timeout_sec: float = 30) -> Any:
     """Run FreeCADGui calls on the Qt main thread when PySide is available."""
     try:
         QtCore = qt_core()
@@ -81,7 +88,13 @@ def run_on_gui_thread(func: Any, *args: Any) -> Any:
 
     result_queue: queue.Queue = queue.Queue(maxsize=1)
     gui_invoker(QtCore).invoke.emit((func, args, result_queue))
-    ok, result = result_queue.get(timeout=30)
+    try:
+        ok, result = result_queue.get(timeout=max(1.0, float(timeout_sec)))
+    except queue.Empty as exc:
+        raise TimeoutError(
+            "GUI bridge RPC timed out while waiting for the FreeCAD GUI thread. "
+            "The GUI operation may still be running; use MCP status/watchdog, then restart the bridge or FreeCAD if it stays stuck."
+        ) from exc
     if ok:
         return result
     raise result
@@ -957,11 +970,22 @@ def rpc_feature_task_state(params: dict[str, Any]) -> dict[str, Any]:
 def rpc_status(params: dict[str, Any]) -> dict[str, Any]:
     import FreeCAD as App
 
+    with _STATS_LOCK:
+        rpc_count = _RPC_COUNT
+        in_flight = _IN_FLIGHT
+        last_rpc_at = _LAST_RPC_AT
+        last_rpc_method = _LAST_RPC_METHOD
     bridge = {
         "running": _SERVER is not None,
         "token_configured": _TOKEN is not None,
         "api_version": BRIDGE_API_VERSION,
         "methods": sorted(RPC_METHODS) if "RPC_METHODS" in globals() else [],
+        "started_at": _STARTED_AT,
+        "uptime_sec": max(0.0, time.time() - _STARTED_AT),
+        "rpc_count": rpc_count,
+        "in_flight": in_flight,
+        "last_rpc_at": last_rpc_at,
+        "last_rpc_method": last_rpc_method,
     }
     if _SERVER is not None:
         bridge["server_address"] = list(_SERVER.server_address)
@@ -1577,6 +1601,7 @@ RPC_METHODS = {
 
 class BridgeHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
+        global _RPC_COUNT, _IN_FLIGHT, _LAST_RPC_AT, _LAST_RPC_METHOD
         if self.path != "/rpc":
             self.send_json({"ok": False, "error": "unknown path"}, status=404)
             return
@@ -1585,17 +1610,33 @@ class BridgeHandler(BaseHTTPRequestHandler):
             if self.headers.get("Authorization") != expected:
                 self.send_json({"ok": False, "error": "unauthorized"}, status=401)
                 return
+        counted = False
         try:
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length).decode("utf-8"))
             method = payload.get("method")
             params = payload.get("params") or {}
+            try:
+                gui_timeout_sec = max(1.0, float(payload.get("timeout_sec") or params.get("_bridge_timeout_sec") or 30))
+            except Exception:
+                gui_timeout_sec = 30
+            with _STATS_LOCK:
+                _RPC_COUNT += 1
+                _IN_FLIGHT += 1
+                counted = True
+                _LAST_RPC_AT = time.time()
+                _LAST_RPC_METHOD = str(method)
             if method not in RPC_METHODS:
                 raise ValueError("unknown method: " + str(method))
-            result = run_on_gui_thread(RPC_METHODS[method], params)
+            result = run_on_gui_thread(RPC_METHODS[method], params, timeout_sec=gui_timeout_sec)
             self.send_json({"ok": True, "result": result})
         except Exception as exc:
             self.send_json({"ok": False, "error": str(exc)}, status=500)
+        finally:
+            if counted:
+                with _STATS_LOCK:
+                    if _IN_FLIGHT > 0:
+                        _IN_FLIGHT -= 1
 
     def log_message(self, format: str, *args: Any) -> None:
         return

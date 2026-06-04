@@ -39,8 +39,10 @@ class FakeBridgeHandler(BaseHTTPRequestHandler):
             result = {
                 "bridge": {
                     "running": True,
-                    "api_version": 3,
+                    "api_version": 4,
                     "methods": ["active_document_get", "document_open", "status", "view_orientation_set", "visibility_ensure"],
+                    "rpc_count": len(FakeBridgeHandler.requests),
+                    "in_flight": 1,
                 },
                 "active_document": {"name": "Doc"},
             }
@@ -149,12 +151,14 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         selected = manager.call(session_id, "selection_get", {"document_name": "Doc"})
 
-        self.assertEqual(attached["status"]["bridge"]["api_version"], 3)
+        self.assertEqual(attached["status"]["bridge"]["api_version"], 4)
         self.assertIn("document_open", attached["status"]["bridge"]["methods"])
         self.assertEqual(selected["gui"]["count"], 1)
         self.assertEqual(selected["session"]["request_count"], 2)
+        self.assertTrue(selected["session"]["watchdog"]["healthy"])
         self.assertEqual(FakeBridgeHandler.requests[0]["authorization"], "Bearer secret")
         self.assertEqual(FakeBridgeHandler.requests[1]["payload"]["params"]["document_name"], "Doc")
+        self.assertEqual(FakeBridgeHandler.requests[1]["payload"]["timeout_sec"], 10)
 
     def test_manager_reports_unknown_session_and_safe_detach(self) -> None:
         manager = GuiBridgeManager()
@@ -171,6 +175,30 @@ class GuiBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(ToolInputError, "bridge rejected request"):
             client.call(url=self.url, method="fail")
 
+    def test_manager_marks_session_unhealthy_after_call_failure(self) -> None:
+        manager = GuiBridgeManager(GuiBridgeClient())
+
+        attached = manager.attach(url=self.url)
+        session_id = attached["session"]["session_id"]
+        with self.assertRaisesRegex(ToolInputError, "marked unhealthy"):
+            manager.call(session_id, "fail")
+        watchdog = manager.watchdog_status(session_id)
+
+        self.assertFalse(watchdog["ok"])
+        self.assertEqual(watchdog["session"]["watchdog"]["consecutive_failures"], 1)
+        self.assertIn("restart FreeCAD", watchdog["session"]["watchdog"]["recovery"])
+
+    def test_watchdog_probe_refreshes_status(self) -> None:
+        manager = GuiBridgeManager(GuiBridgeClient())
+
+        attached = manager.attach(url=self.url)
+        session_id = attached["session"]["session_id"]
+        probed = manager.watchdog_status(session_id, probe=True, timeout_sec=2)
+
+        self.assertTrue(probed["ok"])
+        self.assertTrue(probed["session"]["watchdog"]["healthy"])
+        self.assertEqual(probed["gui"]["bridge"]["api_version"], 4)
+
     def test_client_reports_stale_bridge_for_unknown_method(self) -> None:
         client = GuiBridgeClient()
 
@@ -185,8 +213,9 @@ class GuiBridgeTests(unittest.TestCase):
         session_id = attached["session"]["session_id"]
         status = tools["freecad_gui_status"].handler({"session_id": session_id})
 
-        self.assertEqual(status["gui"]["bridge"]["api_version"], 3)
+        self.assertEqual(status["gui"]["bridge"]["api_version"], 4)
         self.assertIn("freecad_gui_selection_get", tools)
+        self.assertIn("freecad_gui_watchdog_status", tools)
         self.assertIn("freecad_gui_document_open", tools)
         self.assertIn("freecad_gui_view_snapshot", tools)
         self.assertIn("freecad_gui_view_orientation_set", tools)

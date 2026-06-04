@@ -39,7 +39,8 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 | `freecad_gui_attach` | Connect to an already-running GUI bridge and return GUI session metadata. | No |
 | `freecad_gui_list` | List attached GUI bridge sessions held by this MCP server process. | No |
 | `freecad_gui_detach` | Forget a GUI bridge session without closing FreeCAD GUI. | No |
-| `freecad_gui_status` | Report GUI process, bridge API version/methods, active document, active view type, workbench, and bridge health. | No |
+| `freecad_gui_status` | Report GUI process, bridge API version/methods, active document, active view type, workbench, heartbeat counters, and bridge health. | No |
+| `freecad_gui_watchdog_status` | Report MCP-side GUI session health and optionally run a short live status heartbeat probe with restart guidance. | No |
 | `freecad_gui_active_document_get` | Return active GUI document summary plus matching App document id/name. | No |
 | `freecad_gui_document_open` | Open an existing absolute-path `.FCStd` document in the live GUI, activate it by default, ensure final-object visibility by default, and optionally fit the view. | GUI state/file read only |
 | `freecad_gui_active_view_get` | Return active view type/name/camera snapshot when available. | No |

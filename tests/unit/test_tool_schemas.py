@@ -105,6 +105,7 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_gui_attach",
             "freecad_gui_list",
             "freecad_gui_detach",
+            "freecad_gui_watchdog_status",
             "freecad_gui_status",
             "freecad_gui_active_document_get",
             "freecad_gui_document_open",

@@ -195,4 +195,6 @@ Headless typed CAD tools remain the preferred path for model mutation. GUI attac
 
 If a GUI tool returns `unknown method: ...`, the MCP client is talking to an older bridge script already running inside FreeCAD. Stop and start the **FreeCAD MCP** bridge, or restart FreeCAD. If you use an installed Workbench zip instead of the repo `-M` path, rebuild and reinstall the zip before restarting FreeCAD.
 
+For repeated GUI calls, use `freecad_gui_watchdog_status` when a live session starts timing out or returning errors. Normal GUI tool failures mark the MCP-side session unhealthy; `probe=true` runs a short status heartbeat. If the watchdog probe also fails, stop/start the Workbench bridge or restart FreeCAD GUI, then attach again. Bridge API v4 status includes heartbeat counters such as `rpc_count`, `in_flight`, and the last RPC method.
+
 The full tool schema snapshot is in `docs/mcp_tool_schemas.md`.

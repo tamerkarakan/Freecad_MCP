@@ -61,8 +61,41 @@ class GuiBridgeSession:
     created_at: float = field(default_factory=time.time)
     request_count: int = 0
     last_status: JsonObject | None = None
+    last_ok_at: float | None = None
+    last_error_at: float | None = None
+    last_error: str | None = None
+    last_method: str | None = None
+    last_duration_ms: int | None = None
+    consecutive_failures: int = 0
+
+    def record_success(self, method: str, duration_ms: int, *, status: JsonObject | None = None) -> None:
+        self.request_count += 1
+        self.last_method = method
+        self.last_duration_ms = duration_ms
+        self.last_ok_at = time.time()
+        self.last_error = None
+        self.last_error_at = None
+        self.consecutive_failures = 0
+        if method == "status" and status is not None:
+            self.last_status = status
+
+    def record_failure(self, method: str, duration_ms: int, message: str) -> None:
+        self.request_count += 1
+        self.last_method = method
+        self.last_duration_ms = duration_ms
+        self.last_error_at = time.time()
+        self.last_error = message
+        self.consecutive_failures += 1
+
+    def recovery_guidance(self) -> str:
+        return (
+            "Run freecad_gui_watchdog_status with probe=true to re-check it. "
+            "If the probe also fails, stop/start the FreeCAD MCP Workbench bridge or restart FreeCAD GUI, "
+            "then attach again."
+        )
 
     def to_dict(self) -> JsonObject:
+        healthy = self.consecutive_failures == 0
         return {
             "session_id": self.session_id,
             "mode": "freecad-gui-attach",
@@ -71,6 +104,16 @@ class GuiBridgeSession:
             "created_at": self.created_at,
             "request_count": self.request_count,
             "last_status": self.last_status,
+            "watchdog": {
+                "healthy": healthy,
+                "consecutive_failures": self.consecutive_failures,
+                "last_ok_at": self.last_ok_at,
+                "last_error_at": self.last_error_at,
+                "last_error": self.last_error,
+                "last_method": self.last_method,
+                "last_duration_ms": self.last_duration_ms,
+                "recovery": None if healthy else self.recovery_guidance(),
+            },
         }
 
 
@@ -88,7 +131,7 @@ class GuiBridgeClient:
     ) -> JsonObject:
         started = time.perf_counter()
         endpoint = url.rstrip("/") + "/rpc"
-        body = json.dumps({"method": method, "params": params or {}}, separators=(",", ":")).encode("utf-8")
+        body = json.dumps({"method": method, "params": params or {}, "timeout_sec": timeout_sec}, separators=(",", ":")).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -191,9 +234,9 @@ class GuiBridgeManager:
         session = GuiBridgeSession(session_id=uuid.uuid4().hex[:12], url=url.rstrip("/"), token=token)
         status = None
         if probe:
+            started = time.perf_counter()
             status = self.client.call(url=session.url, token=token, method="status", timeout_sec=timeout_sec)
-            session.last_status = status
-            session.request_count += 1
+            session.record_success("status", int((time.perf_counter() - started) * 1000), status=status)
         self.sessions[session.session_id] = session
         return {"session": session.to_dict(), "status": status}
 
@@ -210,8 +253,42 @@ class GuiBridgeManager:
         session = self.sessions.get(session_id)
         if session is None:
             raise ToolInputError(f"unknown GUI bridge session: {session_id}")
-        result = self.client.call(url=session.url, token=session.token, method=method, params=params, timeout_sec=timeout_sec)
-        session.request_count += 1
-        if method == "status":
-            session.last_status = result
+        started = time.perf_counter()
+        try:
+            result = self.client.call(url=session.url, token=session.token, method=method, params=params, timeout_sec=timeout_sec)
+        except ToolInputError as exc:
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            session.record_failure(method, duration_ms, str(exc))
+            raise ToolInputError(f"{exc}. GUI bridge session marked unhealthy; {session.recovery_guidance()}") from exc
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        session.record_success(method, duration_ms, status=result if method == "status" else None)
         return {"session": session.to_dict(), "gui": result}
+
+    def watchdog_status(self, session_id: str, *, probe: bool = False, timeout_sec: int = 3) -> JsonObject:
+        session = self.sessions.get(session_id)
+        if session is None:
+            raise ToolInputError(f"unknown GUI bridge session: {session_id}")
+        if probe:
+            try:
+                probe_result = self.call(session_id, "status", {}, timeout_sec=timeout_sec)
+                return {
+                    "ok": True,
+                    "probed": True,
+                    "session": probe_result["session"],
+                    "gui": probe_result["gui"],
+                }
+            except ToolInputError as exc:
+                return {
+                    "ok": False,
+                    "probed": True,
+                    "session": session.to_dict(),
+                    "error": str(exc),
+                    "recovery": session.recovery_guidance(),
+                }
+        healthy = session.consecutive_failures == 0
+        return {
+            "ok": healthy,
+            "probed": False,
+            "session": session.to_dict(),
+            "recovery": None if healthy else session.recovery_guidance(),
+        }

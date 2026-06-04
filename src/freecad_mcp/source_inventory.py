@@ -381,6 +381,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_gui_attach",
                 "freecad_gui_list",
                 "freecad_gui_detach",
+                "freecad_gui_watchdog_status",
                 "freecad_gui_status",
                 "freecad_gui_active_document_get",
                 "freecad_gui_document_open",
@@ -401,7 +402,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_gui_body_activate",
                 "freecad_gui_feature_task_state",
             ],
-            "evidence": "GUI attach mode is required for opening generated documents in the live GUI, active view, orientation control, visibility repair, viewport snapshots, preselection, picked points, selected edge/face state, user-visible labels, live Sketcher edit mode, PartDesign Body/Tip activation state, and task-panel observation.",
+            "evidence": "GUI attach mode is required for opening generated documents in the live GUI, active view, orientation control, visibility repair, viewport snapshots, preselection, picked points, selected edge/face state, user-visible labels, live Sketcher edit mode, PartDesign Body/Tip activation state, task-panel observation, and watchdog/heartbeat health reporting for long live-GUI sessions.",
         },
         {
             "family": "freecad.document",
