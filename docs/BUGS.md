@@ -36,6 +36,7 @@
 
 ## Closed
 
+- `freecad_spreadsheet_create` previously wrote bare negative quantity strings such as `-20 mm` directly to Spreadsheet value cells. FreeCAD 1.1.1 stores those as strings (unlike positive `16 mm`, which it auto-parses as `=16 mm`), so downstream Sketcher expressions like `Params.bottom_row_y + (...)` could later fail with `Cannot convert str to Quantity`. Value-cell writes now normalize negative numeric/quantity strings to formula text such as `=-20 mm`, and typed CAD smoke verifies a negative Spreadsheet alias can drive `Placement.Base.x`.
 - Sketcher geometry vector parsing previously assumed every coordinate list had three items, so natural `[x,y]` sketch points returned raw `list index out of range`; process and worker runtime scripts now accept `[x,y]` as `z=0`, with real FreeCAD smoke coverage.
 - `freecad_sketch_profile_create` previously rejected a high-level rectangle loop such as `{"type":"rectangle","origin":[0,0],"width":30,"height":20}` with `profile loop has no segments`; process and worker profile creation now expand safe rectangle/polyline helper loops into ordered line segments before validation.
 - GUI bridge object summaries previously assumed every object `Shape` could expose topology and volume; empty/invalid Sketch shapes in live FreeCAD GUI can raise `shape is invalid`, so GUI shape summaries now guard invalid/null shapes and return bounded counts instead of failing state reads.

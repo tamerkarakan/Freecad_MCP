@@ -455,6 +455,7 @@ def expression_summary(obj):
 
 CELL_RE = re.compile(r"^[A-Z]{1,3}[1-9][0-9]*$")
 ALIAS_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+NEGATIVE_NUMERIC_TEXT_RE = re.compile(r"^-\s*(?:\d+(?:\.\d*)?|\.\d+)(?:\s*[A-Za-z_][A-Za-z0-9_*/^.-]*)?$")
 
 
 def normalize_cell(value):
@@ -480,18 +481,21 @@ def normalize_alias(value):
     return alias
 
 
-def spreadsheet_value_text(value):
+def spreadsheet_value_text(value, *, coerce_negative_numeric=False):
     if value is None:
         return ""
     if isinstance(value, dict):
         if "quantity" in value:
-            return str(value["quantity"])
+            return spreadsheet_value_text(value["quantity"], coerce_negative_numeric=True)
         if "formula" in value:
             formula = str(value["formula"])
             return formula if formula.startswith("=") else "=" + formula
         if "value" in value:
-            return spreadsheet_value_text(value["value"])
-    return str(value)
+            return spreadsheet_value_text(value["value"], coerce_negative_numeric=coerce_negative_numeric)
+    text = str(value).strip()
+    if coerce_negative_numeric and text and not text.startswith(("=", "'")) and NEGATIVE_NUMERIC_TEXT_RE.match(text):
+        return "=" + text
+    return text
 
 
 def get_spreadsheet(doc, sheet_name):
@@ -1587,18 +1591,21 @@ def action_spreadsheet_create(args):
             label_cell = normalize_cell(row.get("label_cell") or (label_column + str(row_number)))
             value_cell = normalize_cell(row.get("value_cell") or row.get("cell") or (value_column + str(row_number)))
             if "label" in row:
-                sheet.set(label_cell, spreadsheet_value_text(row.get("label")))
-                changed.append({"cell": label_cell, "value": spreadsheet_value_text(row.get("label"))})
-            sheet.set(value_cell, spreadsheet_value_text(row.get("value")))
-            changed.append({"cell": value_cell, "value": spreadsheet_value_text(row.get("value"))})
+                label_text = spreadsheet_value_text(row.get("label"))
+                sheet.set(label_cell, label_text)
+                changed.append({"cell": label_cell, "value": label_text})
+            value_text = spreadsheet_value_text(row.get("value"), coerce_negative_numeric=True)
+            sheet.set(value_cell, value_text)
+            changed.append({"cell": value_cell, "value": value_text})
             alias = normalize_alias(row.get("alias"))
             if alias:
                 sheet.setAlias(value_cell, alias)
                 aliases[alias] = value_cell
         for cell_spec in args.get("cells") or []:
             cell = normalize_cell(cell_spec.get("cell"))
-            sheet.set(cell, spreadsheet_value_text(cell_spec.get("value")))
-            changed.append({"cell": cell, "value": spreadsheet_value_text(cell_spec.get("value"))})
+            value_text = spreadsheet_value_text(cell_spec.get("value"), coerce_negative_numeric=True)
+            sheet.set(cell, value_text)
+            changed.append({"cell": cell, "value": value_text})
             alias = normalize_alias(cell_spec.get("alias"))
             if alias:
                 sheet.setAlias(cell, alias)

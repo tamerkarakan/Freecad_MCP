@@ -186,7 +186,10 @@ def main() -> int:
                 {
                     "document_path": str(document),
                     "sheet_name": "params",
-                    "rows": [{"label": "box_length", "value": 6.0, "alias": "box_length"}],
+                    "rows": [
+                        {"label": "box_length", "value": 6.0, "alias": "box_length"},
+                        {"label": "box_offset", "value": "-2 mm", "alias": "box_offset"},
+                    ],
                     "output_path": str(document),
                     "overwrite": True,
                 }
@@ -200,7 +203,10 @@ def main() -> int:
                 {
                     "document_path": str(document),
                     "object_name": "Box",
-                    "expressions": {"Length": "params.box_length"},
+                    "expressions": {
+                        "Length": "params.box_length",
+                        "Placement.Base.x": "params.box_offset",
+                    },
                     "output_path": str(document),
                     "overwrite": True,
                 }
@@ -210,6 +216,8 @@ def main() -> int:
         box_bound = box_expression["object"]["shape"]["bound_box"]
         if box_bound["xmax"] - box_bound["xmin"] != 6.0:
             raise RuntimeError(f"box expression did not drive Length: {box_expression}")
+        if box_expression["object"]["placement"]["base"][0] != -2.0:
+            raise RuntimeError(f"negative spreadsheet quantity did not drive Placement.Base.x: {box_expression}")
         box_expressions = {
             item["path"]: item["expression"]
             for item in box_expression["after"]
