@@ -131,9 +131,11 @@ def main() -> int:
         semantic_rectangle_doc = temp / "semantic_rectangle.FCStd"
         profile_builder_doc = temp / "profile_builder.FCStd"
         parametric_builder_doc = temp / "parametric_builder.FCStd"
+        hex_parametric_builder_doc = temp / "hex_parametric_builder.FCStd"
         partdesign_doc = temp / "partdesign.FCStd"
         slot_pad_doc = temp / "slot_pad.FCStd"
         keyhole_pocket_doc = temp / "keyhole_pocket.FCStd"
+        keyhole_recipe_doc = temp / "keyhole_recipe.FCStd"
         auto_sketch_doc = temp / "auto_sketch.FCStd"
         transform_sketch_doc = temp / "transform_sketch.FCStd"
         dimension_sketch_doc = temp / "dimension_sketch.FCStd"
@@ -650,6 +652,48 @@ def main() -> int:
         }
         if feature_expression_paths.get("Length") != "Params.depth":
             raise RuntimeError(f"parametric builder did not bind Pad Length expression: {parametric_profile}")
+
+        hex_parametric_profile = service.definition_map()["freecad_partdesign_parametric_profile_feature_create"].handler(
+            {
+                "document_name": "HexParametricBuilderSmoke",
+                "body_name": "Body",
+                "sketch_name": "HexParametricProfileSketch",
+                "feature_kind": "pad",
+                "feature_name": "HexParametricPad",
+                "sheet_name": "Params",
+                "spreadsheet_rows": [
+                    {"label": "socket_across_flats", "value": 6.928203230275509, "alias": "socket_across_flats", "unit": "mm"},
+                    {"label": "depth", "value": 2, "alias": "depth", "unit": "mm"},
+                ],
+                "require_units": True,
+                "loops": [
+                    {
+                        "name": "socket",
+                        "type": "hexagon",
+                        "center": [0, 0],
+                        "radius": 4,
+                        "across_flats_expression": "Params.socket_across_flats",
+                    }
+                ],
+                "constraint_policy": "semantic",
+                "require_fully_constrained": True,
+                "length": 2,
+                "feature_length_expression": "Params.depth",
+                "output_path": str(hex_parametric_builder_doc),
+                "overwrite": True,
+            }
+        )
+        hex_payload = hex_parametric_profile["freecad"]
+        if not hex_payload.get("ok"):
+            raise RuntimeError(f"hex parametric builder failed: {hex_parametric_profile}")
+        hex_workflow = hex_parametric_profile["workflow"]
+        if not hex_workflow["final_validation"] or hex_workflow["final_validation"]["degrees_of_freedom"] != 0:
+            raise RuntimeError(f"hex parametric builder did not reach DoF=0: {hex_parametric_profile}")
+        hex_binding_roles = {item.get("role") for item in hex_workflow["constraints"]["bindings"]}
+        if "radius" not in hex_binding_roles:
+            raise RuntimeError(f"hex parametric builder did not auto-bind radius: {hex_parametric_profile}")
+        if hex_payload["object"]["shape"]["solids"] != 1:
+            raise RuntimeError(f"hex parametric builder final feature is not a solid: {hex_parametric_profile}")
 
         open_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
@@ -1375,6 +1419,59 @@ def main() -> int:
         )
         if keyhole_pocket["pocket"]["shape"]["solids"] != 1 or keyhole_pocket["body"]["partdesign"]["tip"] != "KeyholePocket":
             raise RuntimeError(f"keyhole Pocket did not preserve a body solid: {keyhole_pocket}")
+
+        assert_ok(
+            service.definition_map()["freecad_partdesign_profile_feature_create"].handler(
+                {
+                    "document_name": "KeyholeRecipeSmoke",
+                    "body_name": "KeyholeRecipeBody",
+                    "sketch_name": "KeyholeRecipeBaseSketch",
+                    "feature_kind": "pad",
+                    "feature_name": "KeyholeRecipeBasePad",
+                    "loops": [{"type": "rectangle", "origin": [0, 0, 0], "width": 12, "height": 8}],
+                    "lock_mode": "block",
+                    "require_fully_constrained": True,
+                    "length": 4,
+                    "output_path": str(keyhole_recipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "keyhole recipe base pad",
+        )
+        keyhole_recipe_pocket = assert_ok(
+            service.definition_map()["freecad_partdesign_profile_feature_create"].handler(
+                {
+                    "document_path": str(keyhole_recipe_doc),
+                    "body_name": "KeyholeRecipeBody",
+                    "sketch_name": "KeyholeRecipeSketch",
+                    "feature_kind": "pocket",
+                    "feature_name": "KeyholeRecipePocket",
+                    "loops": [
+                        {
+                            "name": "hanger",
+                            "type": "keyhole",
+                            "circle_center": [3, 4, 0],
+                            "circle_radius": 1.2,
+                            "slot_end": [7, 4, 0],
+                            "slot_radius": 0.4,
+                            "constraint_policy": "semantic",
+                            "circle_radius_expression": "1.2 mm",
+                            "slot_radius_expression": "0.4 mm",
+                        }
+                    ],
+                    "required_curve_types": ["arc"],
+                    "minimum_curve_segments": 2,
+                    "forbid_all_line_loops": True,
+                    "length": 2,
+                    "output_path": str(keyhole_recipe_doc),
+                    "overwrite": True,
+                }
+            ),
+            "keyhole profile-feature recipe pocket",
+        )
+        if keyhole_recipe_pocket["pocket"]["shape"]["solids"] != 1 or keyhole_recipe_pocket["body"]["partdesign"]["tip"] != "KeyholeRecipePocket":
+            raise RuntimeError(f"keyhole profile-feature recipe did not preserve a body solid: {keyhole_recipe_pocket}")
+
         hole_sketch = assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
                 {

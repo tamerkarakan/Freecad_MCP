@@ -355,7 +355,7 @@ class PartDesignCadToolService(CadDomainToolService):
             ToolDefinition(
                 "freecad_partdesign_profile_feature_create",
                 "Create PartDesign Profile Feature Recipe",
-                "High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
+                "High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
                 {"type": "object", "properties": {**PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
                 self.profile_feature_create,
             ),
@@ -365,7 +365,8 @@ class PartDesignCadToolService(CadDomainToolService):
                 (
                     "Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving "
                     "dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. "
-                    "Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric."
+                    "Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric. "
+                    "With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii."
                 ),
                 {"type": "object", "properties": {**PARAMETRIC_PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
                 self.parametric_profile_feature_create,

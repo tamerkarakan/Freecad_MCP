@@ -3016,6 +3016,16 @@ PROFILE_RECTANGLE_TYPES = {
     "rectangle_three_points",
 }
 
+NAMED_POLYGON_SIDES = {
+    "triangle": 3,
+    "equilateral_triangle": 3,
+    "square": 4,
+    "pentagon": 5,
+    "hexagon": 6,
+    "heptagon": 7,
+    "octagon": 8,
+}
+
 
 def line_segments_from_points(points, *, closed=True):
     segments = []
@@ -3058,6 +3068,133 @@ def rectangle_loop_points(loop):
     return [c1, App.Vector(c2.x, c1.y, c1.z), c2, App.Vector(c1.x, c2.y, c1.z)]
 
 
+def regular_polygon_loop_info(loop):
+    kind = str(loop.get("type") or "").lower()
+    if kind in NAMED_POLYGON_SIDES:
+        sides = NAMED_POLYGON_SIDES[kind]
+    else:
+        sides = int(loop["sides"])
+    if sides < 3:
+        raise ValueError("regular_polygon requires sides >= 3")
+    center = vector(loop.get("center"), [0, 0, 0])
+    corner_value = None
+    for corner_key in ("corner", "first_corner", "firstCornerPoint", "first_corner_point", "corner_point"):
+        if loop.get(corner_key) is not None:
+            corner_value = loop[corner_key]
+            break
+    if corner_value is not None:
+        first_corner = vector(corner_value)
+        diff = App.Vector(first_corner.x - center.x, first_corner.y - center.y, 0)
+        radius = float(diff.Length)
+        if radius <= 1e-12:
+            raise ValueError("regular_polygon requires distinct center and corner")
+    else:
+        radius = float(loop["radius"])
+        if radius <= 1e-12:
+            raise ValueError("regular_polygon requires radius > 0")
+        start = angle_radians(loop.get("start_angle"), 0.0)
+        diff = App.Vector(radius * math.cos(start), radius * math.sin(start), 0)
+    points = [
+        App.Vector(
+            center.x + math.cos(2 * math.pi * idx / sides) * diff.x - math.sin(2 * math.pi * idx / sides) * diff.y,
+            center.y + math.cos(2 * math.pi * idx / sides) * diff.y + math.sin(2 * math.pi * idx / sides) * diff.x,
+            center.z,
+        )
+        for idx in range(sides)
+    ]
+    return {"sides": sides, "center": center, "radius": radius, "points": points}
+
+
+def slot_loop_segments(loop):
+    radius = float(loop["radius"])
+    kind = str(loop.get("type") or "").lower()
+    if kind in {"slot_start_end_radius", "slot_2_point", "slot_two_points"} or loop.get("start"):
+        left = vector(loop.get("start") or loop.get("point1"))
+        right = vector(loop.get("end") or loop.get("point2"))
+    else:
+        center = vector(loop.get("center"), [0, 0, 0])
+        length = float(loop["length"])
+        left = App.Vector(center.x - length / 2, center.y, center.z)
+        right = App.Vector(center.x + length / 2, center.y, center.z)
+    axis = right - left
+    axis_length = float(axis.Length)
+    if axis_length <= 1e-12:
+        raise ValueError("slot requires distinct start and end centers")
+    unit = App.Vector(axis.x / axis_length, axis.y / axis_length, axis.z / axis_length)
+    normal = App.Vector(-unit.y, unit.x, 0)
+    top_left = left + normal * radius
+    top_right = right + normal * radius
+    bottom_right = right - normal * radius
+    bottom_left = left - normal * radius
+    return [
+        {"type": "line", "start": point_list(top_left), "end": point_list(top_right)},
+        {"type": "arc_3_point", "start": point_list(top_right), "mid": point_list(right + unit * radius), "end": point_list(bottom_right)},
+        {"type": "line", "start": point_list(bottom_right), "end": point_list(bottom_left)},
+        {"type": "arc_3_point", "start": point_list(bottom_left), "mid": point_list(left - unit * radius), "end": point_list(top_left)},
+    ]
+
+
+def keyhole_loop_info(loop):
+    center = vector(loop.get("circle_center") or loop.get("center"), [0, 0, 0])
+    circle_radius = float(loop.get("circle_radius", loop.get("head_radius", loop.get("radius"))))
+    if loop.get("slot_radius") is not None:
+        slot_radius = float(loop["slot_radius"])
+    elif loop.get("neck_radius") is not None:
+        slot_radius = float(loop["neck_radius"])
+    elif loop.get("slot_width") is not None:
+        slot_radius = float(loop["slot_width"]) / 2.0
+    elif loop.get("width") is not None:
+        slot_radius = float(loop["width"]) / 2.0
+    else:
+        raise ValueError("keyhole requires slot_radius or slot_width")
+    slot_end = vector(loop.get("slot_end") or loop.get("end"))
+    axis = App.Vector(slot_end.x - center.x, slot_end.y - center.y, 0)
+    axis_length = float(axis.Length)
+    if circle_radius <= 0:
+        raise ValueError("keyhole requires circle_radius > 0")
+    if slot_radius <= 0 or slot_radius >= circle_radius:
+        raise ValueError("keyhole requires 0 < slot_radius < circle_radius")
+    if axis_length <= 1e-12:
+        raise ValueError("keyhole requires distinct circle_center and slot_end")
+    unit = App.Vector(axis.x / axis_length, axis.y / axis_length, 0)
+    normal = App.Vector(-unit.y, unit.x, 0)
+    transition = math.sqrt(max(circle_radius * circle_radius - slot_radius * slot_radius, 0.0))
+    if axis_length <= transition + 1e-9:
+        raise ValueError("keyhole slot_end must extend beyond the circle/slot transition")
+    return {
+        "center": center,
+        "circle_radius": circle_radius,
+        "slot_radius": slot_radius,
+        "slot_end": slot_end,
+        "unit": unit,
+        "normal": normal,
+        "transition": transition,
+    }
+
+
+def keyhole_loop_segments(loop):
+    info = keyhole_loop_info(loop)
+    center = info["center"]
+    circle_radius = info["circle_radius"]
+    slot_radius = info["slot_radius"]
+    slot_end = info["slot_end"]
+    unit = info["unit"]
+    normal = info["normal"]
+    transition = info["transition"]
+    top_near = center + unit * transition + normal * slot_radius
+    bottom_near = center + unit * transition - normal * slot_radius
+    top_far = slot_end + normal * slot_radius
+    bottom_far = slot_end - normal * slot_radius
+    far_mid = slot_end + unit * slot_radius
+    circle_mid = center - unit * circle_radius
+    return [
+        {"type": "line", "start": point_list(top_near), "end": point_list(top_far)},
+        {"type": "arc_3_point", "start": point_list(top_far), "mid": point_list(far_mid), "end": point_list(bottom_far)},
+        {"type": "line", "start": point_list(bottom_far), "end": point_list(bottom_near)},
+        {"type": "arc_3_point", "start": point_list(bottom_near), "mid": point_list(circle_mid), "end": point_list(top_near)},
+    ]
+
+
 def profile_loop_segments(loop):
     segments = loop.get("segments") or loop.get("geometry") or []
     if segments:
@@ -3067,6 +3204,22 @@ def profile_loop_segments(loop):
         return line_segments_from_points(rectangle_loop_points(loop), closed=True)
     if kind == "polyline" and loop.get("points"):
         return line_segments_from_points([vector(point) for point in loop["points"]], closed=bool(loop.get("closed", True)))
+    if kind in NAMED_POLYGON_SIDES or kind == "regular_polygon":
+        return line_segments_from_points(regular_polygon_loop_info(loop)["points"], closed=True)
+    if kind in {"circle", "circle_profile"}:
+        center = vector(loop.get("center"), [0, 0, 0])
+        return [
+            {
+                "type": "circle",
+                "center": point_list(center),
+                "normal": loop.get("normal", [0, 0, 1]),
+                "radius": float(loop["radius"]),
+            }
+        ]
+    if kind in {"slot", "slot_center_length_radius", "slot_start_end_radius", "slot_2_point", "slot_two_points"}:
+        return slot_loop_segments(loop)
+    if kind in {"keyhole", "circle_slot_union", "slot_circle_union"}:
+        return keyhole_loop_segments(loop)
     return []
 
 
@@ -3202,6 +3355,237 @@ def add_rectangle_semantic_constraints(sketch, loop, params, *, loop_name, added
     return semantic
 
 
+def transformed_expression(expression, transform):
+    if expression is None or str(expression).strip() == "":
+        return None
+    text = str(expression)
+    if transform == "diameter_to_radius":
+        return "(" + text + ") / 2"
+    if transform == "hex_across_flats_to_radius":
+        return "(" + text + ") / sqrt(3)"
+    return text
+
+
+def loop_expression(loop, keys):
+    for key, transform in keys:
+        if loop.get(key) is not None:
+            return transformed_expression(loop.get(key), transform)
+    return None
+
+
+def add_regular_polygon_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    import Part
+    import Sketcher
+
+    policy = profile_constraint_policy(loop, params)
+    if policy == "none":
+        return []
+    kind = str(loop.get("type") or "").lower()
+    if kind not in NAMED_POLYGON_SIDES and kind != "regular_polygon":
+        return []
+    info = regular_polygon_loop_info(loop)
+    sides = int(info["sides"])
+    line_indices = list(added[:sides])
+    if len(line_indices) < sides:
+        return []
+
+    semantic = []
+    if bool(loop.get("equal_edges", True)):
+        for idx in range(1, len(line_indices)):
+            _, report = add_semantic_constraint(
+                sketch,
+                Sketcher.Constraint("Equal", line_indices[0], line_indices[idx]),
+                role="equal_edge_" + str(idx),
+                loop=loop,
+                loop_name=loop_name,
+            )
+            semantic.append(report)
+
+    expression_keys = [
+        ("radius_expression", None),
+        ("corner_radius_expression", None),
+        ("diameter_expression", "diameter_to_radius"),
+    ]
+    if sides == 6:
+        expression_keys.append(("across_flats_expression", "hex_across_flats_to_radius"))
+    radius_expression = loop_expression(loop, expression_keys)
+    need_circle = bool(loop.get("construction_circle", True)) or policy == "semantic" or radius_expression is not None
+    circle_idx = None
+    if need_circle:
+        circle_idx = sketch.addGeometry(Part.Circle(info["center"], vector(loop.get("normal"), [0, 0, 1]), float(info["radius"])), True)
+        added.append(circle_idx)
+        if bool(loop.get("point_on_circle", True)):
+            for line_idx in line_indices:
+                _, report = add_semantic_constraint(
+                    sketch,
+                    Sketcher.Constraint("PointOnObject", line_idx, 2, circle_idx),
+                    role="vertex_on_circle",
+                    loop=loop,
+                    loop_name=loop_name,
+                )
+                semantic.append(report)
+
+    if policy == "semantic":
+        if circle_idx is None:
+            circle_idx = sketch.addGeometry(Part.Circle(info["center"], vector(loop.get("normal"), [0, 0, 1]), float(info["radius"])), True)
+            added.append(circle_idx)
+        _, report = add_semantic_constraint(
+            sketch,
+            Sketcher.Constraint("Radius", circle_idx, float(info["radius"])),
+            role="radius",
+            loop=loop,
+            loop_name=loop_name,
+            expression=radius_expression,
+        )
+        semantic.append(report)
+
+        anchor_default = loop.get("center") is not None
+        anchor = bool(loop.get("anchor", params.get("anchor", anchor_default)))
+        if anchor:
+            center = info["center"]
+            for role, expression, constraint in (
+                ("center_x", loop.get("center_x_expression"), Sketcher.Constraint("DistanceX", circle_idx, 3, -2, 1, -float(center.x))),
+                ("center_y", loop.get("center_y_expression"), Sketcher.Constraint("DistanceY", circle_idx, 3, -1, 1, -float(center.y))),
+            ):
+                _, report = add_semantic_constraint(
+                    sketch,
+                    constraint,
+                    role=role,
+                    loop=loop,
+                    loop_name=loop_name,
+                    expression=expression,
+                )
+                semantic.append(report)
+
+        if bool(loop.get("fix_orientation", True)) and line_indices:
+            p0 = info["points"][0]
+            p1 = info["points"][1]
+            edge_angle = math.atan2(float(p1.y - p0.y), float(p1.x - p0.x))
+            _, report = add_semantic_constraint(
+                sketch,
+                Sketcher.Constraint("Angle", line_indices[0], edge_angle),
+                role="orientation",
+                loop=loop,
+                loop_name=loop_name,
+                expression=loop.get("orientation_expression") or loop.get("angle_expression"),
+            )
+            semantic.append(report)
+
+    return semantic
+
+
+def add_circle_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    import Sketcher
+
+    policy = profile_constraint_policy(loop, params)
+    if policy == "none":
+        return []
+    kind = str(loop.get("type") or "").lower()
+    if kind not in {"circle", "circle_profile"} or not added:
+        return []
+    radius = float(loop["radius"])
+    expression = loop_expression(
+        loop,
+        [
+            ("radius_expression", None),
+            ("diameter_expression", "diameter_to_radius"),
+        ],
+    )
+    semantic = []
+    _, report = add_semantic_constraint(
+        sketch,
+        Sketcher.Constraint("Radius", added[0], radius),
+        role="radius",
+        loop=loop,
+        loop_name=loop_name,
+        expression=expression if policy == "semantic" else None,
+    )
+    semantic.append(report)
+    if policy == "semantic" and (loop.get("center") is not None or bool(loop.get("anchor", False))):
+        center = vector(loop.get("center"), [0, 0, 0])
+        for role, expression, constraint in (
+            ("center_x", loop.get("center_x_expression"), Sketcher.Constraint("DistanceX", added[0], 3, -2, 1, -float(center.x))),
+            ("center_y", loop.get("center_y_expression"), Sketcher.Constraint("DistanceY", added[0], 3, -1, 1, -float(center.y))),
+        ):
+            _, report = add_semantic_constraint(
+                sketch,
+                constraint,
+                role=role,
+                loop=loop,
+                loop_name=loop_name,
+                expression=expression,
+            )
+            semantic.append(report)
+    return semantic
+
+
+def add_slot_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    import Sketcher
+
+    policy = profile_constraint_policy(loop, params)
+    if policy == "none":
+        return []
+    kind = str(loop.get("type") or "").lower()
+    if kind not in {"slot", "slot_center_length_radius", "slot_start_end_radius", "slot_2_point", "slot_two_points"} or len(added) < 4:
+        return []
+    radius = float(loop["radius"])
+    expression = loop_expression(loop, [("radius_expression", None), ("slot_radius_expression", None), ("slot_width_expression", "diameter_to_radius")])
+    semantic = []
+    for role, geometry_index in (("slot_radius_1", added[1]), ("slot_radius_2", added[3])):
+        _, report = add_semantic_constraint(
+            sketch,
+            Sketcher.Constraint("Radius", geometry_index, radius),
+            role=role,
+            loop=loop,
+            loop_name=loop_name,
+            expression=expression if policy == "semantic" and role == "slot_radius_1" else None,
+        )
+        semantic.append(report)
+    return semantic
+
+
+def add_keyhole_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    import Sketcher
+
+    policy = profile_constraint_policy(loop, params)
+    if policy == "none":
+        return []
+    kind = str(loop.get("type") or "").lower()
+    if kind not in {"keyhole", "circle_slot_union", "slot_circle_union"} or len(added) < 4:
+        return []
+    info = keyhole_loop_info(loop)
+    slot_expression = loop_expression(loop, [("slot_radius_expression", None), ("neck_radius_expression", None), ("slot_width_expression", "diameter_to_radius")])
+    circle_expression = loop_expression(loop, [("circle_radius_expression", None), ("head_radius_expression", None), ("radius_expression", None), ("circle_diameter_expression", "diameter_to_radius")])
+    semantic = []
+    for role, geometry_index, radius, expression in (
+        ("slot_radius", added[1], float(info["slot_radius"]), slot_expression),
+        ("circle_radius", added[3], float(info["circle_radius"]), circle_expression),
+    ):
+        _, report = add_semantic_constraint(
+            sketch,
+            Sketcher.Constraint("Radius", geometry_index, radius),
+            role=role,
+            loop=loop,
+            loop_name=loop_name,
+            expression=expression if policy == "semantic" else None,
+        )
+        semantic.append(report)
+    return semantic
+
+
+def add_profile_helper_semantic_constraints(sketch, loop, params, *, loop_name, added):
+    semantic = []
+    for helper in (
+        add_rectangle_semantic_constraints,
+        add_regular_polygon_semantic_constraints,
+        add_circle_semantic_constraints,
+        add_slot_semantic_constraints,
+        add_keyhole_semantic_constraints,
+    ):
+        semantic.extend(helper(sketch, loop, params, loop_name=loop_name, added=added))
+    return semantic
+
+
 def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_tolerance):
     import Sketcher
 
@@ -3247,7 +3631,7 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
         for index in range(len(added) - 1):
             constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[index], 2, added[index + 1], 1)))
         constraint_indices.append(sketch.addConstraint(Sketcher.Constraint("Coincident", added[-1], 2, added[0], 1)))
-    semantic_constraints = add_rectangle_semantic_constraints(sketch, loop, params, loop_name=name, added=added)
+    semantic_constraints = add_profile_helper_semantic_constraints(sketch, loop, params, loop_name=name, added=added)
     constraint_indices.extend([item["index"] for item in semantic_constraints])
     return {
         "name": name,

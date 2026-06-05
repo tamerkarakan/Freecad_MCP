@@ -193,6 +193,29 @@ def smoke_worker_sketch_input_ergonomics(service: PersistentToolService) -> None
             if role not in semantic_roles:
                 raise RuntimeError(f"worker semantic rectangle missing {role} constraint: {worker_semantic_rectangle}")
 
+        worker_semantic_hexagon = worker_result(
+            service.definition_map()["freecad_worker_sketch_profile_create"].handler(
+                {
+                    "session_id": session_id,
+                    "document_id": document_id,
+                    "sketch_name": "WorkerSemanticHexagon",
+                    "loops": [{"name": "socket", "type": "hexagon", "center": [0, 30], "radius": 4}],
+                    "constraint_policy": "semantic",
+                    "require_fully_constrained": True,
+                    "timeout_sec": 30,
+                }
+            ),
+            "worker_semantic_hexagon_profile_create",
+        )
+        hex_roles = {item["role"] for item in worker_semantic_hexagon["loops"][0].get("semantic_constraints", [])}
+        if worker_semantic_hexagon["validation"]["degrees_of_freedom"] != 0 or worker_semantic_hexagon["validation"]["block_constraints"]:
+            raise RuntimeError(f"worker semantic hexagon did not fully constrain without Block: {worker_semantic_hexagon}")
+        for role in ("radius", "center_x", "center_y", "orientation"):
+            if role not in hex_roles:
+                raise RuntimeError(f"worker semantic hexagon missing {role} constraint: {worker_semantic_hexagon}")
+        if len(worker_semantic_hexagon["loops"][0]["added_indices"]) != 7:
+            raise RuntimeError(f"worker semantic hexagon did not include construction circle: {worker_semantic_hexagon}")
+
         closed = worker_result(
             service.definition_map()["freecad_worker_document_close"].handler(
                 {"session_id": session_id, "document_id": document_id, "timeout_sec": 30}

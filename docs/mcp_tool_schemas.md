@@ -8063,7 +8063,7 @@ Create a PartDesign Mirrored transform from selected Body features or the whole 
 
 ## `freecad_partdesign_profile_feature_create`
 
-High-level recipe that creates a Body-attached pad-ready Sketcher profile, validates it, then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
+High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -8312,7 +8312,7 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile, valid
 
 ## `freecad_partdesign_parametric_profile_feature_create`
 
-Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric.
+Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric. With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii.
 
 ```json
 {
@@ -9161,7 +9161,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
 
 ```json
 {
