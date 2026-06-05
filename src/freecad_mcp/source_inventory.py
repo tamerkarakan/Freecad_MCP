@@ -487,7 +487,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_partdesign_parametric_profile_feature_create",
                 "freecad_partdesign_sweep_feature_create",
             ],
-            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body Origin, planar face/subelement, or datum/support attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence and the compact Spreadsheet + named-constraint parametric sequence for agents that do not know the GUI workflow.",
+            "evidence": f"PartDesign module exposes {counts.get('PartDesign', 0)} scanned commands and requires Body Origin, planar face/subelement, or datum/support attachment for Pad/Pocket/Hole/Revolution/Groove/Loft/Pipe/Dress-up/Pattern/Mirror workflows; recipe tools encode the Body-attached profile/sweep sequence and the compact Spreadsheet + named-constraint parametric sequence for agents that do not know the GUI workflow, and steer known cuts/protrusions toward helper loops such as keyhole/slot/regular_polygon instead of loose overlapping primitive profiles.",
         },
         {
             "family": "freecad.sketcher",
@@ -509,7 +509,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_sketch_auto_constrain",
                 "freecad_sketch_validate",
             ],
-            "evidence": f"Sketcher module exposes {counts.get('Sketcher', 0)} scanned commands.",
+            "evidence": f"Sketcher module exposes {counts.get('Sketcher', 0)} scanned commands. The typed Sketcher contract is primitive geometry plus explicit constraints plus validation: use profile helpers for known intents, semantic named dimensions for parametric sketches, trim for repair/editing, and profile validation before Pad/Pocket-style features.",
         },
         {
             "family": "freecad.mesh",

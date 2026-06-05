@@ -3169,7 +3169,7 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
 
 ## `freecad_worker_sketch_add_geometry`
 
-Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z].
+Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true.
 
 ```json
 {
@@ -3241,7 +3241,7 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
 
 ## `freecad_worker_sketch_add_constraint`
 
-Add typed constraints to a worker Sketcher object.
+Add typed constraints to a worker Sketcher object. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -3301,7 +3301,7 @@ Add typed constraints to a worker Sketcher object.
 
 ## `freecad_worker_sketch_add_profile`
 
-Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.
+Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.
 
 ```json
 {
@@ -3358,7 +3358,7 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -3532,7 +3532,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_worker_sketch_profile_validate`
 
-Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent.
+Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.
 
 ```json
 {
@@ -3935,7 +3935,7 @@ Delete, rename, set datum, toggle driving/active/virtual, and validate constrain
 
 ## `freecad_worker_sketch_transform`
 
-Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits.
+Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
 
 ```json
 {
@@ -8063,7 +8063,7 @@ Create a PartDesign Mirrored transform from selected Body features or the whole 
 
 ## `freecad_partdesign_profile_feature_create`
 
-High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
+High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Use this instead of making loose overlapping primitives when the requested shape has a known helper intent. Pocket and Groove require document_path with an existing Body solid. For complex cuts/protrusions, treat a Sketcher profile as primitive geometry plus explicit constraints plus validation. Prefer helper/recipe loops for known CAD intents such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not create separate overlapping circle + rectangle/slot profiles and hope Pocket resolves the union. Trim is an edit/repair operation, not the primary construction path for new parametric profiles. For user-editable parametric work, use constraint_policy='semantic', named driving dimensions, Spreadsheet expression bindings, and require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
 
 ```json
 {
@@ -8119,7 +8119,8 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile from o
       "type": "array",
       "items": {
         "type": "object"
-      }
+      },
+      "description": "Ordered profile loops or helper loops. Prefer helper intents such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole over overlapping primitive profiles."
     },
     "lock_mode": {
       "type": "string",
@@ -8312,7 +8313,7 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile from o
 
 ## `freecad_partdesign_parametric_profile_feature_create`
 
-Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric. With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii.
+Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric. With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii. For complex cuts/protrusions, treat a Sketcher profile as primitive geometry plus explicit constraints plus validation. Prefer helper/recipe loops for known CAD intents such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not create separate overlapping circle + rectangle/slot profiles and hope Pocket resolves the union. Trim is an edit/repair operation, not the primary construction path for new parametric profiles. For user-editable parametric work, use constraint_policy='semantic', named driving dimensions, Spreadsheet expression bindings, and require_fully_constrained=true.
 
 ```json
 {
@@ -8368,7 +8369,8 @@ Compact high-level recipe that creates Spreadsheet parameters, a Body-attached S
       "type": "array",
       "items": {
         "type": "object"
-      }
+      },
+      "description": "Ordered profile loops or helper loops. Prefer helper intents such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole over overlapping primitive profiles."
     },
     "lock_mode": {
       "type": "string",
@@ -8975,7 +8977,7 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
 
 ## `freecad_sketch_add_geometry`
 
-Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z].
+Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints.
 
 ```json
 {
@@ -9046,7 +9048,7 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
 
 ## `freecad_sketch_add_constraint`
 
-Add raw or named Sketcher constraints with optional metadata such as datum, driving, active, visibility, and label placement.
+Add raw or named Sketcher constraints with optional metadata such as datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -9105,7 +9107,7 @@ Add raw or named Sketcher constraints with optional metadata such as datum, driv
 
 ## `freecad_sketch_add_profile`
 
-Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.
+Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.
 
 ```json
 {
@@ -9161,7 +9163,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
 
 ```json
 {
@@ -9336,7 +9338,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_sketch_profile_validate`
 
-Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent.
+Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.
 
 ```json
 {
@@ -9499,7 +9501,7 @@ Compare line and circular-arc fit errors for traced sketch points and recommend 
 
 ## `freecad_sketch_geometry_method_catalog`
 
-Return the supported typed creation methods for Sketcher geometry, profiles, transform-generated geometry, and analysis tools.
+Return the supported typed creation methods for Sketcher geometry, profiles, transform-generated geometry, and analysis tools, including which helper/profile paths should be used instead of ad-hoc overlapping primitive sketches.
 
 ```json
 {
@@ -9822,7 +9824,7 @@ Delete, rename, set datum/driving/active/visibility/virtual-space state, validat
 
 ## `freecad_sketch_transform`
 
-Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, rectangular array, and B-spline edits.
+Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, rectangular array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
 
 ```json
 {

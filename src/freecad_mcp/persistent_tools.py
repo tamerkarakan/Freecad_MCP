@@ -56,6 +56,16 @@ DATUM_USAGE_POLICY = (
     "those faces."
 )
 
+SKETCH_COMPLEX_PROFILE_POLICY = (
+    "Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose "
+    "overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, "
+    "regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop "
+    "keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + "
+    "rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary "
+    "construction path for new parametric profiles. For user-editable profiles, prefer "
+    "constraint_policy='semantic' plus require_fully_constrained=true."
+)
+
 PIPE_WORKER_PROPS: JsonObject = {
     "document_id": {"type": "string"},
     "body_name": {"type": "string"},
@@ -789,7 +799,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_geometry",
                 "Worker Add Sketch Geometry",
-                "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z].",
+                "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. " + SKETCH_COMPLEX_PROFILE_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -814,7 +824,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_constraint",
                 "Worker Add Sketch Constraint",
-                "Add typed constraints to a worker Sketcher object.",
+                "Add typed constraints to a worker Sketcher object. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -827,7 +837,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_profile",
                 "Worker Add Sketch Profile",
-                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles.",
+                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -840,7 +850,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_create",
                 "Worker Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or rectangle/polyline loop helpers with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. Coordinate arrays may be [x,y] or [x,y,z]. " + DATUM_USAGE_POLICY,
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + DATUM_USAGE_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -880,7 +890,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_validate",
                 "Worker Validate Sketch Profile",
-                "Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent.",
+                "Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -951,7 +961,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_transform",
                 "Worker Transform Sketch",
-                "Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits.",
+                "Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},

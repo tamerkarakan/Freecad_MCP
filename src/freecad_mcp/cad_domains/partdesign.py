@@ -23,6 +23,17 @@ DATUM_USAGE_POLICY = (
     "those faces."
 )
 
+PROFILE_RECIPE_POLICY = (
+    "For complex cuts/protrusions, treat a Sketcher profile as primitive geometry plus explicit "
+    "constraints plus validation. Prefer helper/recipe loops for known CAD intents such as rectangle, "
+    "circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the "
+    "single-loop keyhole helper or an explicit ordered arc/line loop; do not create separate "
+    "overlapping circle + rectangle/slot profiles and hope Pocket resolves the union. Trim is an "
+    "edit/repair operation, not the primary construction path for new parametric profiles. For "
+    "user-editable parametric work, use constraint_policy='semantic', named driving dimensions, "
+    "Spreadsheet expression bindings, and require_fully_constrained=true."
+)
+
 PIPE_PROPS = {
     "document_path": {"type": "string"},
     "body_name": {"type": "string"},
@@ -216,7 +227,14 @@ PROFILE_WORKFLOW_PROPS = {
     "attachment_offset": {"type": "number", "description": "Offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
     "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset in the local coordinate system of the selected origin plane, planar face, or datum support."},
     "create_body_if_missing": {"type": "boolean"},
-    "loops": {"type": "array", "items": {"type": "object"}},
+    "loops": {
+        "type": "array",
+        "items": {"type": "object"},
+        "description": (
+            "Ordered profile loops or helper loops. Prefer helper intents such as rectangle, circle, "
+            "regular_polygon/hexagon, slot, and keyhole over overlapping primitive profiles."
+        ),
+    },
     "lock_mode": {"type": "string", "enum": ["none", "block"]},
     "endpoint_tolerance": {"type": "number"},
     "required_segment_types": {"type": "array", "items": {"type": "string"}},
@@ -355,7 +373,7 @@ class PartDesignCadToolService(CadDomainToolService):
             ToolDefinition(
                 "freecad_partdesign_profile_feature_create",
                 "Create PartDesign Profile Feature Recipe",
-                "High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Pocket and Groove require document_path with an existing Body solid. " + DATUM_USAGE_POLICY,
+                "High-level recipe that creates a Body-attached pad-ready Sketcher profile from ordered segments or helper loops such as rectangle, circle, hexagon/regular_polygon, slot, and keyhole; validates it; then creates Pad, Pocket, Revolution, or Groove. Use this instead of making loose overlapping primitives when the requested shape has a known helper intent. Pocket and Groove require document_path with an existing Body solid. " + PROFILE_RECIPE_POLICY + " " + DATUM_USAGE_POLICY,
                 {"type": "object", "properties": {**PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
                 self.profile_feature_create,
             ),
@@ -366,7 +384,8 @@ class PartDesignCadToolService(CadDomainToolService):
                     "Compact high-level recipe that creates Spreadsheet parameters, a Body-attached Sketcher profile, named driving "
                     "dimension constraints, Spreadsheet expression bindings, and a Pad/Pocket/Revolution/Groove feature in one MCP call. "
                     "Use this when agents should stay on Sketcher + PartDesign instead of reaching for Part primitives or leaving sketch points numeric. "
-                    "With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii."
+                    "With constraint_policy='semantic', helper loops can auto-bind rectangle width/height, polygon radius/center/orientation, circle radius/center, slot radius, and keyhole radii. "
+                    + PROFILE_RECIPE_POLICY
                 ),
                 {"type": "object", "properties": {**PARAMETRIC_PROFILE_WORKFLOW_PROPS, **COMMON_RUNTIME_PROPS}, "required": ["loops"]},
                 self.parametric_profile_feature_create,

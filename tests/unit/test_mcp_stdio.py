@@ -198,6 +198,7 @@ class ResourceTests(unittest.TestCase):
         self.assertIn("freecad://docs/workbench-bridge", uris)
         self.assertIn("freecad://docs/gui-1-1-1-research", uris)
         self.assertIn("freecad://docs/partdesign-attachment-policy", uris)
+        self.assertIn("freecad://docs/agent-modeling-contract", uris)
         self.assertIn("freecad://docs/freecad-wiki-research", uris)
         self.assertIn("freecad://docs/product-modules", uris)
         self.assertIn("freecad://docs/product-bundles", uris)
@@ -214,6 +215,14 @@ class ResourceTests(unittest.TestCase):
         self.assertIsNotNone(contents)
         self.assertEqual(contents["mimeType"], "text/markdown")
         self.assertIn("Architecture", contents["text"])
+
+    def test_read_agent_modeling_contract_resource(self) -> None:
+        contents = read_resource(ROOT, "freecad://docs/agent-modeling-contract")
+
+        self.assertIsNotNone(contents)
+        self.assertEqual(contents["mimeType"], "text/markdown")
+        self.assertIn("primitive geometry plus explicit constraints plus validation", contents["text"])
+        self.assertIn("single `keyhole` helper loop", contents["text"])
 
     def test_read_product_bundle_manifest_resource(self) -> None:
         contents = read_resource(ROOT, "freecad://product/bundles")
@@ -281,6 +290,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("Hole or Pocket", text)
         self.assertIn("External Projection", text)
         self.assertIn("add_external", text)
+        self.assertIn("single-loop keyhole helper", text)
+        self.assertIn("constraint_policy='semantic'", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

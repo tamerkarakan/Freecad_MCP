@@ -4,6 +4,8 @@ FreeCAD Hybrid MCP is a local Model Context Protocol server for FreeCAD. It lets
 
 The project is built around one main rule: prefer deterministic typed CAD tools over broad Python execution. Raw Python remains an explicit unsafe escape hatch, while normal modeling flows use structured tool schemas, FreeCAD transactions, recompute, validation, and JSON result reporting.
 
+For Sketcher and PartDesign work, the modeling contract is stronger than "draw some primitives": complex profiles should be primitive geometry plus explicit constraints plus validation. Agents should prefer helper/profile recipes for known CAD intents such as rectangle, circle, regular polygon/hexagon, slot, and keyhole; use semantic named Sketcher dimensions for parametric models; and avoid loose overlapping profiles such as circle + rectangle when a single keyhole loop or ordered arc/line loop is the real CAD intent.
+
 ## Current Status
 
 - Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
@@ -142,7 +144,7 @@ The highest-value engineering path in this project is Sketcher + PartDesign. The
 High-level recipe tools:
 
 - `freecad_partdesign_profile_feature_create`: creates and validates a Body-attached profile sketch, then creates Pad, Pocket, Revolution, or Groove.
-- `freecad_partdesign_parametric_profile_feature_create`: creates Spreadsheet parameters, semantic Sketcher profile constraints, expression bindings, final profile validation, and the PartDesign feature in one compact flow. For rectangle loops, `constraint_policy="semantic"` plus `width_expression`/`height_expression` keeps width and height as driven Sketcher dimensions and rejects `Block` shortcuts.
+- `freecad_partdesign_parametric_profile_feature_create`: creates Spreadsheet parameters, semantic Sketcher profile constraints, expression bindings, final profile validation, and the PartDesign feature in one compact flow. For rectangle loops, `constraint_policy="semantic"` plus `width_expression`/`height_expression` keeps width and height as driven Sketcher dimensions and rejects `Block` shortcuts. For keyhole, slot, polygon/socket, and similar repeated CAD intents, prefer helper loops plus `require_fully_constrained=true` over static coordinates or overlapping primitive profiles.
 - `freecad_partdesign_sweep_feature_create`: creates Body-attached profile and spine sketches, then creates Additive or Subtractive Pipe.
 
 Lower-level tools remain available when the sketch, support objects, or selected subelements already exist.
@@ -207,6 +209,7 @@ The GUI smoke launches/uses FreeCAD GUI paths and is intentionally opt-in.
 - [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md): generated bundle profile manifest.
 - [docs/DISTRIBUTION_PROFILES.md](docs/DISTRIBUTION_PROFILES.md): generated distribution profile config skeletons.
 - [docs/SKETCHER_CAPABILITIES.md](docs/SKETCHER_CAPABILITIES.md): Sketcher geometry, profile, validation, and PartDesign attachment notes.
+- [docs/AGENT_MODELING_CONTRACT.md](docs/AGENT_MODELING_CONTRACT.md): agent rules for primitive, helper, recipe, constraint, trim, and validation choices.
 - [docs/GUI_ATTACH_PLAN.md](docs/GUI_ATTACH_PLAN.md): GUI bridge design.
 - [docs/WORKBENCH_BRIDGE.md](docs/WORKBENCH_BRIDGE.md): FreeCAD workbench-hosted bridge setup.
 - [docs/TECHDRAW_CAM_FEM_PLAN.md](docs/TECHDRAW_CAM_FEM_PLAN.md): guarded first-slice plans for advanced workbenches.

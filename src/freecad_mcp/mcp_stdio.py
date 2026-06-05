@@ -43,7 +43,10 @@ REPO_ROOT_ENV = "FREECAD_MCP_REPO_ROOT"
 INSTRUCTIONS = (
     "Exposes static FreeCAD source intelligence, FreeCADCmd runtime tools, "
     "typed process-per-call CAD operations, persistent FreeCADCmd worker sessions, "
-    "and opt-in FreeCAD GUI attach tools."
+    "and opt-in FreeCAD GUI attach tools. For complex Sketcher/PartDesign modeling, "
+    "prefer intent/profile recipes plus explicit constraints and validation over loose "
+    "overlapping primitives; use semantic constraints and full-constraint checks for "
+    "parametric user-editable sketches."
 )
 
 RESOURCE_DESCRIPTORS: list[JsonObject] = [
@@ -80,6 +83,13 @@ RESOURCE_DESCRIPTORS: list[JsonObject] = [
         "name": "sketcher_capabilities",
         "title": "Sketcher Capabilities",
         "description": "Headless Sketcher typed-tool coverage and GUI-only boundaries.",
+        "mimeType": "text/markdown",
+    },
+    {
+        "uri": "freecad://docs/agent-modeling-contract",
+        "name": "agent_modeling_contract",
+        "title": "Agent Modeling Contract",
+        "description": "Rules for choosing primitive, helper, recipe, constraint, trim, and validation paths.",
         "mimeType": "text/markdown",
     },
     {
@@ -328,6 +338,16 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "Use FreeCAD typed MCP tools before low-level Python. "
                             "Inspect available source/tool schemas if needed, create or open the document, "
                             "apply operations with save/output paths, run geometry checks, and report exact files. "
+                            "Complex Sketcher profiles are primitive geometry plus explicit constraints plus validation, "
+                            "not loose overlapping primitives. Prefer profile/PartDesign recipes for known intents "
+                            "such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole or "
+                            "circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line "
+                            "loop with coincident/tangent/dimensional constraints; do not create separate overlapping "
+                            "circle + rectangle/slot profiles and hope a Pocket resolves the union. Use trim for "
+                            "editing/repairing existing geometry, not as the primary construction path for new "
+                            "parametric profiles. When the user may edit dimensions later, use "
+                            "constraint_policy='semantic', named driving dimensions, expression bindings, and "
+                            "require_fully_constrained=true, then validate DoF/pad-ready status. "
                             "PartDesign workflow: use Body Origin planes for base sketches; for holes or pockets "
                             "on existing top/side faces, attach the sketch to the selected planar FaceN, add "
                             "external/reference geometry from face edges or vertices when dimensions need local "
@@ -373,6 +393,7 @@ def read_resource(repo_root: Path, uri: str) -> JsonObject | None:
         "freecad://docs/roadmap-status": repo_root / "docs" / "ROADMAP_STATUS.md",
         "freecad://docs/testing": repo_root / "docs" / "TESTING.md",
         "freecad://docs/sketcher-capabilities": repo_root / "docs" / "SKETCHER_CAPABILITIES.md",
+        "freecad://docs/agent-modeling-contract": repo_root / "docs" / "AGENT_MODELING_CONTRACT.md",
         "freecad://docs/partdesign-attachment-policy": repo_root / "docs" / "PARTDESIGN_ATTACHMENT_POLICY.md",
         "freecad://docs/freecad-wiki-research": repo_root / "docs" / "FREECAD_WIKI_RESEARCH.md",
         "freecad://docs/gui-attach-plan": repo_root / "docs" / "GUI_ATTACH_PLAN.md",
