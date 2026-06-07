@@ -591,6 +591,27 @@ def enforce_strategy_lock_mode(params, lock_mode):
     return preflight
 
 
+def native_curve_intent_validation_issues(params, geometry_counts):
+    intent = normalized_strategy_value(params.get("native_curve_intent"))
+    if intent != "bspline":
+        return []
+    if int(geometry_counts.get("bspline", 0) or 0) > 0:
+        return []
+    return [
+        {
+            "code": "native_curve_intent_requires_bspline_geometry",
+            "native_curve_intent": "bspline",
+            "required_types": ["bspline"],
+            "geometry_type_counts": geometry_counts,
+        }
+    ]
+
+
+def sketch_native_curve_intent_issues(params, sketch):
+    summary = sketch_geometry_type_summary(sketch, include_construction=bool(params.get("include_construction", False)))
+    return native_curve_intent_validation_issues(params, summary["counts"])
+
+
 def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mode=None, preflight=None):
     preflight = preflight or modeling_strategy_preflight(params)
     strategy = preflight.get("modeling_strategy")
@@ -598,6 +619,8 @@ def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mod
     report_layers = sketch_report_layers(sketch, semantic_groups)
     warnings = list(preflight.get("warnings", []))
     errors = []
+    native_curve_intent_issues = sketch_native_curve_intent_issues(params, sketch)
+    errors.extend([issue["code"] for issue in native_curve_intent_issues])
     constraint_counts = semantic_groups.get("constraint_type_counts", {})
     block_count = int(constraint_counts.get("Block", 0) or 0)
     constraint_policy = str(params.get("constraint_policy") or "").lower()
@@ -623,6 +646,7 @@ def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mod
         "preflight": preflight,
         "warnings": warnings,
         "errors": errors,
+        "native_curve_intent_issues": native_curve_intent_issues,
         "constraint_type_counts": constraint_counts,
         "native_type_counts": report_layers.get("native_type_counts", {}),
         "helper_intent_inference": report_layers.get("helper_intent_inference", {}),
@@ -3577,6 +3601,7 @@ def validate_sketch_profile(sketch, params):
         issues.append({"code": "all_line_fallback_detected"})
     if forbid_polyline_fallback and geometry_counts.get("polyline", 0):
         issues.append({"code": "polyline_fallback_detected", "count": geometry_counts.get("polyline", 0)})
+    issues.extend(native_curve_intent_validation_issues(params, geometry_counts))
     failing_intent_mismatches = [item for item in intent_mismatches if item.get("fallback_policy") == "fail" or bool(params.get("forbid_intent_mismatch", False))]
     if failing_intent_mismatches:
         issues.append({"code": "geometry_intent_mismatch", "mismatches": failing_intent_mismatches})
@@ -4585,6 +4610,10 @@ def action_sketch_add_geometry(params):
             closed_validation = sketch_closed_validation(sketch)
             if closed_validation["open_vertices"]:
                 raise ValueError("sketch geometry sequence is not closed; open vertices: " + str(closed_validation["open_vertices"]))
+        if bool(params.get("enforce_native_curve_intent", False)):
+            intent_issues = sketch_native_curve_intent_issues(params, sketch)
+            if intent_issues:
+                raise ValueError("native curve intent validation failed: " + str(intent_issues))
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
@@ -4631,6 +4660,10 @@ def action_sketch_add_profile(params):
     doc.openTransaction("MCP worker add sketch profile")
     try:
         added, constraints = add_profile_geometry(sketch, params["profile"])
+        if bool(params.get("enforce_native_curve_intent", False)):
+            intent_issues = sketch_native_curve_intent_issues(params, sketch)
+            if intent_issues:
+                raise ValueError("native curve intent validation failed: " + str(intent_issues))
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()

@@ -590,6 +590,27 @@ def enforce_strategy_lock_mode(args, lock_mode):
     return preflight
 
 
+def native_curve_intent_validation_issues(args, geometry_counts):
+    intent = normalized_strategy_value(args.get("native_curve_intent"))
+    if intent != "bspline":
+        return []
+    if int(geometry_counts.get("bspline", 0) or 0) > 0:
+        return []
+    return [
+        {
+            "code": "native_curve_intent_requires_bspline_geometry",
+            "native_curve_intent": "bspline",
+            "required_types": ["bspline"],
+            "geometry_type_counts": geometry_counts,
+        }
+    ]
+
+
+def sketch_native_curve_intent_issues(args, sketch):
+    summary = sketch_geometry_type_summary(sketch, include_construction=bool(args.get("include_construction", False)))
+    return native_curve_intent_validation_issues(args, summary["counts"])
+
+
 def sketch_modeling_strategy_report(args, sketch, *, validation=None, lock_mode=None, preflight=None):
     preflight = preflight or modeling_strategy_preflight(args)
     strategy = preflight.get("modeling_strategy")
@@ -597,6 +618,8 @@ def sketch_modeling_strategy_report(args, sketch, *, validation=None, lock_mode=
     report_layers = sketch_report_layers(sketch, semantic_groups)
     warnings = list(preflight.get("warnings", []))
     errors = []
+    native_curve_intent_issues = sketch_native_curve_intent_issues(args, sketch)
+    errors.extend([issue["code"] for issue in native_curve_intent_issues])
     constraint_counts = semantic_groups.get("constraint_type_counts", {})
     block_count = int(constraint_counts.get("Block", 0) or 0)
     constraint_policy = str(args.get("constraint_policy") or "").lower()
@@ -622,6 +645,7 @@ def sketch_modeling_strategy_report(args, sketch, *, validation=None, lock_mode=
         "preflight": preflight,
         "warnings": warnings,
         "errors": errors,
+        "native_curve_intent_issues": native_curve_intent_issues,
         "constraint_type_counts": constraint_counts,
         "native_type_counts": report_layers.get("native_type_counts", {}),
         "helper_intent_inference": report_layers.get("helper_intent_inference", {}),
@@ -4099,6 +4123,7 @@ def validate_sketch_profile(sketch, args):
         issues.append({"code": "all_line_fallback_detected"})
     if forbid_polyline_fallback and geometry_counts.get("polyline", 0):
         issues.append({"code": "polyline_fallback_detected", "count": geometry_counts.get("polyline", 0)})
+    issues.extend(native_curve_intent_validation_issues(args, geometry_counts))
     failing_intent_mismatches = [item for item in intent_mismatches if item.get("fallback_policy") == "fail" or bool(args.get("forbid_intent_mismatch", False))]
     if failing_intent_mismatches:
         issues.append({"code": "geometry_intent_mismatch", "mismatches": failing_intent_mismatches})
@@ -5025,6 +5050,7 @@ def sketch_geometry_method_catalog():
             {
                 "geometry": "bspline",
                 "native_type": "Part.BSplineCurve",
+                "intent_contract": "If native_curve_intent='bspline' is declared, profile validation requires real B-spline geometry; use enforce_native_curve_intent=true on low-level mutation to abort arc/polyline fallback.",
                 "methods": [
                     {"type": "bspline", "fields": ["poles"], "optional": ["periodic"]},
                     {"type": "bspline", "fields": ["points", "interpolate"], "optional": ["periodic"]},
@@ -5079,6 +5105,15 @@ def sketch_geometry_method_catalog():
                 ],
             },
             {"profile": "polyline", "methods": [{"fields": ["points"], "optional": ["closed"]}]},
+        ],
+        "native_curve_intent_contracts": [
+            {
+                "intent": "bspline",
+                "required_native_geometry": ["bspline"],
+                "mutation_fields": ["native_curve_intent", "curve_intent_confirmed", "enforce_native_curve_intent"],
+                "validation_issue": "native_curve_intent_requires_bspline_geometry",
+                "note": "Visible B-spline poles/control points should create native Part.BSplineCurve geometry; arc, line, or polyline fallback must be explicit and user-approved.",
+            }
         ],
         "constraint_methods": [
             {
@@ -5466,6 +5501,11 @@ def action_sketch_add_geometry(args):
         if closed_validation["open_vertices"]:
             doc.abortTransaction()
             raise ValueError("sketch geometry sequence is not closed; open vertices: " + str(closed_validation["open_vertices"]))
+    if bool(args.get("enforce_native_curve_intent", False)):
+        intent_issues = sketch_native_curve_intent_issues(args, sketch)
+        if intent_issues:
+            doc.abortTransaction()
+            raise ValueError("native curve intent validation failed: " + str(intent_issues))
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)
@@ -5505,6 +5545,11 @@ def action_sketch_add_profile(args):
     sketch = get_object(doc, args["sketch_name"])
     doc.openTransaction("MCP add sketch profile")
     added, constraints = add_profile_geometry(sketch, args["profile"])
+    if bool(args.get("enforce_native_curve_intent", False)):
+        intent_issues = sketch_native_curve_intent_issues(args, sketch)
+        if intent_issues:
+            doc.abortTransaction()
+            raise ValueError("native curve intent validation failed: " + str(intent_issues))
     doc.commitTransaction()
     doc.recompute()
     saved = save_if_requested(doc, args)

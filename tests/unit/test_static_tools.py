@@ -111,6 +111,7 @@ class StaticToolServiceTests(unittest.TestCase):
             self.assertEqual(result["status"], "needs_clarification")
             self.assertIn("visible_curves_require_native_curve_intent", result["blockers"])
             self.assertIn("native_curve_intent", result["required_fields_for_mutation"])
+            self.assertIn("enforce_native_curve_intent", result["required_fields_for_mutation"])
             self.assertIn("B-spline", result["curve_question_tr"])
 
     def test_modeling_strategy_intake_blocks_bspline_controls_with_arc_intent(self) -> None:

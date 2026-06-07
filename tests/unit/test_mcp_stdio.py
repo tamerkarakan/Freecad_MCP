@@ -316,6 +316,7 @@ class PromptTests(unittest.TestCase):
         self.assertIn("red dimensions", text)
         self.assertIn("native_curve_intent", text)
         self.assertIn("curve_intent_confirmed=true", text)
+        self.assertIn("enforce_native_curve_intent=true", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

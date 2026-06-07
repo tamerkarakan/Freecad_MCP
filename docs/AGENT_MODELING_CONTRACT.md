@@ -29,7 +29,7 @@ The MCP server does not interpret the image itself. It enforces an explicit mode
 
 If the reference visibly contains Sketcher constraint glyphs, red dimension labels, equality/constraint indexes, or blue construction geometry, the safe default is not `visual_trace`. The agent should ask whether the user wants `sketcher_constraint_rebuild` or `editable_parametric_sketch`, and it should treat construction geometry as construction geometry rather than decoration.
 
-If visible curves could be B-splines, circular arcs, ellipses, or a mixed set, the agent must ask for `native_curve_intent` before mutation. Visible B-spline control points, poles, or handles are evidence for B-spline tooling. Do not rebuild them as arcs unless the user explicitly asks for an arc approximation and accepts the loss of native spline behavior.
+If visible curves could be B-splines, circular arcs, ellipses, or a mixed set, the agent must ask for `native_curve_intent` before mutation. Visible B-spline control points, poles, or handles are evidence for B-spline tooling. Do not rebuild them as arcs unless the user explicitly asks for an arc approximation and accepts the loss of native spline behavior. When `native_curve_intent="bspline"` is carried into `freecad_sketch_profile_create` or `freecad_sketch_profile_validate`, validation fails unless the resulting real geometry contains native B-spline curves. For low-level `freecad_sketch_add_geometry` or `freecad_sketch_add_profile`, set `enforce_native_curve_intent=true` when the current call is expected to create the native curve profile.
 
 ## Native Geometry Versus Helper Intent
 
@@ -86,6 +86,7 @@ After construction, the agent should inspect or report:
 - solver status and degrees of freedom,
 - conflicting, redundant, or malformed constraints,
 - native geometry type counts when curve intent matters,
+- B-spline intent enforcement when `native_curve_intent="bspline"` is declared,
 - geometry/BRep check for the resulting PartDesign Body when a solid is created.
 
 Do not leave fully-constrained or tangent/equal intent to image interpretation. Use `freecad_sketch_validate` or `freecad_worker_sketch_validate` to get native Sketcher evidence: `fully_constrained`, `degrees_of_freedom`, detailed `geometry`, detailed `constraints`, `semantic_groups` for tangent pairs/chains, equal groups, coincident pairs, dimensional/radius constraints, and construction geometry, plus `report_layers` for native/helper separation.

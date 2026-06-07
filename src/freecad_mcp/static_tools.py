@@ -119,7 +119,11 @@ CURVE_INTENT_CHOICES: tuple[JsonObject, ...] = (
         "id": "bspline",
         "label_tr": "B-spline",
         "when_to_use": "Use when the screenshot shows B-spline control points/poles or Sketcher B-spline controls.",
-        "tooling": ["freecad_sketch_add_geometry type=bspline", "freecad_sketch_validate geometry type_id"],
+        "tooling": [
+            "freecad_sketch_add_geometry type=bspline",
+            "enforce_native_curve_intent=true",
+            "freecad_sketch_profile_validate native_curve_intent=bspline",
+        ],
     },
     {
         "id": "arc",
@@ -669,6 +673,8 @@ class StaticToolService:
         required_fields_for_mutation = ["source_type", "modeling_strategy", "strategy_confirmed"]
         if curves_visible or visible_bspline_control_points:
             required_fields_for_mutation.extend(["native_curve_intent", "curve_intent_confirmed"])
+        if visible_bspline_control_points or native_curve_intent == "bspline":
+            required_fields_for_mutation.append("enforce_native_curve_intent")
 
         return {
             "status": status,

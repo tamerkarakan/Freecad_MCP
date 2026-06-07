@@ -37,6 +37,7 @@ class CadActionScriptTests(unittest.TestCase):
         self.assertIn("def emit(", CAD_ACTION_SCRIPT)
         self.assertIn('"is_null": True', CAD_ACTION_SCRIPT)
         self.assertIn("def ensure_settable_property(", CAD_ACTION_SCRIPT)
+        self.assertIn("native_curve_intent_requires_bspline_geometry", CAD_ACTION_SCRIPT)
         self.assertNotIn("and not hasattr(obj, key)", CAD_ACTION_SCRIPT)
         compile(CAD_ACTION_SCRIPT, "<cad_action_script>", "exec")
 
@@ -48,6 +49,7 @@ class LoadRuntimeScriptTests(unittest.TestCase):
         for name in ("cad_action.py", "worker.py"):
             content = load_runtime_script(name)
             self.assertGreater(len(content), 1000, name)
+            self.assertIn("native_curve_intent_requires_bspline_geometry", content, name)
 
     def test_missing_script_raises_clear_error(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "missing or unreadable"):

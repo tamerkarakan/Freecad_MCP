@@ -369,7 +369,8 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "treat those as CAD obligations and prefer sketcher_constraint_rebuild or "
                             "editable_parametric_sketch unless the user explicitly confirms visual trace only. "
                             "If visible curves could be B-splines, circular arcs, or ellipses, ask for native_curve_intent; "
-                            "B-spline control points/poles mean use native B-spline tooling, not arc approximation. "
+                            "B-spline control points/poles mean use native B-spline tooling, not arc approximation; "
+                            "set enforce_native_curve_intent=true or validate with native_curve_intent='bspline' so arc/polyline fallback fails. "
                             "When the user may edit dimensions later, use "
                             "constraint_policy='semantic', named driving dimensions, expression bindings, and "
                             "require_fully_constrained=true, then validate DoF/pad-ready status. "
@@ -415,7 +416,8 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "constraint rebuild/editable parametric sketch instead of silently choosing visual_trace. "
                             "If the screenshot shows B-spline control points or the curve family is unclear, ask "
                             "whether the native curve is B-spline, circular arc, ellipse, or mixed, then pass "
-                            "native_curve_intent and curve_intent_confirmed=true. "
+                            "native_curve_intent, curve_intent_confirmed=true, and enforce_native_curve_intent=true "
+                            "when creating the native curve profile. "
                             f"Source type: {source_type}. Task: {task}"
                         ),
                     },

@@ -106,7 +106,9 @@ SKETCH_STRATEGY_POLICY = (
     "must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. "
     "If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a "
     "visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; "
-    "visible B-spline poles/control points mean use B-spline tooling, not arc approximation."
+    "visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set "
+    "enforce_native_curve_intent=true on low-level mutation or validate/profile-create with "
+    "native_curve_intent='bspline' so arc/polyline fallback fails."
 )
 
 SKETCH_STRATEGY_PROPS: JsonObject = {
@@ -161,6 +163,10 @@ SKETCH_STRATEGY_PROPS: JsonObject = {
         "type": "string",
         "enum": ["user_confirmed", "visible_gui_controls", "native_freecad_geometry", "visual_guess"],
         "description": "Evidence source for native_curve_intent. visual_guess is not enough for B-spline-vs-arc decisions.",
+    },
+    "enforce_native_curve_intent": {
+        "type": "boolean",
+        "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'.",
     },
 }
 
