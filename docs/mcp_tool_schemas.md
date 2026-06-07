@@ -3421,7 +3421,7 @@ Add typed geometry to a worker Sketcher object. B-spline/freeform profile geomet
 
 ## `freecad_worker_sketch_add_constraint`
 
-Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
+Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. The tool solves/recomputes by default and returns solver_evidence with solve_code, DoF, conflicts/redundants, open vertices, and a compact constraint-error summary; set include_constraint_errors=true for per-constraint errors. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -3447,6 +3447,14 @@ Add typed constraints to a worker Sketcher object by passing the provided type s
       "items": {
         "type": "object"
       }
+    },
+    "solve": {
+      "type": "boolean",
+      "description": "Run Sketcher solve before recompute and include the solve_code in solver_evidence. Defaults true."
+    },
+    "include_constraint_errors": {
+      "type": "boolean",
+      "description": "Include per-constraint calculateConstraintError results in solver_evidence; a compact summary is returned either way."
     },
     "output_path": {
       "type": "string"
@@ -9648,7 +9656,7 @@ Add point, line, circle, arc, ellipse, conic arc, or polyline geometry to a sket
 
 ## `freecad_sketch_add_constraint`
 
-Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
+Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. The tool solves/recomputes by default and returns solver_evidence with solve_code, DoF, conflicts/redundants, open vertices, and a compact constraint-error summary; set include_constraint_errors=true for per-constraint errors. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -9665,6 +9673,14 @@ Add raw or named Sketcher constraints by passing the provided type string to Fre
       "items": {
         "type": "object"
       }
+    },
+    "solve": {
+      "type": "boolean",
+      "description": "Run Sketcher solve before recompute and include the solve_code in solver_evidence. Defaults true."
+    },
+    "include_constraint_errors": {
+      "type": "boolean",
+      "description": "Include per-constraint calculateConstraintError results in solver_evidence; a compact summary is returned either way."
     },
     "output_path": {
       "type": "string"
@@ -10404,7 +10420,7 @@ Compare line and circular-arc fit errors for traced sketch points and recommend 
 
 ## `freecad_sketch_geometry_method_catalog`
 
-Return the supported typed creation methods for Sketcher geometry, profiles, constraints, transform-generated geometry, and analysis tools, including which helper/profile paths should be used instead of ad-hoc overlapping primitive sketches. The constraint_methods section lists common FreeCAD Sketcher.Constraint type strings and argument field shapes.
+Return the supported typed creation methods for Sketcher geometry, profiles, constraints, transform-generated geometry, and analysis tools, including explicit line/line_segment aliases and 3-point arc aliases that create one native Part.ArcOfCircle rather than a polyline fallback. The catalog also reports which helper/profile paths should be used instead of ad-hoc overlapping primitive sketches. The constraint_methods section lists common FreeCAD Sketcher.Constraint type strings and argument field shapes.
 
 ```json
 {

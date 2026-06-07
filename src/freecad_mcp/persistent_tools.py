@@ -937,11 +937,19 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_constraint",
                 "Worker Add Sketch Constraint",
-                "Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.",
+                "Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. The tool solves/recomputes by default and returns solver_evidence with solve_code, DoF, conflicts/redundants, open vertices, and a compact constraint-error summary; set include_constraint_errors=true for per-constraint errors. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "constraints": {"type": "array", "items": {"type": "object"}},
+                    "solve": {
+                        "type": "boolean",
+                        "description": "Run Sketcher solve before recompute and include the solve_code in solver_evidence. Defaults true.",
+                    },
+                    "include_constraint_errors": {
+                        "type": "boolean",
+                        "description": "Include per-constraint calculateConstraintError results in solver_evidence; a compact summary is returned either way.",
+                    },
                     **SAVE_PROPS,
                 },
                 ["document_id", "sketch_name", "constraints"],

@@ -61,6 +61,7 @@ For a keyhole or circle-slot cut:
 - Prefer a single `keyhole` helper loop.
 - If the helper is not expressive enough, create one ordered loop with native arcs and lines.
 - Use `Coincident`, `Tangent`, `Equal`, radius, width, length, and position constraints as needed.
+- For smooth arc/line/arc or arc/arc chains, add explicit endpoint `Coincident` constraints first, then endpoint-aware `Tangent` constraints; read `solver_evidence` from `freecad_sketch_add_constraint` or run `freecad_sketch_validate` before continuing.
 - Do not model the same intent as an overlapping circle plus rectangle/slot profile.
 
 `trim` is useful for editing or repairing existing sketch geometry. It should not be the first-choice construction method for a new parametric keyhole, slot, or socket profile.
@@ -71,6 +72,7 @@ For user-editable or Spreadsheet-driven models:
 
 - Use Sketcher dimensions as the real drivers.
 - Use `freecad_sketch_geometry_method_catalog` when unsure which Sketcher constraint type string or argument fields are available; its `constraint_methods` section documents common `Sketcher.Constraint(type, *values)` constructor strings.
+- Treat `line`/`line_segment` as one native `Part.LineSegment`, and 3-point arc aliases such as `arc_3_point`/`arc_from_three_point(s)` as one native `Part.ArcOfCircle`, not a polyline fallback.
 - Use Spreadsheet aliases as named parameters feeding expressions into Sketcher constraints and feature properties.
 - Prefer `constraint_policy="semantic"` for supported helper loops.
 - Prefer `require_fully_constrained=true` when later parameter edits must preserve shape intent.

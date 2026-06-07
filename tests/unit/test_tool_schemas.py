@@ -126,6 +126,11 @@ class ToolSchemaTests(unittest.TestCase):
         sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
         for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
             self.assertIn(name, sketch_validate_props)
+        worker_constraint_description = tools["freecad_worker_sketch_add_constraint"].to_mcp()["description"]
+        self.assertIn("solver_evidence", worker_constraint_description)
+        worker_constraint_props = tools["freecad_worker_sketch_add_constraint"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("solve", worker_constraint_props)
+        self.assertIn("include_constraint_errors", worker_constraint_props)
 
     def test_gui_attach_tools_are_exposed(self) -> None:
         tools = GuiToolService().definition_map()
@@ -347,8 +352,14 @@ class ToolSchemaTests(unittest.TestCase):
         constraint_description = tools["freecad_sketch_add_constraint"].to_mcp()["description"]
         self.assertIn("Sketcher.Constraint(type, *values)", constraint_description)
         self.assertIn("Coincident", constraint_description)
+        self.assertIn("solver_evidence", constraint_description)
+        constraint_props = tools["freecad_sketch_add_constraint"].to_mcp()["inputSchema"]["properties"]
+        self.assertIn("solve", constraint_props)
+        self.assertIn("include_constraint_errors", constraint_props)
         catalog_description = tools["freecad_sketch_geometry_method_catalog"].to_mcp()["description"]
         self.assertIn("constraint_methods", catalog_description)
+        self.assertIn("line_segment", catalog_description)
+        self.assertIn("one native Part.ArcOfCircle", catalog_description)
         sketch_validate_props = tools["freecad_sketch_validate"].to_mcp()["inputSchema"]["properties"]
         for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
             self.assertIn(name, sketch_validate_props)

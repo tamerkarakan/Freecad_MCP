@@ -3177,7 +3177,7 @@ def make_sketch_geometries(item):
     import Part
 
     kind = item.get("type")
-    if kind in {"line", "line_segment", "line_start_end"}:
+    if kind in {"line", "line_segment", "line_start_end", "line_by_points", "line_from_points"}:
         return [Part.LineSegment(vector(item["start"]), vector(item["end"]))]
     if kind in {"line_angle_length", "line_by_angle"}:
         start = vector(item["start"])
@@ -3194,7 +3194,14 @@ def make_sketch_geometries(item):
         return [Part.Circle(vector(item.get("center"), [0, 0, 0]), vector(item.get("normal"), [0, 0, 1]), float(item["radius"]))]
     if kind in {"arc", "arc_of_circle", "arc_center_angles"}:
         return [make_center_angle_arc(item)]
-    if kind in {"arc_3_point", "arc_by_3_points", "arc_start_mid_end"}:
+    if kind in {
+        "arc_3_point",
+        "arc_by_3_points",
+        "arc_start_mid_end",
+        "arc_from_three_point",
+        "arc_from_three_points",
+        "arc_through_3_points",
+    }:
         points = item.get("points") or [item["start"], item["mid"], item["end"]]
         return [Part.ArcOfCircle(vector(points[0]), vector(points[1]), vector(points[2]))]
     if kind == "arc_start_end_radius":
@@ -3253,13 +3260,32 @@ CURVED_PROFILE_SEGMENT_TYPES = {
 
 def normalized_profile_segment_type(kind):
     value = str(kind or "").lower()
-    if value in {"line", "line_segment", "line_start_end", "line_angle_length", "line_by_angle"}:
+    if value in {
+        "line",
+        "line_segment",
+        "line_start_end",
+        "line_by_points",
+        "line_from_points",
+        "line_angle_length",
+        "line_by_angle",
+    }:
         return "line"
     if value == "polyline":
         return "polyline"
     if value in {"bspline", "b_spline"}:
         return "bspline"
-    if value in {"arc", "arc_of_circle", "arc_center_angles", "arc_3_point", "arc_by_3_points", "arc_start_mid_end", "arc_start_end_radius"}:
+    if value in {
+        "arc",
+        "arc_of_circle",
+        "arc_center_angles",
+        "arc_3_point",
+        "arc_by_3_points",
+        "arc_start_mid_end",
+        "arc_from_three_point",
+        "arc_from_three_points",
+        "arc_through_3_points",
+        "arc_start_end_radius",
+    }:
         return "arc"
     if value in {"circle", "circle_center_radius", "circle_3_point", "circle_by_3_points"}:
         return "circle"
@@ -4341,6 +4367,41 @@ def apply_constraint_metadata(sketch, index, spec):
         sketch.setLabelDistance(index, float(spec["label_distance"]))
 
 
+def sketch_constraint_solver_evidence(sketch, *, solve_code=None, include_constraint_errors=False):
+    constraint_error_summary = {"checked": 0, "nonzero_count": 0, "max_abs_error": 0.0, "failed": 0}
+    constraint_errors = []
+    for index in range(len(sketch.Constraints)):
+        try:
+            error = float(sketch.calculateConstraintError(index))
+            abs_error = abs(error)
+            constraint_error_summary["checked"] += 1
+            constraint_error_summary["max_abs_error"] = max(constraint_error_summary["max_abs_error"], abs_error)
+            if abs_error > 1e-7:
+                constraint_error_summary["nonzero_count"] += 1
+            if include_constraint_errors:
+                constraint_errors.append({"index": index, "error": error})
+        except Exception as exc:
+            constraint_error_summary["failed"] += 1
+            if include_constraint_errors:
+                constraint_errors.append({"index": index, "error": None, "message": str(exc)})
+    dof = getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None))
+    evidence = {
+        "solve_code": solve_code,
+        "degrees_of_freedom": dof,
+        "fully_constrained": fully_constrained_from_dof(dof),
+        "evaluate_constraints_invalid_found": bool(sketch.evaluateConstraints()),
+        "open_vertices": [point_list(v) for v in getattr(sketch, "OpenVertices", [])],
+        "conflicting_constraints": list(getattr(sketch, "ConflictingConstraints", [])),
+        "redundant_constraints": list(getattr(sketch, "RedundantConstraints", [])),
+        "partially_redundant_constraints": list(getattr(sketch, "PartiallyRedundantConstraints", [])),
+        "malformed_constraints": list(getattr(sketch, "MalformedConstraints", [])),
+        "constraint_error_summary": constraint_error_summary,
+    }
+    if include_constraint_errors:
+        evidence["constraint_errors"] = constraint_errors
+    return evidence
+
+
 def add_profile_geometry(sketch, profile):
     import Part
     import Sketcher
@@ -4685,9 +4746,21 @@ def action_sketch_add_constraint(params):
     except Exception:
         doc.abortTransaction()
         raise
+    solve_code = sketch.solve() if bool(params.get("solve", True)) else None
     doc.recompute()
     saved = save_doc(doc, params)
-    return {"saved_path": saved, "added_indices": added, "sketch": object_summary(sketch), "document": document_summary(doc)}
+    solver_evidence = sketch_constraint_solver_evidence(
+        sketch,
+        solve_code=solve_code,
+        include_constraint_errors=bool(params.get("include_constraint_errors", False)),
+    )
+    return {
+        "saved_path": saved,
+        "added_indices": added,
+        "solver_evidence": solver_evidence,
+        "sketch": object_summary(sketch),
+        "document": document_summary(doc),
+    }
 
 
 def action_sketch_add_profile(params):
