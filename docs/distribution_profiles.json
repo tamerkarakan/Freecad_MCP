@@ -46,10 +46,11 @@
         }
       },
       "workbench_artifact": null,
-      "tool_count": 21,
+      "tool_count": 22,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
+        "freecad_modeling_strategy_intake",
         "freecad_session_status",
         "freecad_document_new",
         "freecad_document_open",
@@ -115,10 +116,11 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 90,
+      "tool_count": 91,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
+        "freecad_modeling_strategy_intake",
         "freecad_session_status",
         "freecad_document_new",
         "freecad_document_open",
@@ -254,10 +256,11 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 163,
+      "tool_count": 164,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
+        "freecad_modeling_strategy_intake",
         "freecad_session_status",
         "freecad_session_start",
         "freecad_session_list",
@@ -468,13 +471,14 @@
         "artifact_key": "freecad-workbench-module",
         "zip_name": "freecad-mcp-workbench.zip"
       },
-      "tool_count": 166,
+      "tool_count": 167,
       "tool_names": [
         "freecad_command_list",
         "freecad_command_describe",
         "freecad_source_symbol_index",
         "freecad_source_search",
         "freecad_source_open",
+        "freecad_modeling_strategy_intake",
         "freecad_session_status",
         "freecad_session_start",
         "freecad_session_list",

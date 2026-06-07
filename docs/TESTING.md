@@ -29,15 +29,18 @@ Current checks:
 - Unit guard for stdio EOF shutdown cleanup (`test_mcp_stdio.py`).
 - Unit guard for empty MCP resource-template listing (`resources/templates/list`).
 - Unit guard for the agent modeling contract resource (`freecad://docs/agent-modeling-contract`) and for keeping keyhole/helper/semantic-constraint guidance in the `freecad_design_task` prompt (`test_mcp_stdio.py`).
+- Unit guard for image/reference modeling strategy intake: `freecad_modeling_strategy_intake` requires a strategy for image-like tasks, `freecad_image_strategy_intake` renders the user-question prompt, and `freecad_design_task` tells agents to pass `source_type`, `modeling_strategy`, and `strategy_confirmed=true` before Sketcher mutation (`test_static_tools.py`, `test_mcp_stdio.py`).
 - Unit guard for `FREECAD_MCP_MODULES` product aliases, full advertised-surface local developer aliases, GUI-only filtering, worker-module gating, hidden Part tool policy, and source-intelligence add-on behavior (`test_mcp_stdio.py`).
 - Unit guard for FreeCAD 1.1 Sketcher External Projection/External Intersection process and worker aliases, including object/subelement reference schema fields (`test_tool_schemas.py`).
 - Unit guard for visible geometry-check aliases (`freecad_geometry_check`, `freecad_worker_geometry_check`) while keeping `freecad_part_*`/`freecad_worker_part_*` primitive tools hidden from advertised MCP surfaces (`test_tool_schemas.py`, `test_mcp_stdio.py`).
 - Unit guard for the compact parametric PartDesign profile-feature builder schema, including Spreadsheet rows, driving constraints, semantic constraint policy, final validation, sketch expressions, feature expressions, and compact `include_steps` behavior (`test_tool_schemas.py`).
 - Unit guard that Sketcher constraint constructor passthrough and `constraint_methods` catalog guidance stay visible in tool descriptions (`test_tool_schemas.py`).
 - Unit guard that process and worker sketch validate schemas expose native geometry, constraint, semantic-group, and report-layer detail switches (`test_tool_schemas.py`).
+- Unit guard that process and worker Sketcher mutation/validation schemas expose the modeling strategy fields `source_type`, `has_image`, `modeling_strategy`, and `strategy_confirmed` (`test_tool_schemas.py`).
 - Unit guard for generated sellable bundle descriptors, unsafe add-on separation, and upgrade-ladder tool counts (`test_product_bundles.py`).
 - Unit guard for distribution profile descriptors, generated MCP config skeleton shape, and `pyproject.toml` packaging declarations (`test_distribution_profiles.py`).
 - Static MCP smoke guard for empty resource-template listing (`resources/templates/list`).
+- Static MCP smoke guard for `freecad_modeling_strategy_intake` visibility and the `freecad_image_strategy_intake` prompt text.
 - Static MCP smoke guard that hidden Part tools (`freecad_part_*`, `freecad_worker_part_*`) do not appear in `tools/list`.
 - Static MCP smoke guard for GUI attach tool schemas (`freecad_gui_attach`, `freecad_gui_document_open`, `freecad_gui_view_orientation_set`, `freecad_gui_visibility_ensure`, `freecad_gui_selection_get`, viewport snapshot, GUI object label set, Sketcher edit/state tools, PartDesign state/body activation tools, and feature-task state).
 - Distribution profile smoke checks `docs/distribution_profiles.json` and `packaging/profiles/*.mcp.json` after generation.

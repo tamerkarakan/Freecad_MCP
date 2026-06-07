@@ -66,6 +66,63 @@ SKETCH_COMPLEX_PROFILE_POLICY = (
     "constraint_policy='semantic' plus require_fully_constrained=true."
 )
 
+MODELING_STRATEGY_ENUM = [
+    "visual_trace",
+    "editable_parametric_sketch",
+    "manufacturing_partdesign_model",
+    "sketcher_constraint_rebuild",
+    "rough_draft",
+    "semantic_reconstruction",
+    "dimensioned_parametric",
+    "organic_silhouette",
+    "manufacturing_profile",
+]
+
+SOURCE_TYPE_ENUM = [
+    "text_prompt",
+    "image",
+    "reference_image",
+    "screenshot",
+    "photo",
+    "bitmap",
+    "drawing",
+    "diagram",
+    "visual_reference",
+    "silhouette",
+    "traced_image",
+    "existing_model",
+    "sketch",
+]
+
+SKETCH_STRATEGY_POLICY = (
+    "For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has "
+    "chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass "
+    "source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, "
+    "dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions "
+    "must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal."
+)
+
+SKETCH_STRATEGY_PROPS: JsonObject = {
+    "source_type": {
+        "type": "string",
+        "enum": SOURCE_TYPE_ENUM,
+        "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate.",
+    },
+    "has_image": {
+        "type": "boolean",
+        "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference.",
+    },
+    "modeling_strategy": {
+        "type": "string",
+        "enum": MODELING_STRATEGY_ENUM,
+        "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace.",
+    },
+    "strategy_confirmed": {
+        "type": "boolean",
+        "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous.",
+    },
+}
+
 PIPE_WORKER_PROPS: JsonObject = {
     "document_id": {"type": "string"},
     "body_name": {"type": "string"},
@@ -799,7 +856,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_geometry",
                 "Worker Add Sketch Geometry",
-                "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. " + SKETCH_COMPLEX_PROFILE_POLICY,
+                "Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + SKETCH_STRATEGY_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -816,6 +873,7 @@ class PersistentToolService:
                         "type": "boolean",
                         "description": "Fail before saving if the resulting sequence still has open vertices.",
                     },
+                    **SKETCH_STRATEGY_PROPS,
                     **SAVE_PROPS,
                 },
                 ["document_id", "sketch_name", "geometry"],
@@ -837,11 +895,12 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_add_profile",
                 "Worker Add Sketch Profile",
-                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.",
+                "Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. " + SKETCH_STRATEGY_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "profile": {"type": "object"},
+                    **SKETCH_STRATEGY_PROPS,
                     **SAVE_PROPS,
                 },
                 ["document_id", "sketch_name", "profile"],
@@ -850,7 +909,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_create",
                 "Worker Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + DATUM_USAGE_POLICY,
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + DATUM_USAGE_POLICY + " " + SKETCH_STRATEGY_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -882,6 +941,7 @@ class PersistentToolService:
                     "forbid_branch_points": {"type": "boolean"},
                     "forbid_micro_offsets": {"type": "boolean"},
                     "micro_offset_tolerance": {"type": "number"},
+                    **SKETCH_STRATEGY_PROPS,
                     **SAVE_PROPS,
                 },
                 ["document_id", "loops"],
@@ -890,7 +950,7 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_profile_validate",
                 "Worker Validate Sketch Profile",
-                "Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.",
+                "Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. " + SKETCH_STRATEGY_POLICY,
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
@@ -912,6 +972,7 @@ class PersistentToolService:
                     "forbid_polyline_fallback": {"type": "boolean"},
                     "forbid_intent_mismatch": {"type": "boolean"},
                     "expected_geometry": {"type": "array", "items": {"type": "object"}},
+                    **SKETCH_STRATEGY_PROPS,
                 },
                 ["document_id", "sketch_name"],
                 "sketch_profile_validate",

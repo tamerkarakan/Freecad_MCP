@@ -13,6 +13,20 @@ A complex Sketcher profile is primitive geometry plus explicit constraints plus 
 
 If any of those are missing, the agent should treat the result as incomplete.
 
+## Image And Reference Intake
+
+When a task starts from an image, screenshot, drawing, diagram, or other visual reference, the agent must not guess the desired CAD outcome if several interpretations are plausible. Before mutating a document, ask the user which result they expect or call `freecad_modeling_strategy_intake`.
+
+Use these user-facing choices and carry the chosen `modeling_strategy` into Sketcher mutation tools:
+
+- `visual_trace`: visual similarity or silhouette only.
+- `editable_parametric_sketch`: a Sketcher model whose dimensions remain editable.
+- `manufacturing_partdesign_model`: a Body-based PartDesign model suitable for Pad/Pocket/Hole workflows.
+- `sketcher_constraint_rebuild`: rebuild the visible Sketcher constraint logic from primitives.
+- `rough_draft`: fast exploratory geometry with limitations reported.
+
+The MCP server does not interpret the image itself. It enforces an explicit modeling contract: for image/reference work the agent should pass `source_type`, `modeling_strategy`, and `strategy_confirmed=true` to `freecad_sketch_add_geometry`, `freecad_sketch_add_profile`, or `freecad_sketch_profile_create`. If `source_type`/`has_image` marks an image-like task and no strategy is provided, those tools stop before mutation so the user is not left waiting for the wrong kind of model.
+
 ## Native Geometry Versus Helper Intent
 
 Sketcher helpers are not extra primitive geometry types. The agent should read them as native geometry plus a constraint fingerprint:

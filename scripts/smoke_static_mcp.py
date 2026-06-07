@@ -102,6 +102,18 @@ def main() -> int:
                 "params": {"name": "freecad_phase_gate", "arguments": {"phase": "smoke"}},
             },
         )
+        image_prompt = send(
+            process,
+            {
+                "jsonrpc": "2.0",
+                "id": 9,
+                "method": "prompts/get",
+                "params": {
+                    "name": "freecad_image_strategy_intake",
+                    "arguments": {"task": "trace this screenshot", "source_type": "screenshot"},
+                },
+            },
+        )
     finally:
         if process.stdin:
             process.stdin.close()
@@ -111,6 +123,7 @@ def main() -> int:
     assert "tools" in initialized["result"]["capabilities"]
     tool_names = {tool["name"] for tool in tools["result"]["tools"]}
     assert "freecad_command_describe" in tool_names
+    assert "freecad_modeling_strategy_intake" in tool_names
     assert "freecad_session_status" in tool_names
     assert "freecad_session_start" in tool_names
     assert "freecad_worker_document_new" in tool_names
@@ -196,6 +209,8 @@ def main() -> int:
     assert any(resource["uri"] == "freecad://workbench/artifact" for resource in resources["result"]["resources"])
     assert resource_templates["result"]["resourceTemplates"] == []
     assert "Phase: smoke" in prompt["result"]["messages"][0]["content"]["text"]
+    assert "freecad_modeling_strategy_intake" in image_prompt["result"]["messages"][0]["content"]["text"]
+    assert "strategy_confirmed=true" in image_prompt["result"]["messages"][0]["content"]["text"]
     if process.returncode != 0:
         raise RuntimeError(f"server exited with {process.returncode}: {stderr}")
     print("static MCP smoke OK")

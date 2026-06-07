@@ -216,6 +216,15 @@ PROMPT_DESCRIPTORS: list[JsonObject] = [
         ],
     },
     {
+        "name": "freecad_image_strategy_intake",
+        "title": "FreeCAD Image Strategy Intake",
+        "description": "Ask the user which FreeCAD modeling outcome they expect from an image or visual reference before mutating.",
+        "arguments": [
+            {"name": "task", "description": "The image/reference-driven modeling task.", "required": True},
+            {"name": "source_type", "description": "Input kind such as reference_image, screenshot, drawing, or photo.", "required": False},
+        ],
+    },
+    {
         "name": "freecad_phase_gate",
         "title": "FreeCAD Phase Gate",
         "description": "Review a phase for tests, docs, risks, and runtime evidence.",
@@ -351,6 +360,11 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "PointOnObject/Equal constraints, and slot is two lines plus two circular arcs with "
                             "Tangent/equal-radius constraints. Read validate report_layers for native_geometry, "
                             "construction_geometry, constraint_graph, and helper_intent_inference. "
+                            "For image, screenshot, drawing, or visual-reference tasks, if the user did not clearly "
+                            "choose visual_trace, editable_parametric_sketch, sketcher_constraint_rebuild, "
+                            "rough_draft, or manufacturing_partdesign_model output, ask first or call "
+                            "freecad_modeling_strategy_intake; pass source_type, modeling_strategy, and "
+                            "strategy_confirmed=true into Sketcher mutation tools before changing the document. "
                             "When the user may edit dimensions later, use "
                             "constraint_policy='semantic', named driving dimensions, expression bindings, and "
                             "require_fully_constrained=true, then validate DoF/pad-ready status. "
@@ -365,6 +379,34 @@ def render_prompt(name: str, arguments: JsonObject) -> JsonObject:
                             "datum is needed; a datum plane is redundant for one sketch and has the same TNP risk "
                             "as a sketch when attached to generated faces. "
                             f"Task: {task}"
+                        ),
+                    },
+                }
+            ],
+        }
+    if name == "freecad_image_strategy_intake":
+        task = arguments.get("task", "")
+        source_type = arguments.get("source_type", "reference_image")
+        return {
+            "description": "FreeCAD image/reference modeling strategy intake",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": (
+                            "Before mutating a FreeCAD document from an image, screenshot, drawing, or visual "
+                            "reference, clarify the expected modeling outcome if it is not already explicit. "
+                            "Ask the user: 'Bu gorselden ne bekliyorsunuz: sadece gorsel benzerlik mi, "
+                            "FreeCAD'de olculeri degistirilebilir parametrik sketch mi, Sketcher constraint "
+                            "mantiginin yeniden kurulmasi mi, uretilebilir PartDesign model mi, yoksa kaba "
+                            "taslak mi?' Map the answer to one of these modeling_strategy values: visual_trace, "
+                            "editable_parametric_sketch, manufacturing_partdesign_model, "
+                            "sketcher_constraint_rebuild, or rough_draft. Use freecad_modeling_strategy_intake "
+                            "to make the ask/continue decision, then pass source_type, modeling_strategy, and "
+                            "strategy_confirmed=true to freecad_sketch_add_geometry, freecad_sketch_add_profile, "
+                            "or freecad_sketch_profile_create before changing geometry. "
+                            f"Source type: {source_type}. Task: {task}"
                         ),
                     },
                 }

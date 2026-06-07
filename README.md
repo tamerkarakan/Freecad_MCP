@@ -6,10 +6,12 @@ The project is built around one main rule: prefer deterministic typed CAD tools 
 
 For Sketcher and PartDesign work, the modeling contract is stronger than "draw some primitives": complex profiles should be primitive geometry plus explicit constraints plus validation. Agents should prefer helper/profile recipes for known CAD intents such as rectangle, circle, regular polygon/hexagon, slot, and keyhole; use semantic named Sketcher dimensions for parametric models; and avoid loose overlapping profiles such as circle + rectangle when a single keyhole loop or ordered arc/line loop is the real CAD intent.
 
+For image, screenshot, drawing, or visual-reference tasks, the server exposes a modeling strategy intake gate. Agents should ask whether the user expects visual similarity, an editable parametric sketch, a manufacturing PartDesign model, a Sketcher constraint rebuild, or a rough draft before mutating geometry. Sketcher mutation tools accept `source_type`, `modeling_strategy`, and `strategy_confirmed`; image-like calls without a declared strategy stop before mutation.
+
 ## Current Status
 
 - Primary runtime verified against FreeCAD `1.1.1` portable on Windows.
-- Full current MCP surface: `159` tools with `FREECAD_MCP_MODULES=all`.
+- Full current MCP surface: `168` tools with `FREECAD_MCP_MODULES=all`.
 - Product-style profiles are generated for `free`, `pro`, `studio`, `team`, `source`, and `unsafe`.
 - The repository includes generated MCP tool schemas, product bundle manifests, distribution profile skeletons, and a local FreeCAD Workbench bridge artifact.
 - The source command inventory currently scans `1112` FreeCAD GUI command registrations from the configured local FreeCAD source checkout.
@@ -22,6 +24,7 @@ Use this MCP server when you want an AI agent to:
 
 - Create FreeCAD documents and geometry from natural-language instructions.
 - Build and validate Sketcher profiles before PartDesign features are created.
+- Turn visual references into the right class of CAD output by asking for the modeling strategy before creating geometry.
 - Bind named parameters into object properties and Sketcher dimension constraints.
 - Create Body-attached Pad, Pocket, Hole, Revolution, Groove, Loft, Pipe, dress-up, and pattern features.
 - Inspect object metadata, topology, bounding boxes, and geometry-check results.
@@ -93,13 +96,13 @@ The server can expose different tool surfaces with `FREECAD_MCP_MODULES`.
 
 | Profile | Tools | Intended Use |
 | --- | ---: | --- |
-| `free` | 20 | Static command inventory plus file-based document/object/parameter/import-export operations. |
-| `pro` | 85 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
-| `studio` | 155 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
-| `team` | 158 | Studio surface plus source-intelligence tools. |
+| `free` | 22 | Static command inventory plus file-based document/object/parameter/import-export operations. |
+| `pro` | 91 | Adds GUI attach, Sketcher, PartDesign, mesh, and Assembly typed tools. |
+| `studio` | 164 | Adds persistent worker sessions plus TechDraw, CAM, and FEM first slices. |
+| `team` | 167 | Studio surface plus source-intelligence tools. |
 | `source` | 5 | Command/source intelligence add-on only. |
 | `unsafe` | 1 | Broad `freecad_python_exec` escape hatch only. |
-| `all` | 159 | Full advertised MCP surface. |
+| `all` | 168 | Full advertised MCP surface. |
 
 Generated profile files live under [packaging/profiles](packaging/profiles), and the generated bundle manifest is [docs/PRODUCT_BUNDLES.md](docs/PRODUCT_BUNDLES.md).
 
@@ -108,6 +111,7 @@ Generated profile files live under [packaging/profiles](packaging/profiles), and
 | Area | Current Support |
 | --- | --- |
 | Static command inventory | List and describe FreeCAD commands from the generated source inventory. |
+| Modeling strategy intake | Ask/confirm the expected output class for image/reference-driven CAD tasks before Sketcher mutation. |
 | Source intelligence | Search/open source files and symbol index data from a local FreeCAD checkout. |
 | Runtime status | Discover and report the configured `FreeCADCmd` runtime. |
 | Documents | Create, open, save, recompute, close, and export FreeCAD documents. |
@@ -225,7 +229,7 @@ Current unblocked scope is complete, but the next useful expansion areas are:
 - Deepen structured logging with crash bundles, worker restart correlation, response-size summaries, and performance rollups.
 - Extend console reading beyond persistent worker sessions to process-per-call, GUI bridge, and Workbench bridge modes.
 - Expand GUI live bridge coverage beyond viewport snapshots into command boundaries, transaction/dirty state, console forwarding, and safer GUI-side mutation policies.
-- Deepen image-to-sketch guidance for ambiguous B-spline vs circular arc vs line/polyline decisions.
+- Deepen image-to-sketch analysis beyond the current modeling-strategy intake, especially ambiguous B-spline vs circular arc vs line/polyline decisions and visible constraint/dimension extraction.
 - Continue Sketcher and PartDesign research from official docs and local FreeCAD source. Next PartDesign targets include MultiTransform, Scaled, Boolean, and deeper combined Pipe orientation/scaling fixtures.
 - Add persistent-worker parity for Spreadsheet/expression parameter tools after the process-per-call surface settles.
 - Add a guarded GUI command catalog and allowlisted GUI command runner after preconditions, transaction policy, and smoke coverage are clear.

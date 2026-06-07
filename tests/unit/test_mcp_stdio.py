@@ -279,7 +279,7 @@ class PromptTests(unittest.TestCase):
     def test_descriptors_list_both_prompts(self) -> None:
         names = {descriptor["name"] for descriptor in PROMPT_DESCRIPTORS}
 
-        self.assertEqual(names, {"freecad_design_task", "freecad_phase_gate"})
+        self.assertEqual(names, {"freecad_design_task", "freecad_image_strategy_intake", "freecad_phase_gate"})
 
     def test_render_design_task_includes_task(self) -> None:
         rendered = render_prompt("freecad_design_task", {"task": "make a cube"})
@@ -294,6 +294,23 @@ class PromptTests(unittest.TestCase):
         self.assertIn("constraint_policy='semantic'", text)
         self.assertIn("helper_intent_inference", text)
         self.assertIn("PointOnObject", text)
+        self.assertIn("freecad_modeling_strategy_intake", text)
+        self.assertIn("strategy_confirmed=true", text)
+
+    def test_render_image_strategy_intake_includes_strategy_gate(self) -> None:
+        rendered = render_prompt(
+            "freecad_image_strategy_intake",
+            {"task": "turn this screenshot into a bracket", "source_type": "screenshot"},
+        )
+
+        text = rendered["messages"][0]["content"]["text"]
+        self.assertIn("turn this screenshot into a bracket", text)
+        self.assertIn("Source type: screenshot", text)
+        self.assertIn("freecad_modeling_strategy_intake", text)
+        self.assertIn("editable_parametric_sketch", text)
+        self.assertIn("manufacturing_partdesign_model", text)
+        self.assertIn("modeling_strategy", text)
+        self.assertIn("strategy_confirmed=true", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

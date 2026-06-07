@@ -25,6 +25,117 @@ from freecad_mcp.tooling import (
 )
 
 
+IMAGE_LIKE_SOURCE_TYPES = {
+    "image",
+    "reference_image",
+    "screenshot",
+    "photo",
+    "bitmap",
+    "drawing",
+    "diagram",
+    "visual_reference",
+    "silhouette",
+    "traced_image",
+}
+
+MODELING_STRATEGY_CHOICES: tuple[JsonObject, ...] = (
+    {
+        "id": "visual_trace",
+        "label_tr": "Gorsel benzerlik",
+        "label_en": "Visual trace",
+        "when_to_use": "Use when the user only needs a silhouette or visually similar shape.",
+        "quality_gates": ["curve_intent_declared", "native_geometry_reported"],
+    },
+    {
+        "id": "editable_parametric_sketch",
+        "label_tr": "Olculeri degistirilebilir parametrik sketch",
+        "label_en": "Editable parametric sketch",
+        "when_to_use": "Use when dimensions must remain editable through Sketcher constraints and expressions.",
+        "quality_gates": ["constraint_policy_semantic", "named_driving_dimensions", "fully_constrained"],
+    },
+    {
+        "id": "manufacturing_partdesign_model",
+        "label_tr": "Uretilebilir PartDesign model",
+        "label_en": "Manufacturing PartDesign model",
+        "when_to_use": "Use when the output should be a robust Body with Pad/Pocket/Hole features.",
+        "quality_gates": ["body_tip_valid", "pad_or_pocket_ready_profiles", "geometry_check"],
+    },
+    {
+        "id": "sketcher_constraint_rebuild",
+        "label_tr": "Sketcher constraint mantigini yeniden kur",
+        "label_en": "Sketcher constraint rebuild",
+        "when_to_use": "Use when the visual result matters less than rebuilding constraint logic from primitives.",
+        "quality_gates": ["primitive_ids", "constraint_graph", "solver_status"],
+    },
+    {
+        "id": "rough_draft",
+        "label_tr": "Kaba taslak",
+        "label_en": "Rough draft",
+        "when_to_use": "Use for fast exploration when parametric editability is explicitly not required yet.",
+        "quality_gates": ["limitations_reported", "next_refinement_step"],
+    },
+    {
+        "id": "semantic_reconstruction",
+        "label_tr": "Anlamsal yeniden kurulum",
+        "label_en": "Semantic reconstruction",
+        "when_to_use": "Use when the agent should infer design intent instead of tracing pixels directly.",
+        "quality_gates": ["assumptions_reported", "native_geometry_reported", "constraint_graph"],
+    },
+    {
+        "id": "dimensioned_parametric",
+        "label_tr": "Olculendirilmis parametrik model",
+        "label_en": "Dimensioned parametric model",
+        "when_to_use": "Use when important dimensions must be named and spreadsheet/expression driven.",
+        "quality_gates": ["named_driving_dimensions", "expression_bindings", "fully_constrained"],
+    },
+    {
+        "id": "organic_silhouette",
+        "label_tr": "Organik siluet",
+        "label_en": "Organic silhouette",
+        "when_to_use": "Use when B-spline or arc-rich freeform visual shape is more important than mechanical constraints.",
+        "quality_gates": ["curve_fit_report", "bspline_or_arc_intent"],
+    },
+    {
+        "id": "manufacturing_profile",
+        "label_tr": "Uretim profili",
+        "label_en": "Manufacturing profile",
+        "when_to_use": "Use when a single closed sketch profile must be pad/pocket ready.",
+        "quality_gates": ["closed_profile", "pad_ready", "curve_intent_declared"],
+    },
+)
+
+MODELING_STRATEGY_IDS = {str(choice["id"]) for choice in MODELING_STRATEGY_CHOICES}
+
+
+def normalize_strategy_value(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ToolInputError("modeling_strategy must be a string")
+    normalized = value.strip().casefold().replace("-", "_").replace(" ", "_")
+    return normalized or None
+
+
+def normalize_source_type(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ToolInputError("source_type must be a string")
+    normalized = value.strip().casefold().replace("-", "_").replace(" ", "_")
+    return normalized or None
+
+
+def optional_bool(args: JsonObject, key: str, *, default: bool = False) -> bool:
+    value = args.get(key, default)
+    if not isinstance(value, bool):
+        raise ToolInputError(f"{key} must be a boolean")
+    return value
+
+
+def modeling_strategy_choices() -> list[JsonObject]:
+    return [dict(choice) for choice in MODELING_STRATEGY_CHOICES]
+
+
 class InventoryStore:
     """Read-only access to the generated FreeCAD source inventory."""
 
@@ -193,6 +304,43 @@ class StaticToolService:
                     "required": ["path"],
                 },
                 handler=self.source_open,
+            ),
+            ToolDefinition(
+                name="freecad_modeling_strategy_intake",
+                title="Modeling Strategy Intake",
+                description=(
+                    "For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether the agent must "
+                    "ask the user which modeling outcome is expected before mutating a sketch or PartDesign model. "
+                    "Use this gate when visual similarity, editable parametric Sketcher constraints, manufacturing "
+                    "PartDesign output, constraint reconstruction, or rough drafting could all be plausible."
+                ),
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "source_type": {
+                            "type": "string",
+                            "description": "Input source kind, for example reference_image, screenshot, drawing, text_prompt, or existing_model.",
+                        },
+                        "has_image": {
+                            "type": "boolean",
+                            "description": "Set true when the task depends on an image, screenshot, drawing, or visual reference.",
+                        },
+                        "modeling_strategy": {
+                            "type": "string",
+                            "enum": sorted(MODELING_STRATEGY_IDS),
+                            "description": "Chosen output intent. Leave empty if the user has not chosen yet.",
+                        },
+                        "strategy_confirmed": {
+                            "type": "boolean",
+                            "description": "True only when the user explicitly chose the strategy or the prompt states it unambiguously.",
+                        },
+                        "task": {
+                            "type": "string",
+                            "description": "Optional user task text for echoing the intake decision.",
+                        },
+                    },
+                },
+                handler=self.modeling_strategy_intake,
             ),
         ]
 
@@ -366,6 +514,58 @@ class StaticToolService:
             "end_line": end_line,
             "total_lines": len(file_lines),
             "lines": selected,
+        }
+
+    def modeling_strategy_intake(self, args: JsonObject) -> JsonObject:
+        source_type = normalize_source_type(args.get("source_type"))
+        has_image = optional_bool(args, "has_image", default=False)
+        modeling_strategy = normalize_strategy_value(args.get("modeling_strategy"))
+        strategy_confirmed = optional_bool(args, "strategy_confirmed", default=False)
+        task = optional_string(args, "task")
+
+        if modeling_strategy and modeling_strategy not in MODELING_STRATEGY_IDS:
+            raise ToolInputError("unsupported modeling_strategy: " + modeling_strategy)
+
+        image_like = bool(has_image or (source_type in IMAGE_LIKE_SOURCE_TYPES))
+        warnings = []
+        missing_strategy = image_like and not modeling_strategy
+        if image_like and modeling_strategy and not strategy_confirmed:
+            warnings.append(
+                "strategy_not_confirmed: ask the user to confirm this modeling_strategy unless the task text already made it explicit"
+            )
+
+        status = "needs_clarification" if missing_strategy else "ok"
+        action = "ask_user" if missing_strategy else ("confirm_or_continue" if warnings else "continue")
+        question_tr = (
+            "Bu gorselden ne bekliyorsunuz: sadece gorsel benzerlik mi, FreeCAD'de olculeri "
+            "degistirilebilir parametrik sketch mi, Sketcher constraint mantiginin yeniden kurulmasi mi, "
+            "uretilebilir PartDesign model mi, yoksa kaba taslak mi?"
+        )
+        question_en = (
+            "What should this reference become: visual similarity only, an editable parametric Sketcher model, "
+            "a Sketcher constraint rebuild, a manufacturable PartDesign model, or a rough draft?"
+        )
+        required_fields_for_mutation = ["source_type", "modeling_strategy", "strategy_confirmed"]
+
+        return {
+            "status": status,
+            "action": action,
+            "source_type": source_type,
+            "has_image": has_image,
+            "image_like": image_like,
+            "modeling_strategy": modeling_strategy,
+            "strategy_confirmed": strategy_confirmed,
+            "task": task,
+            "question_tr": question_tr,
+            "question_en": question_en,
+            "choices": modeling_strategy_choices(),
+            "required_fields_for_mutation": required_fields_for_mutation,
+            "warnings": warnings,
+            "message": (
+                "Ask the user for the desired modeling outcome before mutating the FreeCAD document."
+                if missing_strategy
+                else "Carry the declared modeling strategy into Sketcher/PartDesign tools."
+            ),
         }
 
     def _source_search_root(self, freecad_root: Path, module: str | None) -> Path:

@@ -11,6 +11,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_source_search` | Search FreeCAD source by text/glob/module. | Git checkout |
 | `freecad_source_open` | Read a source file region with line numbers. | Git checkout |
 | `freecad_source_symbol_index` | Return indexed command/class/module records. | Generated inventory |
+| `freecad_modeling_strategy_intake` | Ask or confirm the expected modeling outcome for image/reference-driven CAD work before sketch mutation. | Static tool contract |
 | `freecad_session_start` | Start or attach to a FreeCAD Python runtime. | FreeCAD process |
 | `freecad_session_status` | Report process, document, and bridge state. | FreeCAD process |
 | `freecad_session_list` | List persistent FreeCAD worker sessions. | FreeCAD process |
@@ -65,11 +66,11 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_partdesign_polar_pattern` | Create a PartDesign PolarPattern transform from selected Body features or the whole Body shape. | PartDesign App API |
 | `freecad_partdesign_mirrored` | Create a PartDesign Mirrored transform from selected Body features or the whole Body shape. | PartDesign App API |
 | `freecad_sketch_create` | Create a Sketcher object, optionally inside a PartDesign Body attached to an origin plane, planar face/subelement, or datum/support object. | Sketcher + PartDesign App API |
-| `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, and circular-arc actual geometry reports. | Sketcher App API |
+| `freecad_sketch_add_geometry` | Add point, line, circle, multiple circular arc intent forms, ellipse/conic arc, B-spline, and polyline geometry, with optional ordered-chain Coincident constraints, closed-profile validation, circular-arc actual geometry reports, and image/reference modeling strategy gate fields. | Sketcher App API |
 | `freecad_sketch_add_constraint` | Add raw Sketcher constraints by passing the provided type string to `Sketcher.Constraint(type, *values)`, with datum/driving/active/visibility metadata and `Group`/`Text` blocked for safety. | Sketcher App API |
-| `freecad_sketch_add_profile` | Add helper profiles such as rectangle variants, named/arbitrary regular polygons, circle, straight/oriented/arc slots, and polyline. | Sketcher App API |
-| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular polygon/hexagon, slot, and keyhole, with endpoint drift rejection, curve-preservation contracts, semantic named constraints, optional Block constraints, and optional PartDesign Body origin-plane, planar face/subelement, or datum/support attachment. | Sketcher + PartDesign App API |
-| `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, and intent-mismatch checks. | Sketcher + Part App API |
+| `freecad_sketch_add_profile` | Add helper profiles such as rectangle variants, named/arbitrary regular polygons, circle, straight/oriented/arc slots, and polyline, with image/reference modeling strategy gate fields. | Sketcher App API |
+| `freecad_sketch_profile_create` | Create loop-based pad-ready profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular polygon/hexagon, slot, and keyhole, with endpoint drift rejection, curve-preservation contracts, semantic named constraints, optional non-parametric Block constraints, image/reference modeling strategy gate fields, and optional PartDesign Body origin-plane, planar face/subelement, or datum/support attachment. | Sketcher + PartDesign App API |
+| `freecad_sketch_profile_validate` | Validate sketch pad-readiness with closed-wire, Part face, isolated point, branch endpoint, micro-offset, native geometry type, intent-mismatch checks, and optional modeling strategy report. | Sketcher + Part App API |
 | `freecad_curve_fit_analyze` | Compare line and circular-arc fit errors for traced points and recommend line, arc, or B-spline before sketch creation. | Geometry analysis |
 | `freecad_sketch_geometry_method_catalog` | List supported typed Sketcher creation methods, profile helpers, common `Sketcher.Constraint` type strings/field shapes, and transform-generated geometry. | Tool metadata |
 | `freecad_sketch_edit_geometry` | Delete/move geometry, toggle construction, add/delete external geometry, carbon-copy, and maintain internal/degenerated geometry. | Sketcher App API |

@@ -467,6 +467,122 @@ def sketch_report_layers(sketch, semantic_groups=None):
     return layers
 
 
+IMAGE_LIKE_SOURCE_TYPES = {
+    "image",
+    "reference_image",
+    "screenshot",
+    "photo",
+    "bitmap",
+    "drawing",
+    "diagram",
+    "visual_reference",
+    "silhouette",
+    "traced_image",
+}
+
+MODELING_STRATEGIES = {
+    "visual_trace",
+    "editable_parametric_sketch",
+    "manufacturing_partdesign_model",
+    "sketcher_constraint_rebuild",
+    "rough_draft",
+    "semantic_reconstruction",
+    "dimensioned_parametric",
+    "organic_silhouette",
+    "manufacturing_profile",
+}
+
+STRICT_PARAMETRIC_STRATEGIES = {
+    "editable_parametric_sketch",
+    "manufacturing_partdesign_model",
+    "sketcher_constraint_rebuild",
+    "dimensioned_parametric",
+    "manufacturing_profile",
+}
+
+
+def normalized_strategy_value(value):
+    if value is None:
+        return None
+    normalized = str(value).strip().lower().replace("-", "_").replace(" ", "_")
+    return normalized or None
+
+
+def modeling_strategy_preflight(args):
+    source_type = normalized_strategy_value(args.get("source_type"))
+    has_image = bool(args.get("has_image", False))
+    strategy = normalized_strategy_value(args.get("modeling_strategy"))
+    strategy_confirmed = bool(args.get("strategy_confirmed", False))
+    if strategy and strategy not in MODELING_STRATEGIES:
+        raise ValueError("unsupported modeling_strategy: " + strategy)
+    image_like = bool(has_image or source_type in IMAGE_LIKE_SOURCE_TYPES)
+    if image_like and not strategy:
+        raise ValueError(
+            "missing_modeling_strategy: image/reference Sketcher work requires asking the user which output is expected; "
+            "call freecad_modeling_strategy_intake and pass source_type, modeling_strategy, and strategy_confirmed=true"
+        )
+    warnings = []
+    if image_like and strategy and not strategy_confirmed:
+        warnings.append("strategy_not_confirmed: confirm the modeling strategy with the user before mutating")
+    return {
+        "source_type": source_type,
+        "has_image": has_image,
+        "image_like": image_like,
+        "modeling_strategy": strategy,
+        "strategy_confirmed": strategy_confirmed,
+        "warnings": warnings,
+    }
+
+
+def enforce_strategy_lock_mode(args, lock_mode):
+    preflight = modeling_strategy_preflight(args)
+    strategy = preflight.get("modeling_strategy")
+    if lock_mode == "block" and strategy in STRICT_PARAMETRIC_STRATEGIES:
+        raise ValueError(
+            "modeling_strategy forbids lock_mode='block': use semantic Sketcher constraints and named dimensions "
+            "for editable/parametric/manufacturing reference work"
+        )
+    return preflight
+
+
+def sketch_modeling_strategy_report(args, sketch, *, validation=None, lock_mode=None, preflight=None):
+    preflight = preflight or modeling_strategy_preflight(args)
+    strategy = preflight.get("modeling_strategy")
+    semantic_groups = sketch_semantic_groups(sketch)
+    report_layers = sketch_report_layers(sketch, semantic_groups)
+    warnings = list(preflight.get("warnings", []))
+    errors = []
+    constraint_counts = semantic_groups.get("constraint_type_counts", {})
+    block_count = int(constraint_counts.get("Block", 0) or 0)
+    constraint_policy = str(args.get("constraint_policy") or "").lower()
+    semantic_policy = bool(args.get("semantic_constraints", False)) or constraint_policy == "semantic"
+
+    if strategy in STRICT_PARAMETRIC_STRATEGIES:
+        if block_count or lock_mode == "block":
+            errors.append("block_constraints_conflict_with_parametric_strategy")
+        if not semantic_policy:
+            warnings.append("semantic_constraint_policy_recommended_for_this_strategy")
+        if not bool(args.get("require_fully_constrained", False)):
+            warnings.append("require_fully_constrained_recommended_for_this_strategy")
+
+    if strategy in {"manufacturing_partdesign_model", "manufacturing_profile"} and validation is not None:
+        if not bool(validation.get("pad_ready", False)):
+            errors.append("manufacturing_strategy_requires_pad_ready_profile")
+
+    if strategy in {"visual_trace", "organic_silhouette"}:
+        warnings.append("visual_strategy_does_not_guarantee_later_dimension_editability")
+
+    return {
+        "status": "fail" if errors else ("warn" if warnings else "pass"),
+        "preflight": preflight,
+        "warnings": warnings,
+        "errors": errors,
+        "constraint_type_counts": constraint_counts,
+        "native_type_counts": report_layers.get("native_type_counts", {}),
+        "helper_intent_inference": report_layers.get("helper_intent_inference", {}),
+    }
+
+
 def requested_arc_sweep(start_angle, end_angle, *, direction=None, sweep=None):
     two_pi = 2.0 * math.pi
     delta_ccw = (float(end_angle) - float(start_angle)) % two_pi
@@ -5285,6 +5401,7 @@ def add_profile_geometry(sketch, profile):
 
 
 def action_sketch_add_geometry(args):
+    strategy_preflight = modeling_strategy_preflight(args)
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     items = args.get("geometry") or []
@@ -5314,6 +5431,7 @@ def action_sketch_add_geometry(args):
         "geometry_reports": geometry_reports,
         "sketch": object_summary(sketch),
         "document": document_summary(doc),
+        "modeling_strategy": sketch_modeling_strategy_report(args, sketch, preflight=strategy_preflight),
     }
     if closed_validation is not None:
         result["closed_validation"] = closed_validation
@@ -5337,6 +5455,7 @@ def action_sketch_add_constraint(args):
 
 
 def action_sketch_add_profile(args):
+    strategy_preflight = modeling_strategy_preflight(args)
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     doc.openTransaction("MCP add sketch profile")
@@ -5351,12 +5470,14 @@ def action_sketch_add_profile(args):
         "constraint_indices": constraints,
         "sketch": object_summary(sketch),
         "document": document_summary(doc),
+        "modeling_strategy": sketch_modeling_strategy_report(args, sketch, preflight=strategy_preflight),
     }
 
 
 def action_sketch_profile_create(args):
     import Sketcher
 
+    strategy_preflight = modeling_strategy_preflight(args)
     doc = open_or_new(args)
     sketch_name = args.get("sketch_name") or "ProfileSketch"
     sketch = doc.getObject(sketch_name)
@@ -5386,6 +5507,11 @@ def action_sketch_profile_create(args):
         lock_mode = str(args.get("lock_mode", "none"))
         if lock_mode not in {"none", "block"}:
             raise ValueError("unsupported lock_mode: " + lock_mode)
+        if lock_mode == "block" and strategy_preflight.get("modeling_strategy") in STRICT_PARAMETRIC_STRATEGIES:
+            raise ValueError(
+                "modeling_strategy forbids lock_mode='block': use semantic Sketcher constraints and named dimensions "
+                "for editable/parametric/manufacturing reference work"
+            )
         if lock_mode == "block":
             for geometry_index in all_added:
                 block_indices.append(sketch.addConstraint(Sketcher.Constraint("Block", geometry_index)))
@@ -5408,6 +5534,7 @@ def action_sketch_profile_create(args):
         "geometry_reports": all_geometry_reports,
         "block_constraint_indices": block_indices,
         "validation": validation,
+        "modeling_strategy": sketch_modeling_strategy_report(args, sketch, validation=validation, lock_mode=lock_mode, preflight=strategy_preflight),
         "attachment": attachment,
         "document": document_summary(doc),
     }
@@ -5417,7 +5544,10 @@ def action_sketch_profile_validate(args):
     doc = App.openDocument(args["document_path"])
     sketch = get_object(doc, args["sketch_name"])
     validation = validate_sketch_profile(sketch, args)
-    return {"sketch": object_summary(sketch), "validation": validation, "document": document_summary(doc)}
+    result = {"sketch": object_summary(sketch), "validation": validation, "document": document_summary(doc)}
+    if any(key in args for key in ("source_type", "has_image", "modeling_strategy", "strategy_confirmed")):
+        result["modeling_strategy"] = sketch_modeling_strategy_report(args, sketch, validation=validation)
+    return result
 
 
 def action_curve_fit_analyze(args):

@@ -27,6 +27,7 @@ class ToolSchemaTests(unittest.TestCase):
 
         self.assertEqual(len(names), len(set(names)))
         self.assertGreater(len(names), 30)
+        self.assertIn("freecad_modeling_strategy_intake", names)
         for tool in tools:
             self.assertEqual(tool["inputSchema"]["type"], "object")
             self.assertIn("properties", tool["inputSchema"])
@@ -97,6 +98,15 @@ class ToolSchemaTests(unittest.TestCase):
         validate_props = tools["freecad_worker_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("expected_geometry", validate_props)
         self.assertIn("required_segment_types", validate_props)
+        for tool_name in [
+            "freecad_worker_sketch_add_geometry",
+            "freecad_worker_sketch_add_profile",
+            "freecad_worker_sketch_profile_create",
+            "freecad_worker_sketch_profile_validate",
+        ]:
+            props = tools[tool_name].to_mcp()["inputSchema"]["properties"]
+            for prop_name in ("source_type", "has_image", "modeling_strategy", "strategy_confirmed"):
+                self.assertIn(prop_name, props)
         sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
         for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
             self.assertIn(name, sketch_validate_props)
@@ -337,8 +347,21 @@ class ToolSchemaTests(unittest.TestCase):
             "attachment_object",
             "constraint_policy",
             "forbid_block_constraints",
+            "source_type",
+            "has_image",
+            "modeling_strategy",
+            "strategy_confirmed",
         ]:
             self.assertIn(name, props)
+        for tool_name in [
+            "freecad_sketch_add_geometry",
+            "freecad_sketch_add_profile",
+            "freecad_sketch_profile_create",
+            "freecad_sketch_profile_validate",
+        ]:
+            props = tools[tool_name].to_mcp()["inputSchema"]["properties"]
+            for prop_name in ("source_type", "has_image", "modeling_strategy", "strategy_confirmed"):
+                self.assertIn(prop_name, props)
         validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
         for name in [
             "expected_geometry",

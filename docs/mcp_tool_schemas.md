@@ -155,6 +155,49 @@ Read a bounded line range from a source file in the local FreeCAD checkout.
 }
 ```
 
+## `freecad_modeling_strategy_intake`
+
+For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether the agent must ask the user which modeling outcome is expected before mutating a sketch or PartDesign model. Use this gate when visual similarity, editable parametric Sketcher constraints, manufacturing PartDesign output, constraint reconstruction, or rough drafting could all be plausible.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "source_type": {
+      "type": "string",
+      "description": "Input source kind, for example reference_image, screenshot, drawing, text_prompt, or existing_model."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the task depends on an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "dimensioned_parametric",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "manufacturing_profile",
+        "organic_silhouette",
+        "rough_draft",
+        "semantic_reconstruction",
+        "sketcher_constraint_rebuild",
+        "visual_trace"
+      ],
+      "description": "Chosen output intent. Leave empty if the user has not chosen yet."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt states it unambiguously."
+    },
+    "task": {
+      "type": "string",
+      "description": "Optional user task text for echoing the intake decision."
+    }
+  }
+}
+```
+
 ## `freecad_session_status`
 
 Discover FreeCADCmd and optionally probe the runtime version/config.
@@ -3169,7 +3212,7 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
 
 ## `freecad_worker_sketch_add_geometry`
 
-Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true.
+Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -3207,6 +3250,48 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
     "require_closed": {
       "type": "boolean",
       "description": "Fail before saving if the resulting sequence still has open vertices."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "output_path": {
       "type": "string"
@@ -3301,7 +3386,7 @@ Add typed constraints to a worker Sketcher object by passing the provided type s
 
 ## `freecad_worker_sketch_add_profile`
 
-Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.
+Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -3324,6 +3409,48 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
     },
     "profile": {
       "type": "object"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "output_path": {
       "type": "string"
@@ -3358,7 +3485,7 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -3500,6 +3627,48 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     "micro_offset_tolerance": {
       "type": "number"
     },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
+    },
     "output_path": {
       "type": "string"
     },
@@ -3532,7 +3701,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_worker_sketch_profile_validate`
 
-Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.
+Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -3621,6 +3790,48 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
       "items": {
         "type": "object"
       }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "compact_response": {
       "type": "boolean",
@@ -8993,7 +9204,7 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
 
 ## `freecad_sketch_add_geometry`
 
-Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family.
+Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -9022,6 +9233,48 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
     "require_closed": {
       "type": "boolean",
       "description": "Fail before saving if the resulting sequence still has open vertices."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "output_path": {
       "type": "string"
@@ -9123,7 +9376,7 @@ Add raw or named Sketcher constraints by passing the provided type string to Fre
 
 ## `freecad_sketch_add_profile`
 
-Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry.
+Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -9137,6 +9390,48 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
     },
     "profile": {
       "type": "object"
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "output_path": {
       "type": "string"
@@ -9179,7 +9474,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -9315,6 +9610,48 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     "micro_offset_tolerance": {
       "type": "number"
     },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
+    },
     "output_path": {
       "type": "string"
     },
@@ -9354,7 +9691,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_sketch_profile_validate`
 
-Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles.
+Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal.
 
 ```json
 {
@@ -9434,6 +9771,48 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
       "items": {
         "type": "object"
       }
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "text_prompt",
+        "image",
+        "reference_image",
+        "screenshot",
+        "photo",
+        "bitmap",
+        "drawing",
+        "diagram",
+        "visual_reference",
+        "silhouette",
+        "traced_image",
+        "existing_model",
+        "sketch"
+      ],
+      "description": "Task source kind. For image/reference inputs, this triggers the modeling strategy gate."
+    },
+    "has_image": {
+      "type": "boolean",
+      "description": "Set true when the sketch is derived from an image, screenshot, drawing, or visual reference."
+    },
+    "modeling_strategy": {
+      "type": "string",
+      "enum": [
+        "visual_trace",
+        "editable_parametric_sketch",
+        "manufacturing_partdesign_model",
+        "sketcher_constraint_rebuild",
+        "rough_draft",
+        "semantic_reconstruction",
+        "dimensioned_parametric",
+        "organic_silhouette",
+        "manufacturing_profile"
+      ],
+      "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
+    },
+    "strategy_confirmed": {
+      "type": "boolean",
+      "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous."
     },
     "executable": {
       "type": "string",

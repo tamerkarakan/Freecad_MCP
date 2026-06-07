@@ -27,6 +27,7 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 
 ## FreeCAD-Specific Ambiguity Rules
 
+- For image/reference modeling, first decide the expected output class with `freecad_modeling_strategy_intake` when unclear. The practical choices are visual trace, editable parametric sketch, manufacturing PartDesign model, Sketcher constraint rebuild, or rough draft. Carry the resulting `modeling_strategy` and `strategy_confirmed=true` into Sketcher mutation tools; do not start creating geometry from an ambiguous image just because a silhouette can be traced.
 - Before rebuilding from an image, classify the input: prompt-only, FreeCAD 2D Sketcher edit screenshot, FreeCAD 3D viewport, task panel/dialog screenshot, or unknown. If the image may be either a 2D Sketcher screenshot or a 3D model view, ask the user directly before mutating a document.
 - For a 2D Sketcher screenshot, treat visible constraint glyphs, dimensions, axes, construction geometry, and helper fingerprints as modeling obligations, not decoration. A fully constrained visual state means the agent must preserve the visible constraint semantics, not only the outline pixels.
 - Green Sketcher geometry alone is not enough evidence that a traced profile is pad-ready; also require `freecad_sketch_profile_validate` or equivalent structured validation.
@@ -47,10 +48,11 @@ Use screenshots to verify coarse UI facts: active workbench cues, visible task p
 ## Recommended Flow
 
 1. Collect structured state with MCP tools.
-2. Mutate GUI state only through narrow tools such as `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_body_activate`, or selection/view tools.
-3. Re-read structured state and assert the expected edit/selection/body/task state.
-4. Capture a local viewport snapshot with `freecad_gui_view_snapshot`, or use a window screenshot only if the task needs GUI chrome/task panels or structured state is insufficient.
-5. Send a low-detail viewport crop to the minimum reliable vision model.
-6. If uncertain, send a high-detail crop of only the relevant region.
-7. If CAD intent is still ambiguous, ask the user a direct question before mutating the model.
-8. Record the screenshot path, model/detail choice, and decision reason in the debug report.
+2. For image/reference creation, run the modeling strategy intake or ask the user which output class is expected before mutation.
+3. Mutate GUI state only through narrow tools such as `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_body_activate`, or selection/view tools.
+4. Re-read structured state and assert the expected edit/selection/body/task state.
+5. Capture a local viewport snapshot with `freecad_gui_view_snapshot`, or use a window screenshot only if the task needs GUI chrome/task panels or structured state is insufficient.
+6. Send a low-detail viewport crop to the minimum reliable vision model.
+7. If uncertain, send a high-detail crop of only the relevant region.
+8. If CAD intent is still ambiguous, ask the user a direct question before mutating the model.
+9. Record the screenshot path, model/detail choice, and decision reason in the debug report.

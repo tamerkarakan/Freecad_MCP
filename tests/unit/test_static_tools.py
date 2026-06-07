@@ -44,6 +44,37 @@ class StaticToolServiceTests(unittest.TestCase):
             with self.assertRaises(ToolInputError):
                 service.source_search({"query": "x" * 501})
 
+    def test_modeling_strategy_intake_requires_choice_for_image(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.modeling_strategy_intake(
+                {"source_type": "reference_image", "has_image": True, "task": "make this"}
+            )
+
+            self.assertEqual(result["status"], "needs_clarification")
+            self.assertEqual(result["action"], "ask_user")
+            self.assertIn("editable_parametric_sketch", {choice["id"] for choice in result["choices"]})
+            self.assertIn("modeling_strategy", result["required_fields_for_mutation"])
+            self.assertIn("Bu gorselden ne bekliyorsunuz", result["question_tr"])
+
+    def test_modeling_strategy_intake_accepts_confirmed_strategy(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.modeling_strategy_intake(
+                {
+                    "source_type": "screenshot",
+                    "modeling_strategy": "editable-parametric-sketch",
+                    "strategy_confirmed": True,
+                }
+            )
+
+            self.assertEqual(result["status"], "ok")
+            self.assertEqual(result["action"], "continue")
+            self.assertEqual(result["modeling_strategy"], "editable_parametric_sketch")
+            self.assertTrue(result["strategy_confirmed"])
+
 
 class SafeSourcePathTests(unittest.TestCase):
     def test_accepts_nested_in_root_path(self) -> None:
