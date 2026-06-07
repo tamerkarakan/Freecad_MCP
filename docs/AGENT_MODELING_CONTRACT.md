@@ -39,6 +39,7 @@ For a keyhole or circle-slot cut:
 For user-editable or Spreadsheet-driven models:
 
 - Use Sketcher dimensions as the real drivers.
+- Use `freecad_sketch_geometry_method_catalog` when unsure which Sketcher constraint type string or argument fields are available; its `constraint_methods` section documents common `Sketcher.Constraint(type, *values)` constructor strings.
 - Use Spreadsheet aliases as named parameters feeding expressions into Sketcher constraints and feature properties.
 - Prefer `constraint_policy="semantic"` for supported helper loops.
 - Prefer `require_fully_constrained=true` when later parameter edits must preserve shape intent.

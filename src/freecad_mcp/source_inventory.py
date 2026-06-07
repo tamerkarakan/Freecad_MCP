@@ -509,7 +509,7 @@ def proposed_tool_families(commands: list[CommandRecord]) -> list[dict[str, obje
                 "freecad_sketch_auto_constrain",
                 "freecad_sketch_validate",
             ],
-            "evidence": f"Sketcher module exposes {counts.get('Sketcher', 0)} scanned commands. The typed Sketcher contract is primitive geometry plus explicit constraints plus validation: use profile helpers for known intents, semantic named dimensions for parametric sketches, trim for repair/editing, and profile validation before Pad/Pocket-style features.",
+            "evidence": f"Sketcher module exposes {counts.get('Sketcher', 0)} scanned commands. The typed Sketcher contract is primitive geometry plus explicit constraints plus validation: use profile helpers for known intents, consult the method catalog for common Sketcher.Constraint type strings and field shapes, use semantic named dimensions for parametric sketches, trim for repair/editing, and profile validation before Pad/Pocket-style features.",
         },
         {
             "family": "freecad.mesh",

@@ -315,6 +315,12 @@ class ToolSchemaTests(unittest.TestCase):
         ]:
             self.assertIn(name, tools)
 
+        constraint_description = tools["freecad_sketch_add_constraint"].to_mcp()["description"]
+        self.assertIn("Sketcher.Constraint(type, *values)", constraint_description)
+        self.assertIn("Coincident", constraint_description)
+        catalog_description = tools["freecad_sketch_geometry_method_catalog"].to_mcp()["description"]
+        self.assertIn("constraint_methods", catalog_description)
+
         props = tools["freecad_sketch_profile_create"].to_mcp()["inputSchema"]["properties"]
         for name in [
             "required_segment_types",

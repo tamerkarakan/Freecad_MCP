@@ -827,6 +827,13 @@ def main() -> int:
         for expected_type in ["rectangle_center", "rectangle_3_point", "triangle", "square", "hexagon", "slot_start_end_radius", "arc_slot", "keyhole"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch profile method catalog missing {expected_type}: {method_catalog}")
+        constraint_types = {item["type"] for item in method_catalog.get("constraint_methods", [])}
+        for expected_type in ["Coincident", "Tangent", "Equal", "DistanceX", "DistanceY", "Radius", "Angle", "PointOnObject"]:
+            if expected_type not in constraint_types:
+                raise RuntimeError(f"sketch constraint method catalog missing {expected_type}: {method_catalog}")
+        constructor = method_catalog.get("constraint_constructor", {})
+        if not constructor.get("constructor_passthrough") or "Group" not in constructor.get("blocked_types", []):
+            raise RuntimeError(f"sketch constraint constructor policy missing: {method_catalog}")
 
         profile = assert_ok(
             service.definition_map()["freecad_sketch_add_profile"].handler(

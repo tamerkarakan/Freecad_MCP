@@ -445,7 +445,7 @@
         "freecad_sketch_auto_constrain",
         "freecad_sketch_validate"
       ],
-      "evidence": "Sketcher module exposes 101 scanned commands. The typed Sketcher contract is primitive geometry plus explicit constraints plus validation: use profile helpers for known intents, semantic named dimensions for parametric sketches, trim for repair/editing, and profile validation before Pad/Pocket-style features."
+      "evidence": "Sketcher module exposes 101 scanned commands. The typed Sketcher contract is primitive geometry plus explicit constraints plus validation: use profile helpers for known intents, consult the method catalog for common Sketcher.Constraint type strings and field shapes, use semantic named dimensions for parametric sketches, trim for repair/editing, and profile validation before Pad/Pocket-style features."
     },
     {
       "family": "freecad.mesh",
