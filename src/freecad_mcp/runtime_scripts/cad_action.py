@@ -500,6 +500,10 @@ STRICT_PARAMETRIC_STRATEGIES = {
     "manufacturing_profile",
 }
 
+VISUAL_ONLY_STRATEGIES = {"visual_trace", "organic_silhouette", "rough_draft"}
+
+NATIVE_CURVE_INTENTS = {"none", "bspline", "arc", "ellipse", "mixed", "unknown"}
+
 
 def normalized_strategy_value(value):
     if value is None:
@@ -513,23 +517,64 @@ def modeling_strategy_preflight(args):
     has_image = bool(args.get("has_image", False))
     strategy = normalized_strategy_value(args.get("modeling_strategy"))
     strategy_confirmed = bool(args.get("strategy_confirmed", False))
+    visible_sketch_constraints = bool(args.get("visible_sketch_constraints", False))
+    visible_dimensions = bool(args.get("visible_dimensions", False))
+    visible_construction_geometry = bool(args.get("visible_construction_geometry", False))
+    curves_visible = bool(args.get("curves_visible", False))
+    visible_bspline_control_points = bool(args.get("visible_bspline_control_points", False))
+    curve_intent = normalized_strategy_value(args.get("native_curve_intent"))
+    curve_intent_confirmed = bool(args.get("curve_intent_confirmed", False))
+    curve_intent_source = normalized_strategy_value(args.get("curve_intent_source"))
     if strategy and strategy not in MODELING_STRATEGIES:
         raise ValueError("unsupported modeling_strategy: " + strategy)
+    if curve_intent and curve_intent not in NATIVE_CURVE_INTENTS:
+        raise ValueError("unsupported native_curve_intent: " + curve_intent)
     image_like = bool(has_image or source_type in IMAGE_LIKE_SOURCE_TYPES)
     if image_like and not strategy:
         raise ValueError(
             "missing_modeling_strategy: image/reference Sketcher work requires asking the user which output is expected; "
             "call freecad_modeling_strategy_intake and pass source_type, modeling_strategy, and strategy_confirmed=true"
         )
+    visible_sketch_evidence = bool(visible_sketch_constraints or visible_dimensions or visible_construction_geometry)
+    if visible_sketch_evidence and strategy in VISUAL_ONLY_STRATEGIES and not strategy_confirmed:
+        raise ValueError(
+            "visible_sketch_evidence_requires_confirmation: the reference shows Sketcher constraints/dimensions/"
+            "construction geometry; ask whether the user wants a constraint rebuild/editable sketch before using visual_trace"
+        )
+    if curves_visible and (not curve_intent or curve_intent == "unknown" or not curve_intent_confirmed):
+        raise ValueError(
+            "missing_native_curve_intent: visible reference curves require asking whether they are B-spline, circular arc, "
+            "ellipse, or mixed before mutating; do not infer arc from silhouette alone"
+        )
+    if visible_bspline_control_points and curve_intent and curve_intent != "bspline":
+        raise ValueError(
+            "bspline_controls_conflict_with_curve_intent: visible B-spline control points/poles require native_curve_intent='bspline' "
+            "unless the user explicitly asks for a different approximation"
+        )
     warnings = []
     if image_like and strategy and not strategy_confirmed:
         warnings.append("strategy_not_confirmed: confirm the modeling strategy with the user before mutating")
+    if visible_sketch_evidence and strategy in VISUAL_ONLY_STRATEGIES:
+        warnings.append("visual_strategy_ignores_visible_sketch_constraints: report the loss of dimensions/constraints/construction geometry")
+    if visible_bspline_control_points and curve_intent == "bspline":
+        warnings.append("bspline_controls_detected: use native B-spline tooling and validate B-spline geometry, not arc approximation")
+    if curves_visible and curve_intent_source == "visual_guess":
+        warnings.append("curve_intent_visual_guess: ask for user/native confirmation before relying on this curve family")
     return {
         "source_type": source_type,
         "has_image": has_image,
         "image_like": image_like,
         "modeling_strategy": strategy,
         "strategy_confirmed": strategy_confirmed,
+        "visible_sketch_evidence": visible_sketch_evidence,
+        "visible_sketch_constraints": visible_sketch_constraints,
+        "visible_dimensions": visible_dimensions,
+        "visible_construction_geometry": visible_construction_geometry,
+        "curves_visible": curves_visible,
+        "visible_bspline_control_points": visible_bspline_control_points,
+        "native_curve_intent": curve_intent,
+        "curve_intent_confirmed": curve_intent_confirmed,
+        "curve_intent_source": curve_intent_source,
         "warnings": warnings,
     }
 

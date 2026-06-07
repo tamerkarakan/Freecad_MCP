@@ -28,6 +28,8 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 ## FreeCAD-Specific Ambiguity Rules
 
 - For image/reference modeling, first decide the expected output class with `freecad_modeling_strategy_intake` when unclear. The practical choices are visual trace, editable parametric sketch, manufacturing PartDesign model, Sketcher constraint rebuild, or rough draft. Carry the resulting `modeling_strategy` and `strategy_confirmed=true` into Sketcher mutation tools; do not start creating geometry from an ambiguous image just because a silhouette can be traced.
+- If the screenshot visibly contains Sketcher constraint glyphs, dimensions, or blue construction geometry, default to asking for `sketcher_constraint_rebuild` or `editable_parametric_sketch`. A visual-only trace is allowed only after explicit user confirmation that the visible constraints/dimensions/construction geometry can be ignored.
+- If curves are visible and their native family is unclear, ask for `native_curve_intent` before mutation. Blue B-spline poles/control points/handles are a strong cue for native B-spline; do not silently convert those curves into circular arcs.
 - Before rebuilding from an image, classify the input: prompt-only, FreeCAD 2D Sketcher edit screenshot, FreeCAD 3D viewport, task panel/dialog screenshot, or unknown. If the image may be either a 2D Sketcher screenshot or a 3D model view, ask the user directly before mutating a document.
 - For a 2D Sketcher screenshot, treat visible constraint glyphs, dimensions, axes, construction geometry, and helper fingerprints as modeling obligations, not decoration. A fully constrained visual state means the agent must preserve the visible constraint semantics, not only the outline pixels.
 - Green Sketcher geometry alone is not enough evidence that a traced profile is pad-ready; also require `freecad_sketch_profile_validate` or equivalent structured validation.
@@ -48,7 +50,7 @@ Use screenshots to verify coarse UI facts: active workbench cues, visible task p
 ## Recommended Flow
 
 1. Collect structured state with MCP tools.
-2. For image/reference creation, run the modeling strategy intake or ask the user which output class is expected before mutation.
+2. For image/reference creation, run the modeling strategy intake or ask the user which output class is expected before mutation; include visible constraint/dimension/construction and native curve-family questions when applicable.
 3. Mutate GUI state only through narrow tools such as `freecad_gui_sketch_enter`, `freecad_gui_sketch_leave`, `freecad_gui_body_activate`, or selection/view tools.
 4. Re-read structured state and assert the expected edit/selection/body/task state.
 5. Capture a local viewport snapshot with `freecad_gui_view_snapshot`, or use a window screenshot only if the task needs GUI chrome/task panels or structured state is insufficient.

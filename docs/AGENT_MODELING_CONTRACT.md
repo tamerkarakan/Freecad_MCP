@@ -27,6 +27,10 @@ Use these user-facing choices and carry the chosen `modeling_strategy` into Sket
 
 The MCP server does not interpret the image itself. It enforces an explicit modeling contract: for image/reference work the agent should pass `source_type`, `modeling_strategy`, and `strategy_confirmed=true` to `freecad_sketch_add_geometry`, `freecad_sketch_add_profile`, or `freecad_sketch_profile_create`. If `source_type`/`has_image` marks an image-like task and no strategy is provided, those tools stop before mutation so the user is not left waiting for the wrong kind of model.
 
+If the reference visibly contains Sketcher constraint glyphs, red dimension labels, equality/constraint indexes, or blue construction geometry, the safe default is not `visual_trace`. The agent should ask whether the user wants `sketcher_constraint_rebuild` or `editable_parametric_sketch`, and it should treat construction geometry as construction geometry rather than decoration.
+
+If visible curves could be B-splines, circular arcs, ellipses, or a mixed set, the agent must ask for `native_curve_intent` before mutation. Visible B-spline control points, poles, or handles are evidence for B-spline tooling. Do not rebuild them as arcs unless the user explicitly asks for an arc approximation and accepts the loss of native spline behavior.
+
 ## Native Geometry Versus Helper Intent
 
 Sketcher helpers are not extra primitive geometry types. The agent should read them as native geometry plus a constraint fingerprint:

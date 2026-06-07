@@ -106,6 +106,49 @@ MODELING_STRATEGY_CHOICES: tuple[JsonObject, ...] = (
 
 MODELING_STRATEGY_IDS = {str(choice["id"]) for choice in MODELING_STRATEGY_CHOICES}
 
+VISUAL_ONLY_STRATEGIES = {"visual_trace", "organic_silhouette", "rough_draft"}
+SKETCH_REBUILD_STRATEGIES = {
+    "editable_parametric_sketch",
+    "sketcher_constraint_rebuild",
+    "dimensioned_parametric",
+    "manufacturing_profile",
+}
+
+CURVE_INTENT_CHOICES: tuple[JsonObject, ...] = (
+    {
+        "id": "bspline",
+        "label_tr": "B-spline",
+        "when_to_use": "Use when the screenshot shows B-spline control points/poles or Sketcher B-spline controls.",
+        "tooling": ["freecad_sketch_add_geometry type=bspline", "freecad_sketch_validate geometry type_id"],
+    },
+    {
+        "id": "arc",
+        "label_tr": "Dairesel yay",
+        "when_to_use": "Use only when the user or native evidence confirms circular arc geometry.",
+        "tooling": ["arc_3_point", "arc_start_end_radius", "arc_center_angles"],
+    },
+    {
+        "id": "ellipse",
+        "label_tr": "Elips / elips yayı",
+        "when_to_use": "Use when the visible curve is an ellipse or elliptical arc, not a circular arc.",
+        "tooling": ["ellipse", "ellipse_arc"],
+    },
+    {
+        "id": "mixed",
+        "label_tr": "Karisik egri aileleri",
+        "when_to_use": "Use when the sketch contains more than one native curve family.",
+        "tooling": ["segment-level expected_type", "freecad_sketch_profile_validate expected_geometry"],
+    },
+    {
+        "id": "unknown",
+        "label_tr": "Belirsiz",
+        "when_to_use": "Use only as an intake result that forces a user question before mutation.",
+        "tooling": ["ask_user", "freecad_curve_fit_analyze"],
+    },
+)
+
+CURVE_INTENT_IDS = {str(choice["id"]) for choice in CURVE_INTENT_CHOICES}
+
 
 def normalize_strategy_value(value: object) -> str | None:
     if value is None:
@@ -125,6 +168,15 @@ def normalize_source_type(value: object) -> str | None:
     return normalized or None
 
 
+def normalize_curve_intent(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ToolInputError("native_curve_intent must be a string")
+    normalized = value.strip().casefold().replace("-", "_").replace(" ", "_")
+    return normalized or None
+
+
 def optional_bool(args: JsonObject, key: str, *, default: bool = False) -> bool:
     value = args.get(key, default)
     if not isinstance(value, bool):
@@ -134,6 +186,10 @@ def optional_bool(args: JsonObject, key: str, *, default: bool = False) -> bool:
 
 def modeling_strategy_choices() -> list[JsonObject]:
     return [dict(choice) for choice in MODELING_STRATEGY_CHOICES]
+
+
+def curve_intent_choices() -> list[JsonObject]:
+    return [dict(choice) for choice in CURVE_INTENT_CHOICES]
 
 
 class InventoryStore:
@@ -334,6 +390,35 @@ class StaticToolService:
                             "type": "boolean",
                             "description": "True only when the user explicitly chose the strategy or the prompt states it unambiguously.",
                         },
+                        "visible_sketch_constraints": {
+                            "type": "boolean",
+                            "description": "True when the reference visibly contains Sketcher constraint glyphs, equal signs, constraint indexes, or solved-state cues.",
+                        },
+                        "visible_dimensions": {
+                            "type": "boolean",
+                            "description": "True when the reference visibly contains dimension labels, distances, radii, diameters, or angle values.",
+                        },
+                        "visible_construction_geometry": {
+                            "type": "boolean",
+                            "description": "True when the reference visibly contains guide/construction geometry such as blue Sketcher lines or construction circles.",
+                        },
+                        "curves_visible": {
+                            "type": "boolean",
+                            "description": "True when the reference contains curved geometry whose native FreeCAD family matters.",
+                        },
+                        "visible_bspline_control_points": {
+                            "type": "boolean",
+                            "description": "True when the screenshot shows B-spline poles/control points/handles; this should bias the agent toward native B-spline, not circular arcs.",
+                        },
+                        "native_curve_intent": {
+                            "type": "string",
+                            "enum": sorted(CURVE_INTENT_IDS),
+                            "description": "Declared native curve family for visible curves. Use unknown to force a question.",
+                        },
+                        "curve_intent_confirmed": {
+                            "type": "boolean",
+                            "description": "True only when the user or native FreeCAD evidence confirms the curve family.",
+                        },
                         "task": {
                             "type": "string",
                             "description": "Optional user task text for echoing the intake decision.",
@@ -521,21 +606,49 @@ class StaticToolService:
         has_image = optional_bool(args, "has_image", default=False)
         modeling_strategy = normalize_strategy_value(args.get("modeling_strategy"))
         strategy_confirmed = optional_bool(args, "strategy_confirmed", default=False)
+        visible_sketch_constraints = optional_bool(args, "visible_sketch_constraints", default=False)
+        visible_dimensions = optional_bool(args, "visible_dimensions", default=False)
+        visible_construction_geometry = optional_bool(args, "visible_construction_geometry", default=False)
+        curves_visible = optional_bool(args, "curves_visible", default=False)
+        visible_bspline_control_points = optional_bool(args, "visible_bspline_control_points", default=False)
+        native_curve_intent = normalize_curve_intent(args.get("native_curve_intent"))
+        curve_intent_confirmed = optional_bool(args, "curve_intent_confirmed", default=False)
         task = optional_string(args, "task")
 
         if modeling_strategy and modeling_strategy not in MODELING_STRATEGY_IDS:
             raise ToolInputError("unsupported modeling_strategy: " + modeling_strategy)
+        if native_curve_intent and native_curve_intent not in CURVE_INTENT_IDS:
+            raise ToolInputError("unsupported native_curve_intent: " + native_curve_intent)
 
         image_like = bool(has_image or (source_type in IMAGE_LIKE_SOURCE_TYPES))
+        visible_sketch_evidence = bool(visible_sketch_constraints or visible_dimensions or visible_construction_geometry)
+        curve_intent_missing = bool(
+            curves_visible and (not native_curve_intent or native_curve_intent == "unknown" or not curve_intent_confirmed)
+        )
         warnings = []
+        blockers = []
         missing_strategy = image_like and not modeling_strategy
+        if visible_sketch_evidence and not modeling_strategy:
+            blockers.append("visible_sketch_evidence_requires_strategy")
+        if visible_sketch_evidence and modeling_strategy in VISUAL_ONLY_STRATEGIES and not strategy_confirmed:
+            blockers.append("visible_sketch_evidence_requires_user_confirmed_visual_override")
+        if curve_intent_missing:
+            blockers.append("visible_curves_require_native_curve_intent")
+        if visible_bspline_control_points and native_curve_intent and native_curve_intent != "bspline":
+            blockers.append("visible_bspline_controls_conflict_with_non_bspline_intent")
         if image_like and modeling_strategy and not strategy_confirmed:
             warnings.append(
                 "strategy_not_confirmed: ask the user to confirm this modeling_strategy unless the task text already made it explicit"
             )
+        if visible_sketch_evidence and modeling_strategy in VISUAL_ONLY_STRATEGIES and strategy_confirmed:
+            warnings.append(
+                "confirmed_visual_override_ignores_visible_sketch_constraints: report that dimensions/constraints/construction geometry will not be reconstructed"
+            )
+        if visible_bspline_control_points and not native_curve_intent:
+            warnings.append("visible_bspline_controls_detected: ask whether the native curve family is B-spline before using arc tools")
 
-        status = "needs_clarification" if missing_strategy else "ok"
-        action = "ask_user" if missing_strategy else ("confirm_or_continue" if warnings else "continue")
+        status = "needs_clarification" if missing_strategy or blockers else "ok"
+        action = "ask_user" if missing_strategy or blockers else ("confirm_or_continue" if warnings else "continue")
         question_tr = (
             "Bu gorselden ne bekliyorsunuz: sadece gorsel benzerlik mi, FreeCAD'de olculeri "
             "degistirilebilir parametrik sketch mi, Sketcher constraint mantiginin yeniden kurulmasi mi, "
@@ -545,7 +658,17 @@ class StaticToolService:
             "What should this reference become: visual similarity only, an editable parametric Sketcher model, "
             "a Sketcher constraint rebuild, a manufacturable PartDesign model, or a rough draft?"
         )
+        curve_question_tr = (
+            "Gorseldeki egrilerin native FreeCAD tipi nedir: B-spline mi, dairesel arc mi, elips mi, "
+            "yoksa karisik/belirsiz mi? B-spline kontrol noktalari gorunuyorsa arc olarak yeniden kurmayayim."
+        )
+        curve_question_en = (
+            "What is the native FreeCAD curve family: B-spline, circular arc, ellipse, mixed, or unknown? "
+            "If B-spline control points are visible, do not rebuild them as arcs."
+        )
         required_fields_for_mutation = ["source_type", "modeling_strategy", "strategy_confirmed"]
+        if curves_visible or visible_bspline_control_points:
+            required_fields_for_mutation.extend(["native_curve_intent", "curve_intent_confirmed"])
 
         return {
             "status": status,
@@ -553,18 +676,35 @@ class StaticToolService:
             "source_type": source_type,
             "has_image": has_image,
             "image_like": image_like,
+            "visible_sketch_evidence": visible_sketch_evidence,
+            "visible_sketch_constraints": visible_sketch_constraints,
+            "visible_dimensions": visible_dimensions,
+            "visible_construction_geometry": visible_construction_geometry,
+            "curves_visible": curves_visible,
+            "visible_bspline_control_points": visible_bspline_control_points,
             "modeling_strategy": modeling_strategy,
             "strategy_confirmed": strategy_confirmed,
+            "native_curve_intent": native_curve_intent,
+            "curve_intent_confirmed": curve_intent_confirmed,
             "task": task,
             "question_tr": question_tr,
             "question_en": question_en,
+            "curve_question_tr": curve_question_tr,
+            "curve_question_en": curve_question_en,
             "choices": modeling_strategy_choices(),
+            "recommended_strategies": (
+                ["sketcher_constraint_rebuild", "editable_parametric_sketch"]
+                if visible_sketch_evidence
+                else ["visual_trace", "editable_parametric_sketch", "manufacturing_partdesign_model"]
+            ),
+            "curve_choices": curve_intent_choices(),
             "required_fields_for_mutation": required_fields_for_mutation,
+            "blockers": blockers,
             "warnings": warnings,
             "message": (
                 "Ask the user for the desired modeling outcome before mutating the FreeCAD document."
-                if missing_strategy
-                else "Carry the declared modeling strategy into Sketcher/PartDesign tools."
+                if missing_strategy or blockers
+                else "Carry the declared modeling and curve strategy into Sketcher/PartDesign tools."
             ),
         }
 

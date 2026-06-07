@@ -75,6 +75,63 @@ class StaticToolServiceTests(unittest.TestCase):
             self.assertEqual(result["modeling_strategy"], "editable_parametric_sketch")
             self.assertTrue(result["strategy_confirmed"])
 
+    def test_modeling_strategy_intake_prefers_rebuild_for_visible_constraints(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.modeling_strategy_intake(
+                {
+                    "source_type": "screenshot",
+                    "has_image": True,
+                    "modeling_strategy": "visual_trace",
+                    "visible_sketch_constraints": True,
+                    "visible_dimensions": True,
+                    "visible_construction_geometry": True,
+                }
+            )
+
+            self.assertEqual(result["status"], "needs_clarification")
+            self.assertIn("visible_sketch_evidence_requires_user_confirmed_visual_override", result["blockers"])
+            self.assertEqual(result["recommended_strategies"], ["sketcher_constraint_rebuild", "editable_parametric_sketch"])
+
+    def test_modeling_strategy_intake_requires_curve_intent_for_visible_curves(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.modeling_strategy_intake(
+                {
+                    "source_type": "reference_image",
+                    "modeling_strategy": "sketcher_constraint_rebuild",
+                    "strategy_confirmed": True,
+                    "curves_visible": True,
+                    "visible_bspline_control_points": True,
+                }
+            )
+
+            self.assertEqual(result["status"], "needs_clarification")
+            self.assertIn("visible_curves_require_native_curve_intent", result["blockers"])
+            self.assertIn("native_curve_intent", result["required_fields_for_mutation"])
+            self.assertIn("B-spline", result["curve_question_tr"])
+
+    def test_modeling_strategy_intake_blocks_bspline_controls_with_arc_intent(self) -> None:
+        with fake_repo() as repo:
+            service = StaticToolService(InventoryStore(repo))
+
+            result = service.modeling_strategy_intake(
+                {
+                    "source_type": "screenshot",
+                    "modeling_strategy": "sketcher_constraint_rebuild",
+                    "strategy_confirmed": True,
+                    "curves_visible": True,
+                    "visible_bspline_control_points": True,
+                    "native_curve_intent": "arc",
+                    "curve_intent_confirmed": True,
+                }
+            )
+
+            self.assertEqual(result["status"], "needs_clarification")
+            self.assertIn("visible_bspline_controls_conflict_with_non_bspline_intent", result["blockers"])
+
 
 class SafeSourcePathTests(unittest.TestCase):
     def test_accepts_nested_in_root_path(self) -> None:

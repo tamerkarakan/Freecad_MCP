@@ -105,7 +105,20 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_worker_sketch_profile_validate",
         ]:
             props = tools[tool_name].to_mcp()["inputSchema"]["properties"]
-            for prop_name in ("source_type", "has_image", "modeling_strategy", "strategy_confirmed"):
+            for prop_name in (
+                "source_type",
+                "has_image",
+                "modeling_strategy",
+                "strategy_confirmed",
+                "visible_sketch_constraints",
+                "visible_dimensions",
+                "visible_construction_geometry",
+                "curves_visible",
+                "visible_bspline_control_points",
+                "native_curve_intent",
+                "curve_intent_confirmed",
+                "curve_intent_source",
+            ):
                 self.assertIn(prop_name, props)
         sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
         for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
@@ -360,7 +373,20 @@ class ToolSchemaTests(unittest.TestCase):
             "freecad_sketch_profile_validate",
         ]:
             props = tools[tool_name].to_mcp()["inputSchema"]["properties"]
-            for prop_name in ("source_type", "has_image", "modeling_strategy", "strategy_confirmed"):
+            for prop_name in (
+                "source_type",
+                "has_image",
+                "modeling_strategy",
+                "strategy_confirmed",
+                "visible_sketch_constraints",
+                "visible_dimensions",
+                "visible_construction_geometry",
+                "curves_visible",
+                "visible_bspline_control_points",
+                "native_curve_intent",
+                "curve_intent_confirmed",
+                "curve_intent_source",
+            ):
                 self.assertIn(prop_name, props)
         validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
         for name in [

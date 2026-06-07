@@ -78,6 +78,8 @@ MODELING_STRATEGY_ENUM = [
     "manufacturing_profile",
 ]
 
+VISUAL_ONLY_STRATEGY_ENUM = ["visual_trace", "organic_silhouette", "rough_draft"]
+
 SOURCE_TYPE_ENUM = [
     "text_prompt",
     "image",
@@ -94,12 +96,17 @@ SOURCE_TYPE_ENUM = [
     "sketch",
 ]
 
+NATIVE_CURVE_INTENT_ENUM = ["none", "bspline", "arc", "ellipse", "mixed", "unknown"]
+
 SKETCH_STRATEGY_POLICY = (
     "For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has "
     "chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass "
     "source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, "
     "dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions "
-    "must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal."
+    "must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. "
+    "If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a "
+    "visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; "
+    "visible B-spline poles/control points mean use B-spline tooling, not arc approximation."
 )
 
 SKETCH_STRATEGY_PROPS: JsonObject = {
@@ -120,6 +127,40 @@ SKETCH_STRATEGY_PROPS: JsonObject = {
     "strategy_confirmed": {
         "type": "boolean",
         "description": "True only when the user explicitly chose the strategy or the prompt made it unambiguous.",
+    },
+    "visible_sketch_constraints": {
+        "type": "boolean",
+        "description": "Set true when the reference visibly contains Sketcher constraint glyphs/indexes or solved-state constraint cues.",
+    },
+    "visible_dimensions": {
+        "type": "boolean",
+        "description": "Set true when the reference visibly contains distance/radius/diameter/angle dimensions.",
+    },
+    "visible_construction_geometry": {
+        "type": "boolean",
+        "description": "Set true when blue guide/construction geometry is visible and should be reconstructed as construction geometry.",
+    },
+    "curves_visible": {
+        "type": "boolean",
+        "description": "Set true when visible curves require a native family decision before mutation.",
+    },
+    "visible_bspline_control_points": {
+        "type": "boolean",
+        "description": "Set true when B-spline poles/control points/handles are visible; do not submit arc geometry unless the user explicitly overrides.",
+    },
+    "native_curve_intent": {
+        "type": "string",
+        "enum": NATIVE_CURVE_INTENT_ENUM,
+        "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown.",
+    },
+    "curve_intent_confirmed": {
+        "type": "boolean",
+        "description": "True only when the user, GUI controls, or native FreeCAD evidence confirms the curve family.",
+    },
+    "curve_intent_source": {
+        "type": "string",
+        "enum": ["user_confirmed", "visible_gui_controls", "native_freecad_geometry", "visual_guess"],
+        "description": "Evidence source for native_curve_intent. visual_guess is not enough for B-spline-vs-arc decisions.",
     },
 }
 
