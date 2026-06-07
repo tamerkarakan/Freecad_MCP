@@ -987,12 +987,15 @@ class PersistentToolService:
             self._worker_tool(
                 "freecad_worker_sketch_validate",
                 "Worker Validate Sketch",
-                "Solve and summarize Sketcher state, constraints, missing constraints, and constraint errors.",
+                "Solve and summarize native Sketcher state, geometry, constraints, missing constraints, semantic groups such as tangent/equal chains, and constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.",
                 {
                     "document_id": {"type": "string"},
                     "sketch_name": {"type": "string"},
                     "solve": {"type": "boolean"},
                     "detect_missing": {"type": "boolean"},
+                    "include_geometry": {"type": "boolean", "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."},
+                    "include_constraints": {"type": "boolean", "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."},
+                    "include_semantic_groups": {"type": "boolean", "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."},
                     "include_constraint_errors": {"type": "boolean"},
                     "include_construction": {"type": "boolean"},
                     "precision": {"type": "number"},

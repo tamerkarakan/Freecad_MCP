@@ -88,6 +88,148 @@ def point_list(value):
     return list(value)
 
 
+def point_attr(value, name):
+    try:
+        point = getattr(value, name)
+    except Exception:
+        return None
+    try:
+        return point_list(point)
+    except Exception:
+        return None
+
+
+def float_attr(value, name):
+    try:
+        raw = getattr(value, name)
+    except Exception:
+        return None
+    try:
+        return float(raw)
+    except Exception:
+        return None
+
+
+def fully_constrained_from_dof(dof):
+    if dof is None:
+        return None
+    try:
+        return abs(float(dof)) < 1e-9
+    except Exception:
+        return None
+
+
+def point_pos_name(pos):
+    return {1: "start", 2: "end", 3: "center"}.get(int(pos), str(pos))
+
+
+def constraint_ref(role, geometry_index, point_pos):
+    ref = {"role": role, "geometry_index": int(geometry_index)}
+    if int(point_pos):
+        ref["point_pos"] = int(point_pos)
+        ref["point"] = point_pos_name(point_pos)
+    if int(geometry_index) < 0:
+        ref["special_reference"] = {
+            -1: "sketch_horizontal_axis",
+            -2: "sketch_vertical_axis",
+        }.get(int(geometry_index), "external_or_internal_reference")
+    return ref
+
+
+def constraint_refs(constraint):
+    refs = []
+    for role, geo_attr, pos_attr in (
+        ("first", "First", "FirstPos"),
+        ("second", "Second", "SecondPos"),
+        ("third", "Third", "ThirdPos"),
+    ):
+        geometry_index = int(getattr(constraint, geo_attr, -2000))
+        point_pos = int(getattr(constraint, pos_attr, 0))
+        if geometry_index != -2000:
+            refs.append(constraint_ref(role, geometry_index, point_pos))
+    return refs
+
+
+def grouped_components(edges):
+    parent = {}
+
+    def find(value):
+        parent.setdefault(value, value)
+        if parent[value] != value:
+            parent[value] = find(parent[value])
+        return parent[value]
+
+    def union(left, right):
+        left_root = find(left)
+        right_root = find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    for left, right in edges:
+        union(int(left), int(right))
+    groups = {}
+    for value in list(parent):
+        groups.setdefault(find(value), set()).add(value)
+    return [sorted(group) for group in groups.values() if len(group) > 1]
+
+
+def sketch_semantic_groups(sketch):
+    constraints = list(getattr(sketch, "Constraints", []) or [])
+    tangent_edges = []
+    equal_edges = []
+    coincident_pairs = []
+    dimensional_constraints = []
+    radius_constraints = []
+    for index, constraint in enumerate(constraints):
+        constraint_type = str(getattr(constraint, "Type", ""))
+        first = int(getattr(constraint, "First", -2000))
+        second = int(getattr(constraint, "Second", -2000))
+        first_pos = int(getattr(constraint, "FirstPos", 0))
+        second_pos = int(getattr(constraint, "SecondPos", 0))
+        if constraint_type == "Tangent" and first >= 0 and second >= 0:
+            tangent_edges.append((first, second))
+        elif constraint_type == "Equal" and first >= 0 and second >= 0:
+            equal_edges.append((first, second))
+        elif constraint_type == "Coincident":
+            coincident_pairs.append(
+                {
+                    "index": index,
+                    "refs": [
+                        constraint_ref("first", first, first_pos),
+                        constraint_ref("second", second, second_pos),
+                    ],
+                }
+            )
+        if constraint_type in {"Distance", "DistanceX", "DistanceY", "Angle", "Radius", "Diameter"}:
+            item = constraint_summary(constraint, index)
+            dimensional_constraints.append(item)
+            if constraint_type in {"Radius", "Diameter"}:
+                radius_constraints.append(item)
+    construction_geometry = []
+    for geometry_index, _geometry in enumerate(list(getattr(sketch, "Geometry", []) or [])):
+        try:
+            if bool(sketch.getConstruction(geometry_index)):
+                construction_geometry.append(geometry_index)
+        except Exception:
+            pass
+    return {
+        "construction_geometry": construction_geometry,
+        "coincident_pairs": coincident_pairs,
+        "tangent_pairs": [
+            {"geometry": [int(left), int(right)]}
+            for left, right in tangent_edges
+        ],
+        "tangent_chains": grouped_components(tangent_edges),
+        "equal_pairs": [
+            {"geometry": [int(left), int(right)]}
+            for left, right in equal_edges
+        ],
+        "equal_groups": grouped_components(equal_edges),
+        "dimensional_constraints": dimensional_constraints,
+        "radius_constraints": radius_constraints,
+    }
+
+
 def requested_arc_sweep(start_angle, end_angle, *, direction=None, sweep=None):
     two_pi = 2.0 * math.pi
     delta_ccw = (float(end_angle) - float(start_angle)) % two_pi
@@ -347,6 +489,7 @@ def constraint_summary(constraint, index=None):
         "label_distance": float(getattr(constraint, "LabelDistance", 0.0)),
         "label_position": float(getattr(constraint, "LabelPosition", 0.0)),
     }
+    summary["refs"] = constraint_refs(constraint)
     return summary
 
 
@@ -355,12 +498,50 @@ def geometry_summary(sketch, geometry, index):
         construction = bool(sketch.getConstruction(index))
     except Exception:
         construction = None
-    return {
+    summary = {
         "index": index,
         "type_id": geometry.getTypeId().getName() if hasattr(geometry, "getTypeId") else type(geometry).__name__,
         "construction": construction,
         "repr": repr(geometry),
     }
+    for key, attr in (
+        ("start", "StartPoint"),
+        ("end", "EndPoint"),
+        ("center", "Center"),
+        ("location", "Location"),
+    ):
+        point = point_attr(geometry, attr)
+        if point is not None:
+            summary[key] = point
+    for key, attr in (
+        ("radius", "Radius"),
+        ("major_radius", "MajorRadius"),
+        ("minor_radius", "MinorRadius"),
+        ("first_parameter", "FirstParameter"),
+        ("last_parameter", "LastParameter"),
+    ):
+        value = float_attr(geometry, attr)
+        if value is not None:
+            summary[key] = value
+    if "center" not in summary and "location" in summary:
+        summary["center"] = summary["location"]
+    circle = getattr(geometry, "Circle", None)
+    if circle is not None:
+        if "center" not in summary:
+            center = point_attr(circle, "Center")
+            if center is not None:
+                summary["center"] = center
+        if "radius" not in summary:
+            radius = float_attr(circle, "Radius")
+            if radius is not None:
+                summary["radius"] = radius
+        axis = point_attr(circle, "Axis")
+        if axis is not None:
+            summary["axis"] = axis
+    axis = point_attr(geometry, "Axis")
+    if axis is not None:
+        summary["axis"] = axis
+    return summary
 
 
 def sketch_summary(obj):
@@ -368,10 +549,12 @@ def sketch_summary(obj):
         return None
     geometry = list(getattr(obj, "Geometry", []))
     constraints = list(getattr(obj, "Constraints", []))
+    dof = getattr(obj, "DoF", getattr(obj, "DegreesOfFreedom", None))
     return {
         "geometry_count": len(geometry),
         "constraint_count": len(constraints),
-        "degrees_of_freedom": getattr(obj, "DoF", getattr(obj, "DegreesOfFreedom", None)),
+        "degrees_of_freedom": dof,
+        "fully_constrained": fully_constrained_from_dof(dof),
         "open_vertices": [point_list(v) for v in getattr(obj, "OpenVertices", [])],
         "conflicting_constraints": list(getattr(obj, "ConflictingConstraints", [])),
         "redundant_constraints": list(getattr(obj, "RedundantConstraints", [])),
@@ -379,6 +562,7 @@ def sketch_summary(obj):
         "malformed_constraints": list(getattr(obj, "MalformedConstraints", [])),
         "geometry": [geometry_summary(obj, geo, idx) for idx, geo in enumerate(geometry)],
         "constraints": [constraint_summary(constraint, idx) for idx, constraint in enumerate(constraints)],
+        "semantic_groups": sketch_semantic_groups(obj),
     }
 
 
@@ -5302,11 +5486,13 @@ def action_sketch_validate(args):
                 constraint_errors.append({"index": index, "error": float(sketch.calculateConstraintError(index))})
             except Exception as exc:
                 constraint_errors.append({"index": index, "error": None, "message": str(exc)})
-    return {
+    dof = getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None))
+    result = {
         "sketch": object_summary(sketch),
         "geometry_count": len(sketch.Geometry),
         "constraint_count": len(sketch.Constraints),
-        "degrees_of_freedom": getattr(sketch, "DoF", getattr(sketch, "DegreesOfFreedom", None)),
+        "degrees_of_freedom": dof,
+        "fully_constrained": fully_constrained_from_dof(dof),
         "solve_code": solve_code,
         "evaluate_constraints_invalid_found": bool(sketch.evaluateConstraints()),
         "open_vertices": [point_list(v) for v in getattr(sketch, "OpenVertices", [])],
@@ -5321,6 +5507,14 @@ def action_sketch_validate(args):
         "dependent_geometry": [list(pair) for pair in sketch.getGeometryWithDependentParameters()],
         "constraint_errors": constraint_errors,
     }
+    if bool(args.get("include_geometry", True)):
+        result["geometry"] = [geometry_summary(sketch, geo, idx) for idx, geo in enumerate(sketch.Geometry)]
+    if bool(args.get("include_constraints", True)):
+        result["constraints"] = [constraint_summary(constraint, idx) for idx, constraint in enumerate(sketch.Constraints)]
+    if bool(args.get("include_semantic_groups", True)):
+        result["semantic_groups"] = sketch_semantic_groups(sketch)
+    result["evidence_source"] = "native_sketcher"
+    return result
 
 
 def action_import_file(args):

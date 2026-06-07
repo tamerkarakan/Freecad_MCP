@@ -968,6 +968,14 @@ def main() -> int:
         expected_min_constraints = expected_profile_constraints + len(radius_constraint_indices)
         if validation["geometry_count"] < expected_profile_geometry or validation["constraint_count"] < expected_min_constraints:
             raise RuntimeError(f"advanced sketch validation mismatch: {validation}")
+        if validation.get("evidence_source") != "native_sketcher":
+            raise RuntimeError(f"advanced sketch validation did not report native evidence source: {validation}")
+        if not validation.get("geometry") or not validation.get("constraints"):
+            raise RuntimeError(f"advanced sketch validation omitted native geometry/constraint details: {validation}")
+        semantic_groups = validation.get("semantic_groups", {})
+        for key in ("coincident_pairs", "tangent_pairs", "equal_groups", "dimensional_constraints", "construction_geometry"):
+            if key not in semantic_groups:
+                raise RuntimeError(f"advanced sketch validation omitted semantic group {key}: {validation}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
@@ -2726,6 +2734,11 @@ def main() -> int:
         ]
         if auto_constraint_types.count("Horizontal") < 2 or "Equal" not in auto_constraint_types:
             raise RuntimeError(f"auto constraints were not applied: {auto_validation}")
+        auto_semantic_groups = auto_validation.get("semantic_groups", {})
+        if "Equal" not in {item.get("type") for item in auto_validation.get("constraints", [])}:
+            raise RuntimeError(f"auto sketch validation omitted native constraint details: {auto_validation}")
+        if not auto_semantic_groups.get("equal_groups"):
+            raise RuntimeError(f"auto sketch validation omitted equal semantic groups: {auto_validation}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(

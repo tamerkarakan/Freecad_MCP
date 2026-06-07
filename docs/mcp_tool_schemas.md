@@ -4054,7 +4054,7 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality, and red
 
 ## `freecad_worker_sketch_validate`
 
-Solve and summarize Sketcher state, constraints, missing constraints, and constraint errors.
+Solve and summarize native Sketcher state, geometry, constraints, missing constraints, semantic groups such as tangent/equal chains, and constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.
 
 ```json
 {
@@ -4080,6 +4080,18 @@ Solve and summarize Sketcher state, constraints, missing constraints, and constr
     },
     "detect_missing": {
       "type": "boolean"
+    },
+    "include_geometry": {
+      "type": "boolean",
+      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."
+    },
+    "include_constraints": {
+      "type": "boolean",
+      "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."
+    },
+    "include_semantic_groups": {
+      "type": "boolean",
+      "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
     },
     "include_constraint_errors": {
       "type": "boolean"
@@ -9941,7 +9953,7 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality constrai
 
 ## `freecad_sketch_validate`
 
-Solve and summarize sketch geometry, constraints, solver diagnostics, missing constraints, open vertices, and per-constraint errors.
+Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.
 
 ```json
 {
@@ -9958,6 +9970,18 @@ Solve and summarize sketch geometry, constraints, solver diagnostics, missing co
     },
     "detect_missing": {
       "type": "boolean"
+    },
+    "include_geometry": {
+      "type": "boolean",
+      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."
+    },
+    "include_constraints": {
+      "type": "boolean",
+      "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."
+    },
+    "include_semantic_groups": {
+      "type": "boolean",
+      "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
     },
     "include_constraint_errors": {
       "type": "boolean"

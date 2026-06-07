@@ -2009,6 +2009,14 @@ def main() -> int:
             )
             if validation["geometry_count"] < 4:
                 raise RuntimeError(f"worker sketch validation mismatch: {validation}")
+            if validation.get("evidence_source") != "native_sketcher":
+                raise RuntimeError(f"worker sketch validation did not report native evidence source: {validation}")
+            if not validation.get("geometry") or not validation.get("constraints"):
+                raise RuntimeError(f"worker sketch validation omitted native geometry/constraint details: {validation}")
+            semantic_groups = validation.get("semantic_groups", {})
+            for key in ("coincident_pairs", "tangent_pairs", "equal_groups", "dimensional_constraints", "construction_geometry"):
+                if key not in semantic_groups:
+                    raise RuntimeError(f"worker sketch validation omitted semantic group {key}: {validation}")
 
             closed_sketch_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(

@@ -162,8 +162,8 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_validate",
                 "Validate Sketch",
-                "Solve and summarize sketch geometry, constraints, solver diagnostics, missing constraints, open vertices, and per-constraint errors.",
-                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "solve": {"type": "boolean"}, "detect_missing": {"type": "boolean"}, "include_constraint_errors": {"type": "boolean"}, "precision": {"type": "number"}, "angle_precision": {"type": "number"}, "include_construction": {"type": "boolean"}},
+                "Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.",
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "solve": {"type": "boolean"}, "detect_missing": {"type": "boolean"}, "include_geometry": {"type": "boolean", "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."}, "include_constraints": {"type": "boolean", "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."}, "include_semantic_groups": {"type": "boolean", "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."}, "include_constraint_errors": {"type": "boolean"}, "precision": {"type": "number"}, "angle_precision": {"type": "number"}, "include_construction": {"type": "boolean"}},
                 ["document_path", "sketch_name"],
                 "sketch_validate",
             ),

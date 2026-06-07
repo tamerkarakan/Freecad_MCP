@@ -58,6 +58,8 @@ After construction, the agent should inspect or report:
 - native geometry type counts when curve intent matters,
 - geometry/BRep check for the resulting PartDesign Body when a solid is created.
 
+Do not leave fully-constrained or tangent/equal intent to image interpretation. Use `freecad_sketch_validate` or `freecad_worker_sketch_validate` to get native Sketcher evidence: `fully_constrained`, `degrees_of_freedom`, detailed `geometry`, detailed `constraints`, and `semantic_groups` for tangent pairs/chains, equal groups, coincident pairs, dimensional/radius constraints, and construction geometry.
+
 If validation fails, the agent should repair the sketch or recreate it through a stronger recipe instead of continuing to feature creation.
 
 ## Face And Datum Policy

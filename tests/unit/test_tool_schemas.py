@@ -97,6 +97,9 @@ class ToolSchemaTests(unittest.TestCase):
         validate_props = tools["freecad_worker_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]
         self.assertIn("expected_geometry", validate_props)
         self.assertIn("required_segment_types", validate_props)
+        sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
+        for name in ("include_geometry", "include_constraints", "include_semantic_groups"):
+            self.assertIn(name, sketch_validate_props)
 
     def test_gui_attach_tools_are_exposed(self) -> None:
         tools = GuiToolService().definition_map()
@@ -320,6 +323,9 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("Coincident", constraint_description)
         catalog_description = tools["freecad_sketch_geometry_method_catalog"].to_mcp()["description"]
         self.assertIn("constraint_methods", catalog_description)
+        sketch_validate_props = tools["freecad_sketch_validate"].to_mcp()["inputSchema"]["properties"]
+        for name in ("include_geometry", "include_constraints", "include_semantic_groups"):
+            self.assertIn(name, sketch_validate_props)
 
         props = tools["freecad_sketch_profile_create"].to_mcp()["inputSchema"]["properties"]
         for name in [
