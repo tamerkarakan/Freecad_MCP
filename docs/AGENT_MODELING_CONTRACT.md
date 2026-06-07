@@ -13,6 +13,18 @@ A complex Sketcher profile is primitive geometry plus explicit constraints plus 
 
 If any of those are missing, the agent should treat the result as incomplete.
 
+## Native Geometry Versus Helper Intent
+
+Sketcher helpers are not extra primitive geometry types. The agent should read them as native geometry plus a constraint fingerprint:
+
+- Rectangle: 4 `LineSegment` items plus `Coincident`, `Horizontal`, and `Vertical` constraints.
+- Regular polygon/triangle/square/hexagon: `LineSegment` loop plus a construction circle, `PointOnObject`, and `Equal` constraints.
+- Slot: 2 `LineSegment` items plus 2 `ArcOfCircle` items with `Coincident`, `Tangent`, and equal/radius constraints.
+- Circle: native `Circle` geometry unless native validation says it is an arc chain.
+- B-spline: native `BSplineCurve` with control poles; do not collapse it into arcs from silhouette alone.
+
+When validating an existing sketch, prefer `report_layers.native_geometry`, `report_layers.construction_geometry`, `report_layers.constraint_graph`, and `report_layers.helper_intent_inference` over visual guesswork. Helper intent is an inference layer, not the primitive layer.
+
 ## Choose The Right Layer
 
 Use high-level PartDesign or Sketcher profile recipes when the intent is known:
@@ -58,7 +70,7 @@ After construction, the agent should inspect or report:
 - native geometry type counts when curve intent matters,
 - geometry/BRep check for the resulting PartDesign Body when a solid is created.
 
-Do not leave fully-constrained or tangent/equal intent to image interpretation. Use `freecad_sketch_validate` or `freecad_worker_sketch_validate` to get native Sketcher evidence: `fully_constrained`, `degrees_of_freedom`, detailed `geometry`, detailed `constraints`, and `semantic_groups` for tangent pairs/chains, equal groups, coincident pairs, dimensional/radius constraints, and construction geometry.
+Do not leave fully-constrained or tangent/equal intent to image interpretation. Use `freecad_sketch_validate` or `freecad_worker_sketch_validate` to get native Sketcher evidence: `fully_constrained`, `degrees_of_freedom`, detailed `geometry`, detailed `constraints`, `semantic_groups` for tangent pairs/chains, equal groups, coincident pairs, dimensional/radius constraints, and construction geometry, plus `report_layers` for native/helper separation.
 
 If validation fails, the agent should repair the sketch or recreate it through a stronger recipe instead of continuing to feature creation.
 

@@ -4054,7 +4054,7 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality, and red
 
 ## `freecad_worker_sketch_validate`
 
-Solve and summarize native Sketcher state, geometry, constraints, missing constraints, semantic groups such as tangent/equal chains, and constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.
+Solve and summarize native Sketcher state, geometry, constraints, missing constraints, semantic groups such as tangent/equal chains, helper-intent report layers, and constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors. Report helper/profile intent separately from native primitives: rectangle is 4 LineSegment geometry with Horizontal/Vertical/Coincident constraints; regular polygon is LineSegment plus construction circle, PointOnObject, and Equal constraints; slot is 2 LineSegment plus 2 ArcOfCircle with Tangent and equal/radius constraints.
 
 ```json
 {
@@ -4083,7 +4083,7 @@ Solve and summarize native Sketcher state, geometry, constraints, missing constr
     },
     "include_geometry": {
       "type": "boolean",
-      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."
+      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius and B-spline poles/knots when available. Defaults true."
     },
     "include_constraints": {
       "type": "boolean",
@@ -4091,7 +4091,11 @@ Solve and summarize native Sketcher state, geometry, constraints, missing constr
     },
     "include_semantic_groups": {
       "type": "boolean",
-      "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
+      "description": "Include derived tangent pairs/chains, equal groups, PointOnObject, horizontal/vertical, symmetry, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
+    },
+    "include_report_layers": {
+      "type": "boolean",
+      "description": "Include native_geometry, construction_geometry, constraint_graph, and helper_intent_inference layers. Defaults true."
     },
     "include_constraint_errors": {
       "type": "boolean"
@@ -8989,7 +8993,7 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
 
 ## `freecad_sketch_add_geometry`
 
-Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints.
+Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family.
 
 ```json
 {
@@ -9175,7 +9179,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry.
 
 ```json
 {
@@ -9953,7 +9957,7 @@ Detect/apply missing Sketcher coincident, vertical/horizontal, equality constrai
 
 ## `freecad_sketch_validate`
 
-Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.
+Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, helper-intent report layers, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors. Report helper/profile intent separately from native primitives: Rectangle is 4 LineSegment geometry with Horizontal/Vertical/Coincident constraints; regular polygons are LineSegment loops with a construction circle, PointOnObject, and Equal constraints; slot is 2 LineSegment plus 2 ArcOfCircle with Tangent and equal/radius constraints. Do not call helpers separate native primitive types.
 
 ```json
 {
@@ -9973,7 +9977,7 @@ Solve and summarize native Sketcher geometry, constraints, solver diagnostics, m
     },
     "include_geometry": {
       "type": "boolean",
-      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."
+      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius and B-spline poles/knots when available. Defaults true."
     },
     "include_constraints": {
       "type": "boolean",
@@ -9981,7 +9985,11 @@ Solve and summarize native Sketcher geometry, constraints, solver diagnostics, m
     },
     "include_semantic_groups": {
       "type": "boolean",
-      "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
+      "description": "Include derived tangent pairs/chains, equal groups, PointOnObject, horizontal/vertical, symmetry, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."
+    },
+    "include_report_layers": {
+      "type": "boolean",
+      "description": "Include native_geometry, construction_geometry, constraint_graph, and helper_intent_inference layers. Defaults true."
     },
     "include_constraint_errors": {
       "type": "boolean"

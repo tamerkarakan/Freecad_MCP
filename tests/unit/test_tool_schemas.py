@@ -98,7 +98,7 @@ class ToolSchemaTests(unittest.TestCase):
         self.assertIn("expected_geometry", validate_props)
         self.assertIn("required_segment_types", validate_props)
         sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
-        for name in ("include_geometry", "include_constraints", "include_semantic_groups"):
+        for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
             self.assertIn(name, sketch_validate_props)
 
     def test_gui_attach_tools_are_exposed(self) -> None:
@@ -324,8 +324,9 @@ class ToolSchemaTests(unittest.TestCase):
         catalog_description = tools["freecad_sketch_geometry_method_catalog"].to_mcp()["description"]
         self.assertIn("constraint_methods", catalog_description)
         sketch_validate_props = tools["freecad_sketch_validate"].to_mcp()["inputSchema"]["properties"]
-        for name in ("include_geometry", "include_constraints", "include_semantic_groups"):
+        for name in ("include_geometry", "include_constraints", "include_semantic_groups", "include_report_layers"):
             self.assertIn(name, sketch_validate_props)
+        self.assertIn("helper-intent", tools["freecad_sketch_validate"].to_mcp()["description"])
 
         props = tools["freecad_sketch_profile_create"].to_mcp()["inputSchema"]["properties"]
         for name in [

@@ -292,6 +292,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("add_external", text)
         self.assertIn("single-loop keyhole helper", text)
         self.assertIn("constraint_policy='semantic'", text)
+        self.assertIn("helper_intent_inference", text)
+        self.assertIn("PointOnObject", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

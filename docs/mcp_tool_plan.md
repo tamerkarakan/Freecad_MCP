@@ -76,7 +76,7 @@ The static scan found 1112 GUI command registrations across 26 modules. The MCP 
 | `freecad_sketch_edit_constraints` | Delete/rename/update constraints, set datum/driving/active/virtual/visibility state, and clean redundant/invalid constraints. | Sketcher App API |
 | `freecad_sketch_transform` | Apply fillet/trim/extend/split/join/copy/move/symmetry/array and B-spline transform operations. | Sketcher App API |
 | `freecad_sketch_auto_constrain` | Detect/apply missing coincident, horizontal/vertical, equality constraints and run autoconstraint. | Sketcher App API |
-| `freecad_sketch_validate` | Solve and summarize fully constrained/DoF state, native geometry details, constraint refs, semantic tangent/equal groups, missing constraints, open vertices, dependency, and per-constraint errors. | Sketcher validation API |
+| `freecad_sketch_validate` | Solve and summarize fully constrained/DoF state, native geometry details, constraint refs, semantic tangent/equal groups, report layers for native geometry/construction geometry/constraint graph/helper-intent inference, missing constraints, open vertices, dependency, and per-constraint errors. | Sketcher validation API |
 
 ## P2 Tools
 

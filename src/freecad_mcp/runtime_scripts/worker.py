@@ -100,6 +100,37 @@ def point_attr(value, name):
         return None
 
 
+def value_attr_or_method(value, name):
+    try:
+        raw = getattr(value, name)
+    except Exception:
+        return None
+    try:
+        return raw() if callable(raw) else raw
+    except Exception:
+        return None
+
+
+def point_list_attr_or_method(value, name):
+    raw = value_attr_or_method(value, name)
+    if raw is None:
+        return None
+    try:
+        return [point_list(item) for item in list(raw)]
+    except Exception:
+        return None
+
+
+def scalar_list_attr_or_method(value, name):
+    raw = value_attr_or_method(value, name)
+    if raw is None:
+        return None
+    try:
+        return [float(item) for item in list(raw)]
+    except Exception:
+        return None
+
+
 def float_attr(value, name):
     try:
         raw = getattr(value, name)
@@ -118,6 +149,10 @@ def fully_constrained_from_dof(dof):
         return abs(float(dof)) < 1e-9
     except Exception:
         return None
+
+
+def geometry_type_id(geometry):
+    return geometry.getTypeId().getName() if hasattr(geometry, "getTypeId") else type(geometry).__name__
 
 
 def point_pos_name(pos):
@@ -179,10 +214,18 @@ def sketch_semantic_groups(sketch):
     tangent_edges = []
     equal_edges = []
     coincident_pairs = []
+    point_on_object_constraints = []
+    horizontal_constraints = []
+    vertical_constraints = []
+    parallel_constraints = []
+    perpendicular_constraints = []
+    symmetric_constraints = []
     dimensional_constraints = []
     radius_constraints = []
+    constraint_type_counts = {}
     for index, constraint in enumerate(constraints):
         constraint_type = str(getattr(constraint, "Type", ""))
+        constraint_type_counts[constraint_type] = constraint_type_counts.get(constraint_type, 0) + 1
         first = int(getattr(constraint, "First", -2000))
         second = int(getattr(constraint, "Second", -2000))
         first_pos = int(getattr(constraint, "FirstPos", 0))
@@ -201,6 +244,18 @@ def sketch_semantic_groups(sketch):
                     ],
                 }
             )
+        elif constraint_type == "PointOnObject":
+            point_on_object_constraints.append(constraint_summary(constraint, index))
+        elif constraint_type == "Horizontal":
+            horizontal_constraints.append(constraint_summary(constraint, index))
+        elif constraint_type == "Vertical":
+            vertical_constraints.append(constraint_summary(constraint, index))
+        elif constraint_type == "Parallel":
+            parallel_constraints.append(constraint_summary(constraint, index))
+        elif constraint_type == "Perpendicular":
+            perpendicular_constraints.append(constraint_summary(constraint, index))
+        elif constraint_type == "Symmetric":
+            symmetric_constraints.append(constraint_summary(constraint, index))
         if constraint_type in {"Distance", "DistanceX", "DistanceY", "Angle", "Radius", "Diameter"}:
             item = constraint_summary(constraint, index)
             dimensional_constraints.append(item)
@@ -216,6 +271,7 @@ def sketch_semantic_groups(sketch):
     return {
         "construction_geometry": construction_geometry,
         "coincident_pairs": coincident_pairs,
+        "point_on_object_constraints": point_on_object_constraints,
         "tangent_pairs": [
             {"geometry": [int(left), int(right)]}
             for left, right in tangent_edges
@@ -226,9 +282,190 @@ def sketch_semantic_groups(sketch):
             for left, right in equal_edges
         ],
         "equal_groups": grouped_components(equal_edges),
+        "horizontal_constraints": horizontal_constraints,
+        "vertical_constraints": vertical_constraints,
+        "parallel_constraints": parallel_constraints,
+        "perpendicular_constraints": perpendicular_constraints,
+        "symmetric_constraints": symmetric_constraints,
         "dimensional_constraints": dimensional_constraints,
         "radius_constraints": radius_constraints,
+        "constraint_type_counts": constraint_type_counts,
     }
+
+
+def sketch_native_geometry_layers(sketch):
+    native_geometry = []
+    construction_geometry = []
+    type_counts = {}
+    for index, geometry in enumerate(list(getattr(sketch, "Geometry", []) or [])):
+        try:
+            construction = bool(sketch.getConstruction(index))
+        except Exception:
+            construction = None
+        item = {
+            "index": index,
+            "type_id": geometry_type_id(geometry),
+            "role": "construction" if construction else "real_geometry",
+            "construction": construction,
+        }
+        type_counts[item["type_id"]] = type_counts.get(item["type_id"], 0) + 1
+        if construction:
+            construction_geometry.append(item)
+        else:
+            native_geometry.append(item)
+    return {
+        "native_geometry": native_geometry,
+        "construction_geometry": construction_geometry,
+        "native_type_counts": type_counts,
+        "do_not_report_helper_as_primitive": True,
+    }
+
+
+def geometry_indices_by_kind(sketch):
+    kinds = {
+        "real_geometry": [],
+        "real_lines": [],
+        "real_arcs": [],
+        "real_circles": [],
+        "real_bspline_curves": [],
+        "construction_circles": [],
+    }
+    for index, geometry in enumerate(list(getattr(sketch, "Geometry", []) or [])):
+        type_id = geometry_type_id(geometry)
+        try:
+            construction = bool(sketch.getConstruction(index))
+        except Exception:
+            construction = False
+        if not construction:
+            kinds["real_geometry"].append(index)
+        target_prefix = "construction" if construction else "real"
+        if "LineSegment" in type_id and target_prefix == "real":
+            kinds["real_lines"].append(index)
+        elif "ArcOfCircle" in type_id and target_prefix == "real":
+            kinds["real_arcs"].append(index)
+        elif "Circle" in type_id:
+            if construction:
+                kinds["construction_circles"].append(index)
+            else:
+                kinds["real_circles"].append(index)
+        elif "BSpline" in type_id and target_prefix == "real":
+            kinds["real_bspline_curves"].append(index)
+    return kinds
+
+
+def constraints_touching_geometry(constraints, geometry_indices, constraint_type=None):
+    wanted = {int(value) for value in geometry_indices}
+    rows = []
+    for index, constraint in enumerate(constraints):
+        if constraint_type and str(getattr(constraint, "Type", "")) != constraint_type:
+            continue
+        refs = constraint_refs(constraint)
+        if any(int(ref.get("geometry_index", -2000)) in wanted for ref in refs):
+            rows.append({"index": index, "type": str(getattr(constraint, "Type", "")), "refs": refs})
+    return rows
+
+
+def sketch_helper_intent_inference(sketch, semantic_groups=None):
+    semantic_groups = semantic_groups or sketch_semantic_groups(sketch)
+    constraints = list(getattr(sketch, "Constraints", []) or [])
+    kinds = geometry_indices_by_kind(sketch)
+    real_geometry = kinds["real_geometry"]
+    helper_intents = []
+    line_set = set(kinds["real_lines"])
+    arc_set = set(kinds["real_arcs"])
+    tangent_pairs = semantic_groups.get("tangent_pairs", [])
+    equal_groups = semantic_groups.get("equal_groups", [])
+    construction_circles = kinds["construction_circles"]
+
+    def append_intent(intent, confidence, native_geometry, fingerprint, evidence=None):
+        helper_intents.append(
+            {
+                "intent": intent,
+                "confidence": confidence,
+                "native_geometry": native_geometry,
+                "constraint_fingerprint": fingerprint,
+                "evidence": evidence or {},
+                "note": "helper/profile intent inferred from native geometry plus constraints; it is not a separate FreeCAD primitive",
+            }
+        )
+
+    if len(real_geometry) == 4 and len(kinds["real_lines"]) == 4:
+        h_count = len(semantic_groups.get("horizontal_constraints", []))
+        v_count = len(semantic_groups.get("vertical_constraints", []))
+        coincident_count = len(semantic_groups.get("coincident_pairs", []))
+        if h_count >= 1 and v_count >= 1 and coincident_count >= 4 and not construction_circles:
+            append_intent(
+                "rectangle_like",
+                0.86,
+                [{"type_id": "Part::GeomLineSegment", "indices": kinds["real_lines"]}],
+                ["Coincident", "Horizontal", "Vertical"],
+                {"horizontal_constraints": h_count, "vertical_constraints": v_count, "coincident_pairs": coincident_count},
+            )
+
+    if len(real_geometry) >= 3 and len(kinds["real_lines"]) == len(real_geometry) and construction_circles:
+        point_on_circle = constraints_touching_geometry(constraints, construction_circles, "PointOnObject")
+        largest_equal_group = max((len(group) for group in equal_groups), default=0)
+        if point_on_circle and largest_equal_group >= max(2, len(kinds["real_lines"]) - 1):
+            append_intent(
+                "regular_polygon_like",
+                0.9,
+                [
+                    {"type_id": "Part::GeomLineSegment", "indices": kinds["real_lines"]},
+                    {"type_id": "Part::GeomCircle", "indices": construction_circles, "role": "construction"},
+                ],
+                ["Coincident", "Equal", "PointOnObject"],
+                {"sides": len(kinds["real_lines"]), "point_on_construction_circle": len(point_on_circle), "largest_equal_group": largest_equal_group},
+            )
+
+    if len(real_geometry) == 4 and len(kinds["real_lines"]) == 2 and len(kinds["real_arcs"]) == 2:
+        tangent_arc_line = [
+            pair for pair in tangent_pairs
+            if len(pair.get("geometry", [])) == 2
+            and ({int(pair["geometry"][0]), int(pair["geometry"][1])} & line_set)
+            and ({int(pair["geometry"][0]), int(pair["geometry"][1])} & arc_set)
+        ]
+        arc_equal = any(arc_set.issubset(set(group)) for group in equal_groups)
+        if len(tangent_arc_line) >= 2:
+            append_intent(
+                "slot_like",
+                0.88 if arc_equal else 0.78,
+                [
+                    {"type_id": "Part::GeomLineSegment", "indices": kinds["real_lines"]},
+                    {"type_id": "Part::GeomArcOfCircle", "indices": kinds["real_arcs"]},
+                ],
+                ["Coincident", "Tangent", "Equal" if arc_equal else "Radius"],
+                {"tangent_arc_line_pairs": len(tangent_arc_line), "arc_equal": arc_equal},
+            )
+
+    if kinds["real_bspline_curves"]:
+        append_intent(
+            "bspline_native_curve_present",
+            1.0,
+            [{"type_id": "Part::GeomBSplineCurve", "indices": kinds["real_bspline_curves"]}],
+            ["BSplineControlPoles"],
+            {"control_points_available_in_geometry_summary": True},
+        )
+
+    return {
+        "helper_intents": helper_intents,
+        "do_not_report_helper_as_primitive": True,
+        "classification_basis": "native_geometry_plus_constraint_fingerprint",
+        "primitive_policy": {
+            "rectangle": "4 LineSegment geometry plus Horizontal/Vertical/Coincident constraints",
+            "regular_polygon": "LineSegment loop plus construction circle, PointOnObject, and Equal constraints",
+            "slot": "2 LineSegment plus 2 ArcOfCircle with Tangent and equal/radius constraints",
+            "circle": "native Circle geometry, not an arc chain unless native geometry says so",
+            "bspline": "native BSplineCurve with control poles; do not collapse it to arcs from silhouette alone",
+        },
+    }
+
+
+def sketch_report_layers(sketch, semantic_groups=None):
+    semantic_groups = semantic_groups or sketch_semantic_groups(sketch)
+    layers = sketch_native_geometry_layers(sketch)
+    layers["constraint_graph"] = semantic_groups
+    layers["helper_intent_inference"] = sketch_helper_intent_inference(sketch, semantic_groups)
+    return layers
 
 
 def requested_arc_sweep(start_angle, end_angle, *, direction=None, sweep=None):
@@ -430,7 +667,7 @@ def geometry_summary(sketch, geometry, index):
         construction = None
     summary = {
         "index": index,
-        "type_id": geometry.getTypeId().getName() if hasattr(geometry, "getTypeId") else type(geometry).__name__,
+        "type_id": geometry_type_id(geometry),
         "construction": construction,
         "repr": repr(geometry),
     }
@@ -471,6 +708,21 @@ def geometry_summary(sketch, geometry, index):
     axis = point_attr(geometry, "Axis")
     if axis is not None:
         summary["axis"] = axis
+    poles = point_list_attr_or_method(geometry, "getPoles")
+    if poles is None:
+        poles = point_list_attr_or_method(geometry, "Poles")
+    if poles is not None:
+        summary["poles"] = poles
+    knots = scalar_list_attr_or_method(geometry, "getKnots")
+    if knots is not None:
+        summary["knots"] = knots
+    for key, name in (
+        ("degree", "Degree"),
+        ("continuity", "Continuity"),
+    ):
+        value = float_attr(geometry, name)
+        if value is not None:
+            summary[key] = value
     return summary
 
 
@@ -480,6 +732,7 @@ def sketch_summary(obj):
     geometry = list(getattr(obj, "Geometry", []))
     constraints = list(getattr(obj, "Constraints", []))
     dof = getattr(obj, "DoF", getattr(obj, "DegreesOfFreedom", None))
+    semantic_groups = sketch_semantic_groups(obj)
     return {
         "geometry_count": len(geometry),
         "constraint_count": len(constraints),
@@ -492,7 +745,8 @@ def sketch_summary(obj):
         "malformed_constraints": list(getattr(obj, "MalformedConstraints", [])),
         "geometry": [geometry_summary(obj, geo, idx) for idx, geo in enumerate(geometry)],
         "constraints": [constraint_summary(constraint, idx) for idx, constraint in enumerate(constraints)],
-        "semantic_groups": sketch_semantic_groups(obj),
+        "semantic_groups": semantic_groups,
+        "report_layers": sketch_report_layers(obj, semantic_groups),
     }
 
 
@@ -4648,8 +4902,12 @@ def action_sketch_validate(params):
         result["geometry"] = [geometry_summary(sketch, geo, idx) for idx, geo in enumerate(sketch.Geometry)]
     if bool(params.get("include_constraints", True)):
         result["constraints"] = [constraint_summary(constraint, idx) for idx, constraint in enumerate(sketch.Constraints)]
+    semantic_groups = None
     if bool(params.get("include_semantic_groups", True)):
-        result["semantic_groups"] = sketch_semantic_groups(sketch)
+        semantic_groups = sketch_semantic_groups(sketch)
+        result["semantic_groups"] = semantic_groups
+    if bool(params.get("include_report_layers", True)):
+        result["report_layers"] = sketch_report_layers(sketch, semantic_groups)
     result["evidence_source"] = "native_sketcher"
     return result
 

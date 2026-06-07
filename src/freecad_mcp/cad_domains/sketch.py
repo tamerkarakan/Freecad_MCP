@@ -21,7 +21,15 @@ SKETCH_COMPLEX_PROFILE_POLICY = (
     "rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, "
     "not as the primary construction path for new parametric profiles. For user-editable or parametric "
     "profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are "
-    "named Sketcher drivers instead of static coordinates or Block constraints."
+    "named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile "
+    "intent as native geometry plus constraint fingerprint, not as a separate primitive family."
+)
+
+SKETCH_HELPER_LAYER_POLICY = (
+    "Report helper/profile intent separately from native primitives: Rectangle is 4 LineSegment geometry "
+    "with Horizontal/Vertical/Coincident constraints; regular polygons are LineSegment loops with a "
+    "construction circle, PointOnObject, and Equal constraints; slot is 2 LineSegment plus 2 ArcOfCircle "
+    "with Tangent and equal/radius constraints. Do not call helpers separate native primitive types."
 )
 
 
@@ -162,8 +170,8 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_validate",
                 "Validate Sketch",
-                "Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors.",
-                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "solve": {"type": "boolean"}, "detect_missing": {"type": "boolean"}, "include_geometry": {"type": "boolean", "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius when available. Defaults true."}, "include_constraints": {"type": "boolean", "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."}, "include_semantic_groups": {"type": "boolean", "description": "Include derived tangent pairs/chains, equal groups, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."}, "include_constraint_errors": {"type": "boolean"}, "precision": {"type": "number"}, "angle_precision": {"type": "number"}, "include_construction": {"type": "boolean"}},
+                "Solve and summarize native Sketcher geometry, constraints, solver diagnostics, missing constraints, open vertices, semantic groups such as tangent/equal chains, helper-intent report layers, and per-constraint errors. Use this to get native Sketcher evidence instead of inferring constraint state from screenshot colors. " + SKETCH_HELPER_LAYER_POLICY,
+                {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "solve": {"type": "boolean"}, "detect_missing": {"type": "boolean"}, "include_geometry": {"type": "boolean", "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius and B-spline poles/knots when available. Defaults true."}, "include_constraints": {"type": "boolean", "description": "Include constraint type, raw indices, resolved refs, names, values, driving/active state, and label metadata. Defaults true."}, "include_semantic_groups": {"type": "boolean", "description": "Include derived tangent pairs/chains, equal groups, PointOnObject, horizontal/vertical, symmetry, dimensional/radius constraints, construction geometry, and coincident pairs. Defaults true."}, "include_report_layers": {"type": "boolean", "description": "Include native_geometry, construction_geometry, constraint_graph, and helper_intent_inference layers. Defaults true."}, "include_constraint_errors": {"type": "boolean"}, "precision": {"type": "number"}, "angle_precision": {"type": "number"}, "include_construction": {"type": "boolean"}},
                 ["document_path", "sketch_name"],
                 "sketch_validate",
             ),

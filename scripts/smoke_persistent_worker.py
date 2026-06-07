@@ -2017,6 +2017,12 @@ def main() -> int:
             for key in ("coincident_pairs", "tangent_pairs", "equal_groups", "dimensional_constraints", "construction_geometry"):
                 if key not in semantic_groups:
                     raise RuntimeError(f"worker sketch validation omitted semantic group {key}: {validation}")
+            report_layers = validation.get("report_layers", {})
+            for key in ("native_geometry", "construction_geometry", "constraint_graph", "helper_intent_inference"):
+                if key not in report_layers:
+                    raise RuntimeError(f"worker sketch validation omitted report layer {key}: {validation}")
+            if not report_layers.get("helper_intent_inference", {}).get("do_not_report_helper_as_primitive"):
+                raise RuntimeError(f"worker sketch validation omitted helper primitive policy: {validation}")
 
             closed_sketch_doc = worker_result(
                 service.definition_map()["freecad_worker_document_close"].handler(

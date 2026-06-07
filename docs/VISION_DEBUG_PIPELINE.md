@@ -27,8 +27,11 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 
 ## FreeCAD-Specific Ambiguity Rules
 
+- Before rebuilding from an image, classify the input: prompt-only, FreeCAD 2D Sketcher edit screenshot, FreeCAD 3D viewport, task panel/dialog screenshot, or unknown. If the image may be either a 2D Sketcher screenshot or a 3D model view, ask the user directly before mutating a document.
+- For a 2D Sketcher screenshot, treat visible constraint glyphs, dimensions, axes, construction geometry, and helper fingerprints as modeling obligations, not decoration. A fully constrained visual state means the agent must preserve the visible constraint semantics, not only the outline pixels.
 - Green Sketcher geometry alone is not enough evidence that a traced profile is pad-ready; also require `freecad_sketch_profile_validate` or equivalent structured validation.
-- If a reference image may contain both arcs and B-splines, ask for the intended native geometry or use `freecad_curve_fit_analyze` on trace points before creating geometry.
+- If a reference image may contain both arcs, B-splines, ellipses, lines, or circles and the native type is not visible from Sketcher controls/metadata, ask for the intended native geometry or use `freecad_curve_fit_analyze` on trace points before creating geometry.
+- If native Sketcher state is available, prefer `freecad_sketch_validate`/`freecad_worker_sketch_validate` `report_layers` over visual classification: helpers such as rectangle, regular polygon, and slot are native geometry plus constraints, not separate primitive types.
 - If the agent falls back from B-spline/arc to line/polyline, the fallback must be explicit and accepted by the user or by a tool contract that permits it.
 - For arc creation, prefer intent-specific methods such as `arc_3_point`, `arc_start_end_radius`, or `arc_center_angles`, then inspect `geometry_reports`.
 - For GUI selection debugging, prefer `freecad_gui_selection_get` and `freecad_gui_preselection_get` before visual screenshot interpretation.

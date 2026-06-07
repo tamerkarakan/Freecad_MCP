@@ -976,6 +976,12 @@ def main() -> int:
         for key in ("coincident_pairs", "tangent_pairs", "equal_groups", "dimensional_constraints", "construction_geometry"):
             if key not in semantic_groups:
                 raise RuntimeError(f"advanced sketch validation omitted semantic group {key}: {validation}")
+        report_layers = validation.get("report_layers", {})
+        for key in ("native_geometry", "construction_geometry", "constraint_graph", "helper_intent_inference"):
+            if key not in report_layers:
+                raise RuntimeError(f"advanced sketch validation omitted report layer {key}: {validation}")
+        if not report_layers.get("helper_intent_inference", {}).get("do_not_report_helper_as_primitive"):
+            raise RuntimeError(f"advanced sketch validation omitted helper primitive policy: {validation}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
@@ -2739,6 +2745,8 @@ def main() -> int:
             raise RuntimeError(f"auto sketch validation omitted native constraint details: {auto_validation}")
         if not auto_semantic_groups.get("equal_groups"):
             raise RuntimeError(f"auto sketch validation omitted equal semantic groups: {auto_validation}")
+        if "helper_intent_inference" not in auto_validation.get("report_layers", {}):
+            raise RuntimeError(f"auto sketch validation omitted helper intent report layer: {auto_validation}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
