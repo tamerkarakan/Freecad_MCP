@@ -76,8 +76,7 @@ def create_partdesign_rect_pad(
                         ],
                     }
                 ],
-                "lock_mode": "block",
-                "require_fully_constrained": True,
+                "lock_mode": "none",
                 "output_path": str(document),
                 "overwrite": True,
             }
@@ -513,7 +512,7 @@ def main() -> int:
         if taper_extrude["object"]["shape"]["solids"] != 1 or not taper_extrude["object"]["shape"]["valid"]:
             raise RuntimeError(f"feature taper extrude invalid: {taper_extrude}")
 
-        for blocked_type in ("Group", "Text"):
+        for blocked_type in ("Block", "Group", "Text"):
             blocked = assert_tool_failed(
                 service.definition_map()["freecad_sketch_add_constraint"].handler(
                     {
@@ -525,7 +524,7 @@ def main() -> int:
                 f"sketch {blocked_type} constraint blocked",
             )
             blocked_payload = blocked.get("freecad") or {}
-            if "Group/Text" not in blocked_payload.get("error", ""):
+            if "Block/Group/Text" not in blocked_payload.get("error", ""):
                 raise RuntimeError(f"Sketcher {blocked_type} constraint did not fail safely: {blocked}")
 
         assert_ok(
@@ -775,7 +774,6 @@ def main() -> int:
             },
             {"type": "arc_of_hyperbola", "center": [14, 0, 0], "major_radius": 2, "minor_radius": 1, "start_angle": -1, "end_angle": 1},
             {"type": "arc_of_parabola", "start_angle": -1, "end_angle": 1},
-            {"type": "bspline", "poles": [[0, 5, 0], [1, 6, 0], [2, 5, 0]]},
             {"type": "polyline", "points": [[0, 8, 0], [1, 8, 0], [1, 9, 0]], "closed": False},
         ]
         expected_advanced_geometry = len(advanced_geometry_items) + 1
@@ -821,9 +819,14 @@ def main() -> int:
             for method in item["methods"]
             if method.get("type")
         )
-        for expected_type in ["line_angle_length", "arc_3_point", "arc_start_end_radius", "arc_center_angles", "circle_3_point", "bspline"]:
+        for expected_type in ["line_angle_length", "arc_3_point", "arc_start_end_radius", "arc_center_angles", "circle_3_point"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch geometry method catalog missing {expected_type}: {method_catalog}")
+        if "bspline" in catalog_types:
+            raise RuntimeError(f"sketch geometry method catalog still advertises unsupported bspline creation: {method_catalog}")
+        unsupported_geometry = {item.get("geometry") for item in method_catalog.get("unsupported_geometry", [])}
+        if "bspline" not in unsupported_geometry:
+            raise RuntimeError(f"sketch geometry method catalog did not mark bspline unsupported: {method_catalog}")
         for expected_type in ["rectangle_center", "rectangle_3_point", "triangle", "square", "hexagon", "slot_start_end_radius", "arc_slot", "keyhole"]:
             if expected_type not in catalog_types:
                 raise RuntimeError(f"sketch profile method catalog missing {expected_type}: {method_catalog}")
@@ -832,8 +835,22 @@ def main() -> int:
             if expected_type not in constraint_types:
                 raise RuntimeError(f"sketch constraint method catalog missing {expected_type}: {method_catalog}")
         constructor = method_catalog.get("constraint_constructor", {})
-        if not constructor.get("constructor_passthrough") or "Group" not in constructor.get("blocked_types", []):
+        if not constructor.get("constructor_passthrough") or "Block" not in constructor.get("blocked_types", []):
             raise RuntimeError(f"sketch constraint constructor policy missing: {method_catalog}")
+        bspline_rejected = assert_tool_failed(
+            service.definition_map()["freecad_sketch_add_geometry"].handler(
+                {
+                    "document_path": str(advanced_sketch_doc),
+                    "sketch_name": "AdvancedSketch",
+                    "geometry": [{"type": "bspline", "poles": [[0, 5, 0], [1, 6, 0], [2, 5, 0]]}],
+                    "output_path": str(advanced_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "unsupported bspline sketch geometry",
+        )
+        if "bspline is not supported" not in bspline_rejected["freecad"].get("error", ""):
+            raise RuntimeError(f"bspline geometry was not rejected clearly: {bspline_rejected}")
 
         profile = assert_ok(
             service.definition_map()["freecad_sketch_add_profile"].handler(
@@ -1001,7 +1018,7 @@ def main() -> int:
                     "sketch_name": "ConnectedSketch",
                     "geometry": [
                         {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
-                        {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
+                        {"type": "line", "start": [10, 0, 0], "end": [10, 10, 0]},
                         {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
                         {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
                     ],
@@ -1065,8 +1082,7 @@ def main() -> int:
                     "document_name": "RectangleLoopSmoke",
                     "sketch_name": "RectangleLoopSketch",
                     "loops": [{"type": "rectangle", "origin": [0, 0], "width": 6, "height": 4}],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(rectangle_loop_doc),
                     "overwrite": True,
                 }
@@ -1106,15 +1122,18 @@ def main() -> int:
                     "sketch_name": "ProfileBuilderSketch",
                     "loops": [
                         {
-                            "name": "spline_arc_loop",
+                            "name": "arc_arc_loop",
                             "segments": [
                                 {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
                                 {
-                                    "type": "bspline",
-                                    "expected_type": "bspline",
+                                    "type": "arc",
+                                    "expected_type": "arc",
                                     "fallback_policy": "fail",
-                                    "reason": "variable curvature trace",
-                                    "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]],
+                                    "reason": "supported circular side",
+                                    "center": [10, 5, 0],
+                                    "radius": 5,
+                                    "start_angle": -1.5707963267948966,
+                                    "end_angle": 1.5707963267948966,
                                 },
                                 {
                                     "type": "arc",
@@ -1130,11 +1149,10 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "required_segment_types": ["bspline", "arc"],
+                    "lock_mode": "none",
+                    "required_segment_types": ["arc"],
                     "minimum_curve_segments": 2,
                     "forbid_polyline_fallback": True,
-                    "require_fully_constrained": True,
                     "output_path": str(profile_builder_doc),
                     "overwrite": True,
                 }
@@ -1143,13 +1161,11 @@ def main() -> int:
         )
         if not profile_builder["validation"]["ok"] or not profile_builder["validation"]["pad_ready"]:
             raise RuntimeError(f"profile builder did not produce pad-ready profile: {profile_builder}")
-        if profile_builder["validation"]["degrees_of_freedom"] != 0:
-            raise RuntimeError(f"profile builder did not fully constrain profile: {profile_builder}")
         if profile_builder["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
             raise RuntimeError(f"profile builder did not preserve curve segment count: {profile_builder}")
         if profile_builder["loops"][0]["segment_intent_mismatches"]:
             raise RuntimeError(f"profile builder reported unexpected segment intent mismatch: {profile_builder}")
-        if len(profile_builder.get("geometry_reports", [])) != 1 or profile_builder["geometry_reports"][0]["input_type"] != "arc":
+        if len(profile_builder.get("geometry_reports", [])) != 2 or any(report.get("input_type") != "arc" for report in profile_builder["geometry_reports"]):
             raise RuntimeError(f"profile builder did not report its arc geometry: {profile_builder}")
         profile_indices = profile_builder["loops"][0]["added_indices"]
         profile_validation = assert_ok(
@@ -1157,12 +1173,11 @@ def main() -> int:
                 {
                     "document_path": str(profile_builder_doc),
                     "sketch_name": "ProfileBuilderSketch",
-                    "require_fully_constrained": True,
-                    "required_segment_types": ["bspline", "arc"],
+                    "required_segment_types": ["arc"],
                     "minimum_curve_segments": 2,
                     "forbid_all_line_loops": True,
                     "expected_geometry": [
-                        {"geometry_index": profile_indices[1], "expected_type": "bspline", "fallback_policy": "fail", "reason": "variable curvature trace"},
+                        {"geometry_index": profile_indices[1], "expected_type": "arc", "fallback_policy": "fail", "reason": "supported circular side"},
                         {"geometry_index": profile_indices[2], "expected_type": "arc", "fallback_policy": "fail", "reason": "constant-radius round end"},
                     ],
                 }
@@ -1171,7 +1186,7 @@ def main() -> int:
         )
         if not profile_validation["validation"]["ok"] or profile_validation["validation"]["face_validation"]["face_count"] != 1:
             raise RuntimeError(f"profile validation mismatch: {profile_validation}")
-        if profile_validation["validation"]["geometry_type_counts"].get("bspline") != 1 or profile_validation["validation"]["geometry_type_counts"].get("arc") != 1:
+        if profile_validation["validation"]["geometry_type_counts"].get("arc") != 2:
             raise RuntimeError(f"profile validation did not report native curve types: {profile_validation}")
         if profile_validation["validation"]["intent_mismatches"]:
             raise RuntimeError(f"profile validation reported unexpected intent mismatch: {profile_validation}")
@@ -1193,8 +1208,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1237,8 +1251,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1450,8 +1463,7 @@ def main() -> int:
                     "feature_kind": "pad",
                     "feature_name": "KeyholeRecipeBasePad",
                     "loops": [{"type": "rectangle", "origin": [0, 0, 0], "width": 12, "height": 8}],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "length": 4,
                     "output_path": str(keyhole_recipe_doc),
                     "overwrite": True,
@@ -1575,8 +1587,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1602,8 +1613,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1650,8 +1660,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "reference_axis": "sketch_v_axis",
                     "angle": 180,
                     "output_path": str(recipe_revolution_doc),
@@ -1679,8 +1688,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1722,8 +1730,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1765,8 +1772,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1809,8 +1815,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -1852,8 +1857,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -2185,8 +2189,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(subtractive_pipe_doc),
                     "overwrite": True,
                 }
@@ -2555,8 +2558,7 @@ def main() -> int:
                             ],
                         }
                     ],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "output_path": str(partdesign_doc),
                     "overwrite": True,
                 }
@@ -2640,7 +2642,7 @@ def main() -> int:
                             "segments": [
                                 {
                                     "type": "line",
-                                    "expected_type": "bspline",
+                                    "expected_type": "arc",
                                     "fallback_policy": "fail",
                                     "start": [0, 0, 0],
                                     "end": [10, 0, 0],
@@ -2678,8 +2680,10 @@ def main() -> int:
             ),
             "curve fit freeform analyze",
         )
-        if spline_fit["analysis"]["recommendation"] != "bspline":
-            raise RuntimeError(f"curve fit did not recommend bspline for freeform trace: {spline_fit}")
+        if spline_fit["analysis"]["recommendation"] != "unsupported_freeform":
+            raise RuntimeError(f"curve fit did not report unsupported freeform trace: {spline_fit}")
+        if spline_fit["analysis"]["decision"].get("action") != "ask_user":
+            raise RuntimeError(f"curve fit did not force a user decision for unsupported freeform trace: {spline_fit}")
 
         assert_ok(
             service.definition_map()["freecad_sketch_create"].handler(
@@ -2766,7 +2770,6 @@ def main() -> int:
                     "sketch_name": "TransformSketch",
                     "geometry": [
                         {"type": "line", "start": [0, 0, 0], "end": [5, 0, 0]},
-                        {"type": "bspline", "poles": [[0, 5, 0], [1, 6, 0], [2, 5, 0], [3, 6, 0]]},
                     ],
                     "output_path": str(transform_sketch_doc),
                     "overwrite": True,
@@ -2783,8 +2786,6 @@ def main() -> int:
                     "operations": [
                         {"operation": "copy", "geometry_indices": [0], "vector": [0, 2, 0]},
                         {"operation": "move", "geometry_indices": [0], "vector": [1, 0, 0]},
-                        {"operation": "increase_bspline_degree", "geometry_index": 1, "increment": 1},
-                        {"operation": "insert_bspline_knot", "geometry_index": 1, "parameter": 0.5, "multiplicity": 1},
                     ],
                     "output_path": str(transform_sketch_doc),
                     "overwrite": True,
@@ -2797,6 +2798,20 @@ def main() -> int:
         expected_transform_geometry = len(transform_added) + len(copied_indices)
         if transformed["sketch"]["sketch"]["geometry_count"] != expected_transform_geometry:
             raise RuntimeError(f"unexpected transform geometry count: {transformed}")
+        bspline_transform_rejected = assert_tool_failed(
+            service.definition_map()["freecad_sketch_transform"].handler(
+                {
+                    "document_path": str(transform_sketch_doc),
+                    "sketch_name": "TransformSketch",
+                    "operations": [{"operation": "convert_to_nurbs", "geometry_index": 0}],
+                    "output_path": str(transform_sketch_doc),
+                    "overwrite": True,
+                }
+            ),
+            "unsupported bspline transform",
+        )
+        if "B-spline/NURBS sketch transforms are not supported" not in bspline_transform_rejected["freecad"].get("error", ""):
+            raise RuntimeError(f"bspline transform was not rejected clearly: {bspline_transform_rejected}")
 
         assembly_doc = temp / "assembly.FCStd"
         assembly = assert_ok(

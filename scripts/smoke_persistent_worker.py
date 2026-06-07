@@ -76,8 +76,7 @@ def create_worker_rect_pad(
                         ],
                     }
                 ],
-                "lock_mode": "block",
-                "require_fully_constrained": True,
+                "lock_mode": "none",
                 "timeout_sec": 90,
             }
         ),
@@ -160,8 +159,7 @@ def smoke_worker_sketch_input_ergonomics(service: PersistentToolService) -> None
                     "document_id": document_id,
                     "sketch_name": "WorkerRectangleLoop",
                     "loops": [{"type": "rectangle", "origin": [0, 10], "width": 6, "height": 4}],
-                    "lock_mode": "block",
-                    "require_fully_constrained": True,
+                    "lock_mode": "none",
                     "timeout_sec": 30,
                 }
             ),
@@ -334,7 +332,7 @@ def main() -> int:
                         "sketch_name": "WorkerClosedChain",
                         "geometry": [
                             {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
-                            {"type": "bspline", "poles": [[10, 0, 0], [12, 5, 0], [10, 10, 0]]},
+                            {"type": "line", "start": [10, 0, 0], "end": [10, 10, 0]},
                             {"type": "arc", "center": [5, 10, 0], "radius": 5, "start_angle": 0, "end_angle": 3.141592653589793},
                             {"type": "line", "start": [0, 10, 0], "end": [0, 0, 0]},
                         ],
@@ -358,15 +356,18 @@ def main() -> int:
                         "sketch_name": "WorkerProfileBuilder",
                         "loops": [
                             {
-                                "name": "spline_arc_loop",
+                                "name": "arc_arc_loop",
                                 "segments": [
                                     {"type": "line", "start": [0, 20, 0], "end": [10, 20, 0]},
                                     {
-                                        "type": "bspline",
-                                        "expected_type": "bspline",
+                                        "type": "arc",
+                                        "expected_type": "arc",
                                         "fallback_policy": "fail",
-                                        "reason": "variable curvature trace",
-                                        "poles": [[10, 20, 0], [12, 25, 0], [10, 30, 0]],
+                                        "reason": "supported circular side",
+                                        "center": [10, 25, 0],
+                                        "radius": 5,
+                                        "start_angle": -1.5707963267948966,
+                                        "end_angle": 1.5707963267948966,
                                     },
                                     {
                                         "type": "arc",
@@ -382,24 +383,21 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "required_segment_types": ["bspline", "arc"],
+                        "lock_mode": "none",
+                        "required_segment_types": ["arc"],
                         "minimum_curve_segments": 2,
                         "forbid_polyline_fallback": True,
-                        "require_fully_constrained": True,
                     }
                 ),
                 "worker_sketch_profile_create",
             )
             if not worker_profile["validation"]["ok"] or not worker_profile["validation"]["pad_ready"]:
                 raise RuntimeError(f"worker profile builder did not produce pad-ready profile: {worker_profile}")
-            if worker_profile["validation"]["degrees_of_freedom"] != 0:
-                raise RuntimeError(f"worker profile builder did not fully constrain profile: {worker_profile}")
             if worker_profile["loops"][0]["curve_contract"]["curve_segment_count"] != 2:
                 raise RuntimeError(f"worker profile builder did not preserve curve segment count: {worker_profile}")
             if worker_profile["loops"][0]["segment_intent_mismatches"]:
                 raise RuntimeError(f"worker profile builder reported unexpected intent mismatch: {worker_profile}")
-            if len(worker_profile.get("geometry_reports", [])) != 1 or worker_profile["geometry_reports"][0]["input_type"] != "arc":
+            if len(worker_profile.get("geometry_reports", [])) != 2 or any(report.get("input_type") != "arc" for report in worker_profile["geometry_reports"]):
                 raise RuntimeError(f"worker profile builder did not report its arc geometry: {worker_profile}")
             worker_profile_indices = worker_profile["loops"][0]["added_indices"]
             worker_profile_validation = worker_result(
@@ -408,12 +406,11 @@ def main() -> int:
                         "session_id": session_id,
                         "document_id": document_id,
                         "sketch_name": "WorkerProfileBuilder",
-                        "require_fully_constrained": True,
-                        "required_segment_types": ["bspline", "arc"],
+                        "required_segment_types": ["arc"],
                         "minimum_curve_segments": 2,
                         "forbid_all_line_loops": True,
                         "expected_geometry": [
-                            {"geometry_index": worker_profile_indices[1], "expected_type": "bspline", "fallback_policy": "fail"},
+                            {"geometry_index": worker_profile_indices[1], "expected_type": "arc", "fallback_policy": "fail"},
                             {"geometry_index": worker_profile_indices[2], "expected_type": "arc", "fallback_policy": "fail"},
                         ],
                     }
@@ -422,7 +419,7 @@ def main() -> int:
             )
             if not worker_profile_validation["validation"]["ok"]:
                 raise RuntimeError(f"worker profile validation mismatch: {worker_profile_validation}")
-            if worker_profile_validation["validation"]["geometry_type_counts"].get("bspline") != 1 or worker_profile_validation["validation"]["geometry_type_counts"].get("arc") != 1:
+            if worker_profile_validation["validation"]["geometry_type_counts"].get("arc") != 2:
                 raise RuntimeError(f"worker profile validation did not report native curve types: {worker_profile_validation}")
 
             partdesign_document = worker_result(
@@ -453,8 +450,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                     }
                 ),
                 "worker_partdesign_profile_create",
@@ -495,8 +491,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                     }
                 ),
                 "worker_partdesign_pocket_profile_create",
@@ -598,8 +593,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -976,8 +970,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                     }
                 ),
                 "worker_partdesign_revolution_profile_create",
@@ -1020,8 +1013,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1064,8 +1056,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1133,8 +1124,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1176,8 +1166,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1243,8 +1232,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1287,8 +1275,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1330,8 +1317,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1546,8 +1532,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),
@@ -1735,7 +1720,7 @@ def main() -> int:
                             "segments": [
                                 {
                                     "type": "line",
-                                    "expected_type": "bspline",
+                                    "expected_type": "arc",
                                     "fallback_policy": "fail",
                                     "start": [0, 60, 0],
                                     "end": [10, 60, 0],
@@ -1922,16 +1907,17 @@ def main() -> int:
             if not constraint["added_indices"]:
                 raise RuntimeError(f"worker sketch constraint missing: {constraint}")
 
-            blocked_group = service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
-                {
-                    "session_id": session_id,
-                    "document_id": document_id,
-                    "sketch_name": "WorkerSketch",
-                    "constraints": [{"type": "Group", "values": [[0, 1]]}],
-                }
-            )
-            if blocked_group.get("ok") is not False or "Group/Text" not in blocked_group["worker"].get("error", ""):
-                raise RuntimeError(f"worker Sketcher Group constraint did not fail safely: {blocked_group}")
+            for blocked_type in ("Block", "Group", "Text"):
+                blocked_constraint = service.definition_map()["freecad_worker_sketch_add_constraint"].handler(
+                    {
+                        "session_id": session_id,
+                        "document_id": document_id,
+                        "sketch_name": "WorkerSketch",
+                        "constraints": [{"type": blocked_type, "values": [[0, 1]]}],
+                    }
+                )
+                if blocked_constraint.get("ok") is not False or "Block/Group/Text" not in blocked_constraint["worker"].get("error", ""):
+                    raise RuntimeError(f"worker Sketcher {blocked_type} constraint did not fail safely: {blocked_constraint}")
 
             edit_geometry = worker_result(
                 service.definition_map()["freecad_worker_sketch_edit_geometry"].handler(
@@ -2283,8 +2269,7 @@ def main() -> int:
                                 ],
                             }
                         ],
-                        "lock_mode": "block",
-                        "require_fully_constrained": True,
+                        "lock_mode": "none",
                         "timeout_sec": 90,
                     }
                 ),

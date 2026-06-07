@@ -112,6 +112,7 @@ class StaticToolServiceTests(unittest.TestCase):
             self.assertIn("visible_curves_require_native_curve_intent", result["blockers"])
             self.assertIn("native_curve_intent", result["required_fields_for_mutation"])
             self.assertIn("enforce_native_curve_intent", result["required_fields_for_mutation"])
+            self.assertIn("forbid_real_line_geometry", result["required_fields_for_mutation"])
             self.assertIn("B-spline", result["curve_question_tr"])
 
     def test_modeling_strategy_intake_blocks_bspline_controls_with_arc_intent(self) -> None:
@@ -131,7 +132,7 @@ class StaticToolServiceTests(unittest.TestCase):
             )
 
             self.assertEqual(result["status"], "needs_clarification")
-            self.assertIn("visible_bspline_controls_conflict_with_non_bspline_intent", result["blockers"])
+            self.assertIn("unsupported_freeform_requires_construction_guides_only_or_user_reinterpretation", result["blockers"])
 
 
 class SafeSourcePathTests(unittest.TestCase):

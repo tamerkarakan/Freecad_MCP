@@ -23,13 +23,14 @@ Use these user-facing choices and carry the chosen `modeling_strategy` into Sket
 - `editable_parametric_sketch`: a Sketcher model whose dimensions remain editable.
 - `manufacturing_partdesign_model`: a Body-based PartDesign model suitable for Pad/Pocket/Hole workflows.
 - `sketcher_constraint_rebuild`: rebuild the visible Sketcher constraint logic from primitives.
+- `construction_guides_only`: recreate only blue construction/reference geometry; do not claim a pad-ready or fully constrained profile.
 - `rough_draft`: fast exploratory geometry with limitations reported.
 
 The MCP server does not interpret the image itself. It enforces an explicit modeling contract: for image/reference work the agent should pass `source_type`, `modeling_strategy`, and `strategy_confirmed=true` to `freecad_sketch_add_geometry`, `freecad_sketch_add_profile`, or `freecad_sketch_profile_create`. If `source_type`/`has_image` marks an image-like task and no strategy is provided, those tools stop before mutation so the user is not left waiting for the wrong kind of model.
 
 If the reference visibly contains Sketcher constraint glyphs, red dimension labels, equality/constraint indexes, or blue construction geometry, the safe default is not `visual_trace`. The agent should ask whether the user wants `sketcher_constraint_rebuild` or `editable_parametric_sketch`, and it should treat construction geometry as construction geometry rather than decoration.
 
-If visible curves could be B-splines, circular arcs, ellipses, or a mixed set, the agent must ask for `native_curve_intent` before mutation. Visible B-spline control points, poles, or handles are evidence for B-spline tooling. Do not rebuild them as arcs unless the user explicitly asks for an arc approximation and accepts the loss of native spline behavior. When `native_curve_intent="bspline"` is carried into `freecad_sketch_profile_create` or `freecad_sketch_profile_validate`, validation fails unless the resulting real geometry contains native B-spline curves. For low-level `freecad_sketch_add_geometry` or `freecad_sketch_add_profile`, set `enforce_native_curve_intent=true` when the current call is expected to create the native curve profile.
+If visible curves could be freeform/B-spline, circular arcs, ellipses, or a mixed set, the agent must ask for `native_curve_intent` before mutation. This MCP profile does not support native B-spline/freeform profile creation. If B-spline/freeform controls are visible, the safe choices are: ask the user for an arc/ellipse-supported reinterpretation, or use `construction_guides_only` and create only construction geometry. Do not approximate unsupported freeform curves with many real lines or polylines.
 
 ## Native Geometry Versus Helper Intent
 
@@ -39,7 +40,7 @@ Sketcher helpers are not extra primitive geometry types. The agent should read t
 - Regular polygon/triangle/square/hexagon: `LineSegment` loop plus a construction circle, `PointOnObject`, and `Equal` constraints.
 - Slot: 2 `LineSegment` items plus 2 `ArcOfCircle` items with `Coincident`, `Tangent`, and equal/radius constraints.
 - Circle: native `Circle` geometry unless native validation says it is an arc chain.
-- B-spline: native `BSplineCurve` with control poles; do not collapse it into arcs from silhouette alone.
+- Existing/imported B-spline: detectable as native `BSplineCurve`, but unsupported for new profile creation in this MCP profile.
 
 When validating an existing sketch, prefer `report_layers.native_geometry`, `report_layers.construction_geometry`, `report_layers.constraint_graph`, and `report_layers.helper_intent_inference` over visual guesswork. Helper intent is an inference layer, not the primitive layer.
 
@@ -86,7 +87,7 @@ After construction, the agent should inspect or report:
 - solver status and degrees of freedom,
 - conflicting, redundant, or malformed constraints,
 - native geometry type counts when curve intent matters,
-- B-spline intent enforcement when `native_curve_intent="bspline"` is declared,
+- unsupported freeform/B-spline rejection and line/polyline fallback guards when curve intent matters,
 - geometry/BRep check for the resulting PartDesign Body when a solid is created.
 
 Do not leave fully-constrained or tangent/equal intent to image interpretation. Use `freecad_sketch_validate` or `freecad_worker_sketch_validate` to get native Sketcher evidence: `fully_constrained`, `degrees_of_freedom`, detailed `geometry`, detailed `constraints`, `semantic_groups` for tangent pairs/chains, equal groups, coincident pairs, dimensional/radius constraints, and construction geometry, plus `report_layers` for native/helper separation.

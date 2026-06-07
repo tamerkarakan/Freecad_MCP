@@ -92,8 +92,8 @@ MODELING_STRATEGY_CHOICES: tuple[JsonObject, ...] = (
         "id": "organic_silhouette",
         "label_tr": "Organik siluet",
         "label_en": "Organic silhouette",
-        "when_to_use": "Use when B-spline or arc-rich freeform visual shape is more important than mechanical constraints.",
-        "quality_gates": ["curve_fit_report", "bspline_or_arc_intent"],
+        "when_to_use": "Use only for supported arc/ellipse-rich visual shapes; unsupported freeform/B-spline profiles must not be approximated with many lines.",
+        "quality_gates": ["curve_fit_report", "supported_curve_intent"],
     },
     {
         "id": "manufacturing_profile",
@@ -101,6 +101,13 @@ MODELING_STRATEGY_CHOICES: tuple[JsonObject, ...] = (
         "label_en": "Manufacturing profile",
         "when_to_use": "Use when a single closed sketch profile must be pad/pocket ready.",
         "quality_gates": ["closed_profile", "pad_ready", "curve_intent_declared"],
+    },
+    {
+        "id": "construction_guides_only",
+        "label_tr": "Sadece construction/klavuz geometri",
+        "label_en": "Construction guides only",
+        "when_to_use": "Use when the screenshot has blue guide/constructor lines but the real green profile uses unsupported freeform curves.",
+        "quality_gates": ["construction_only", "no_pad_ready_claim", "no_full_constraint_claim"],
     },
 )
 
@@ -116,14 +123,10 @@ SKETCH_REBUILD_STRATEGIES = {
 
 CURVE_INTENT_CHOICES: tuple[JsonObject, ...] = (
     {
-        "id": "bspline",
-        "label_tr": "B-spline",
-        "when_to_use": "Use when the screenshot shows B-spline control points/poles or Sketcher B-spline controls.",
-        "tooling": [
-            "freecad_sketch_add_geometry type=bspline",
-            "enforce_native_curve_intent=true",
-            "freecad_sketch_profile_validate native_curve_intent=bspline",
-        ],
+        "id": "unsupported_freeform",
+        "label_tr": "Desteklenmeyen freeform/B-spline",
+        "when_to_use": "Use when the screenshot shows B-spline/freeform controls; this blocks profile mutation except construction_guides_only.",
+        "tooling": ["ask_user", "construction_guides_only", "forbid_real_line_geometry=true"],
     },
     {
         "id": "arc",
@@ -372,7 +375,7 @@ class StaticToolService:
                     "For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether the agent must "
                     "ask the user which modeling outcome is expected before mutating a sketch or PartDesign model. "
                     "Use this gate when visual similarity, editable parametric Sketcher constraints, manufacturing "
-                    "PartDesign output, constraint reconstruction, or rough drafting could all be plausible."
+                    "PartDesign output, constraint reconstruction, construction guides only, or rough drafting could all be plausible."
                 ),
                 input_schema={
                     "type": "object",
@@ -412,12 +415,12 @@ class StaticToolService:
                         },
                         "visible_bspline_control_points": {
                             "type": "boolean",
-                            "description": "True when the screenshot shows B-spline poles/control points/handles; this should bias the agent toward native B-spline, not circular arcs.",
+                            "description": "True when the screenshot shows B-spline/freeform poles/control points/handles; this means profile creation is unsupported unless the user chooses construction guides only or reinterpretation.",
                         },
                         "native_curve_intent": {
                             "type": "string",
                             "enum": sorted(CURVE_INTENT_IDS),
-                            "description": "Declared native curve family for visible curves. Use unknown to force a question.",
+                            "description": "Declared native curve family for visible curves. Use unsupported_freeform for B-spline/freeform references and unknown to force a question.",
                         },
                         "curve_intent_confirmed": {
                             "type": "boolean",
@@ -638,8 +641,9 @@ class StaticToolService:
             blockers.append("visible_sketch_evidence_requires_user_confirmed_visual_override")
         if curve_intent_missing:
             blockers.append("visible_curves_require_native_curve_intent")
-        if visible_bspline_control_points and native_curve_intent and native_curve_intent != "bspline":
-            blockers.append("visible_bspline_controls_conflict_with_non_bspline_intent")
+        unsupported_freeform = bool(visible_bspline_control_points or native_curve_intent == "unsupported_freeform")
+        if unsupported_freeform and modeling_strategy and modeling_strategy != "construction_guides_only":
+            blockers.append("unsupported_freeform_requires_construction_guides_only_or_user_reinterpretation")
         if image_like and modeling_strategy and not strategy_confirmed:
             warnings.append(
                 "strategy_not_confirmed: ask the user to confirm this modeling_strategy unless the task text already made it explicit"
@@ -649,32 +653,32 @@ class StaticToolService:
                 "confirmed_visual_override_ignores_visible_sketch_constraints: report that dimensions/constraints/construction geometry will not be reconstructed"
             )
         if visible_bspline_control_points and not native_curve_intent:
-            warnings.append("visible_bspline_controls_detected: ask whether the native curve family is B-spline before using arc tools")
+            warnings.append("visible_bspline_controls_detected: B-spline/freeform profiles are unsupported; ask whether to create construction guides only or reinterpret as supported arcs/ellipses")
 
         status = "needs_clarification" if missing_strategy or blockers else "ok"
         action = "ask_user" if missing_strategy or blockers else ("confirm_or_continue" if warnings else "continue")
         question_tr = (
             "Bu gorselden ne bekliyorsunuz: sadece gorsel benzerlik mi, FreeCAD'de olculeri "
             "degistirilebilir parametrik sketch mi, Sketcher constraint mantiginin yeniden kurulmasi mi, "
-            "uretilebilir PartDesign model mi, yoksa kaba taslak mi?"
+            "uretilebilir PartDesign model mi, sadece mavi construction/klavuz geometri mi, yoksa kaba taslak mi?"
         )
         question_en = (
             "What should this reference become: visual similarity only, an editable parametric Sketcher model, "
-            "a Sketcher constraint rebuild, a manufacturable PartDesign model, or a rough draft?"
+            "a Sketcher constraint rebuild, a manufacturable PartDesign model, construction guides only, or a rough draft?"
         )
         curve_question_tr = (
-            "Gorseldeki egrilerin native FreeCAD tipi nedir: B-spline mi, dairesel arc mi, elips mi, "
-            "yoksa karisik/belirsiz mi? B-spline kontrol noktalari gorunuyorsa arc olarak yeniden kurmayayim."
+            "Gorseldeki egrilerin native FreeCAD tipi nedir: desteklenen dairesel arc mi, elips mi, karisik mi, "
+            "yoksa desteklenmeyen freeform/B-spline mi? Freeform/B-spline ise profil cizmeyeyim; en fazla construction guide olusturayim."
         )
         curve_question_en = (
-            "What is the native FreeCAD curve family: B-spline, circular arc, ellipse, mixed, or unknown? "
-            "If B-spline control points are visible, do not rebuild them as arcs."
+            "What is the native FreeCAD curve family: supported circular arc, ellipse, mixed, or unsupported freeform/B-spline? "
+            "If B-spline/freeform controls are visible, do not rebuild them as arcs or many line segments."
         )
         required_fields_for_mutation = ["source_type", "modeling_strategy", "strategy_confirmed"]
         if curves_visible or visible_bspline_control_points:
             required_fields_for_mutation.extend(["native_curve_intent", "curve_intent_confirmed"])
-        if visible_bspline_control_points or native_curve_intent == "bspline":
-            required_fields_for_mutation.append("enforce_native_curve_intent")
+        if unsupported_freeform:
+            required_fields_for_mutation.extend(["forbid_real_line_geometry", "enforce_native_curve_intent"])
 
         return {
             "status": status,
@@ -699,9 +703,13 @@ class StaticToolService:
             "curve_question_en": curve_question_en,
             "choices": modeling_strategy_choices(),
             "recommended_strategies": (
+                ["construction_guides_only"]
+                if unsupported_freeform
+                else (
                 ["sketcher_constraint_rebuild", "editable_parametric_sketch"]
                 if visible_sketch_evidence
                 else ["visual_trace", "editable_parametric_sketch", "manufacturing_partdesign_model"]
+                )
             ),
             "curve_choices": curve_intent_choices(),
             "required_fields_for_mutation": required_fields_for_mutation,

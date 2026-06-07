@@ -124,15 +124,13 @@ def main() -> int:
                             "length": 6,
                             "loops": [
                                 {
-                                    "segments": [
-                                        {"type": "line", "start": [0, 0, 0], "end": [10, 0, 0]},
-                                        {"type": "line", "start": [10, 0, 0], "end": [10, 8, 0]},
-                                        {"type": "line", "start": [10, 8, 0], "end": [0, 8, 0]},
-                                        {"type": "line", "start": [0, 8, 0], "end": [0, 0, 0]},
-                                    ],
+                                    "type": "rectangle",
+                                    "origin": [0, 0, 0],
+                                    "width": 10,
+                                    "height": 8,
                                 }
                             ],
-                            "lock_mode": "block",
+                            "constraint_policy": "semantic",
                             "require_fully_constrained": True,
                             "output_path": str(output_path),
                             "overwrite": True,

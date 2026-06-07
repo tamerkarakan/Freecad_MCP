@@ -235,7 +235,11 @@ PROFILE_WORKFLOW_PROPS = {
             "regular_polygon/hexagon, slot, and keyhole over overlapping primitive profiles."
         ),
     },
-    "lock_mode": {"type": "string", "enum": ["none", "block"]},
+    "lock_mode": {
+        "type": "string",
+        "enum": ["none"],
+        "description": "Block lock mode is unsupported; use semantic Sketcher constraints and named dimensions.",
+    },
     "endpoint_tolerance": {"type": "number"},
     "required_segment_types": {"type": "array", "items": {"type": "string"}},
     "required_curve_types": {"type": "array", "items": {"type": "string"}},

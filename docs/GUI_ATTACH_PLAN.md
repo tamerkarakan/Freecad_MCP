@@ -96,7 +96,7 @@ The bridge server uses a PySide signal hop to run RPC handlers on the Qt GUI thr
 - Bridge calls must fail with structured errors when FreeCAD GUI is not on the main thread or no active document/view exists.
 - `unknown method: ...` means the MCP stdio server and the already-running GUI bridge script are out of sync; stop/start the FreeCAD MCP bridge or restart FreeCAD so the current bridge script is loaded.
 - Connector-aware Assembly flows should consume `freecad_gui_selection_get` records before writing native `JointObject` references.
-- Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, narrow programmatic GUI actions second, local screenshot evidence third, smallest useful crop/detail sent to vision models, and user confirmation for ambiguous B-spline/arc/polyline decisions.
+- Screenshot/vision debugging must follow `docs/VISION_DEBUG_PIPELINE.md`: structured MCP state first, narrow programmatic GUI actions second, local screenshot evidence third, smallest useful crop/detail sent to vision models, and user confirmation for unsupported freeform/B-spline versus supported arc/ellipse/line decisions.
 
 ## Test Plan
 

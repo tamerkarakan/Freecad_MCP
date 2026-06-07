@@ -157,7 +157,7 @@ Read a bounded line range from a source file in the local FreeCAD checkout.
 
 ## `freecad_modeling_strategy_intake`
 
-For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether the agent must ask the user which modeling outcome is expected before mutating a sketch or PartDesign model. Use this gate when visual similarity, editable parametric Sketcher constraints, manufacturing PartDesign output, constraint reconstruction, or rough drafting could all be plausible.
+For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether the agent must ask the user which modeling outcome is expected before mutating a sketch or PartDesign model. Use this gate when visual similarity, editable parametric Sketcher constraints, manufacturing PartDesign output, constraint reconstruction, construction guides only, or rough drafting could all be plausible.
 
 ```json
 {
@@ -174,6 +174,7 @@ For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether
     "modeling_strategy": {
       "type": "string",
       "enum": [
+        "construction_guides_only",
         "dimensioned_parametric",
         "editable_parametric_sketch",
         "manufacturing_partdesign_model",
@@ -208,18 +209,18 @@ For image, screenshot, drawing, or reference-driven FreeCAD work, decide whether
     },
     "visible_bspline_control_points": {
       "type": "boolean",
-      "description": "True when the screenshot shows B-spline poles/control points/handles; this should bias the agent toward native B-spline, not circular arcs."
+      "description": "True when the screenshot shows B-spline/freeform poles/control points/handles; this means profile creation is unsupported unless the user chooses construction guides only or reinterpretation."
     },
     "native_curve_intent": {
       "type": "string",
       "enum": [
         "arc",
-        "bspline",
         "ellipse",
         "mixed",
-        "unknown"
+        "unknown",
+        "unsupported_freeform"
       ],
-      "description": "Declared native curve family for visible curves. Use unknown to force a question."
+      "description": "Declared native curve family for visible curves. Use unsupported_freeform for B-spline/freeform references and unknown to force a question."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -3247,7 +3248,7 @@ Create a Sketcher object inside an in-memory worker document, optionally inside 
 
 ## `freecad_worker_sketch_add_geometry`
 
-Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Add typed geometry to a worker Sketcher object. B-spline/freeform profile geometry is intentionally unsupported. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact control is needed; for common closed profiles prefer helper/profile tools so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -3320,7 +3321,8 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -3352,13 +3354,13 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -3376,7 +3378,15 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -3411,7 +3421,7 @@ Add typed geometry to a worker Sketcher object. Coordinate arrays may be [x,y] o
 
 ## `freecad_worker_sketch_add_constraint`
 
-Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked unsafe/crashy types Group and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, Lock, and Block; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
+Add typed constraints to a worker Sketcher object by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; the process freecad_sketch_geometry_method_catalog exposes the machine-readable constraint_methods list and field shapes. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -3471,7 +3481,7 @@ Add typed constraints to a worker Sketcher object by passing the provided type s
 
 ## `freecad_worker_sketch_add_profile`
 
-Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Add a helper profile such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -3529,7 +3539,8 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -3561,13 +3572,13 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -3585,7 +3596,15 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -3620,7 +3639,7 @@ Add a helper profile such as rectangle variants, named/arbitrary regular polygon
 
 ## `freecad_worker_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc segments or helper loops such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole, with endpoint continuity and curve-preservation guards, optionally attached inside a PartDesign Body. B-spline/freeform profiles are intentionally unsupported. This is the preferred complex-sketch builder for worker sessions: it expands helpers or ordered segments, validates closed wires, and can enforce pad-ready/full-constraint contracts. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer helper/profile recipes for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true. FreeCAD workflow policy: use Body Origin planes for base sketches; for ordinary holes/pockets on an existing cube/top/side face, attach the sketch directly to the selected planar FaceN, add external/reference geometry from that face's edges or vertices when needed, dimension the circle/profile, then use Hole or Pocket. Datum objects live inside a Body and are useful for arbitrary mirror planes, visible reference indicators, reusable offset/angled supports for multiple sketches, revolution/groove axes, loft/sweep section supports, datum chains, and LCS orientation references. A datum plane is basically redundant for support of one sketch, and a datum attached to generated faces has the same topological naming risk as a sketch attached to those faces. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -3690,9 +3709,9 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     "lock_mode": {
       "type": "string",
       "enum": [
-        "none",
-        "block"
-      ]
+        "none"
+      ],
+      "description": "Block lock mode is unsupported; use semantic constraints."
     },
     "constraint_policy": {
       "type": "string",
@@ -3796,7 +3815,8 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -3828,13 +3848,13 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -3852,7 +3872,15 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -3886,7 +3914,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_worker_sketch_profile_validate`
 
-Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Validate whether a worker Sketcher object is pad-ready and whether native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -4010,7 +4038,8 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -4042,13 +4071,13 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -4066,7 +4095,15 @@ Validate whether a worker Sketcher object is pad-ready and whether native geomet
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "compact_response": {
       "type": "boolean",
@@ -4381,7 +4418,7 @@ Delete, rename, set datum, toggle driving/active/virtual, and validate constrain
 
 ## `freecad_worker_sketch_transform`
 
-Apply Sketcher transform operations such as copy, fillet, trim, array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
+Apply Sketcher transform operations such as copy, fillet, trim, and array. B-spline/NURBS transforms are unsupported. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
 
 ```json
 {
@@ -4529,7 +4566,7 @@ Solve and summarize native Sketcher state, geometry, constraints, missing constr
     },
     "include_geometry": {
       "type": "boolean",
-      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius and B-spline poles/knots when available. Defaults true."
+      "description": "Include native geometry details such as type_id, construction flag, start/end/center/radius, and existing B-spline poles/knots when present in imported sketches. Defaults true."
     },
     "include_constraints": {
       "type": "boolean",
@@ -8587,9 +8624,9 @@ High-level recipe that creates a Body-attached pad-ready Sketcher profile from o
     "lock_mode": {
       "type": "string",
       "enum": [
-        "none",
-        "block"
-      ]
+        "none"
+      ],
+      "description": "Block lock mode is unsupported; use semantic Sketcher constraints and named dimensions."
     },
     "endpoint_tolerance": {
       "type": "number"
@@ -8837,9 +8874,9 @@ Compact high-level recipe that creates Spreadsheet parameters, a Body-attached S
     "lock_mode": {
       "type": "string",
       "enum": [
-        "none",
-        "block"
-      ]
+        "none"
+      ],
+      "description": "Block lock mode is unsupported; use semantic Sketcher constraints and named dimensions."
     },
     "endpoint_tolerance": {
       "type": "number"
@@ -9439,7 +9476,7 @@ Create a Sketcher object, optionally inside a PartDesign Body attached to XY/XZ/
 
 ## `freecad_sketch_add_geometry`
 
-Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Add point, line, circle, arc, ellipse, conic arc, or polyline geometry to a sketch. B-spline/freeform profile geometry is intentionally unsupported. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -9503,7 +9540,8 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -9535,13 +9573,13 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -9559,7 +9597,15 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -9602,7 +9648,7 @@ Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry
 
 ## `freecad_sketch_add_constraint`
 
-Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked unsafe/crashy types Group and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, Lock, and Block; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
+Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.
 
 ```json
 {
@@ -9661,7 +9707,7 @@ Add raw or named Sketcher constraints by passing the provided type string to Fre
 
 ## `freecad_sketch_add_profile`
 
-Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Add common closed/open Sketcher profiles such as rectangle variants, named/arbitrary regular polygons, circle, polyline, straight/oriented/arc slots, and single-loop keyhole circle+slot profiles. Prefer these helpers over loose overlapping primitives; for a keyhole cut, use the keyhole helper rather than separate circle + rectangle/slot geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -9710,7 +9756,8 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -9742,13 +9789,13 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -9766,7 +9813,15 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -9809,7 +9864,7 @@ Add common closed/open Sketcher profiles such as rectangle variants, named/arbit
 
 ## `freecad_sketch_profile_create`
 
-Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Create loop-based pad-ready Sketcher profiles from ordered line/arc segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. B-spline/freeform profiles are intentionally unsupported. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. Complex sketches are primitive geometry plus explicit constraints plus validation, not just loose overlapping primitives. Prefer intent/profile helpers for known shapes such as rectangle, circle, regular_polygon/hexagon, slot, and keyhole. For keyhole/circle-slot cuts, use the single-loop keyhole helper or an explicit ordered arc/line loop; do not make separate overlapping circle + rectangle/slot profiles for a PartDesign cut. Use trim for editing or repairing existing geometry, not as the primary construction path for new parametric profiles. For user-editable or parametric profiles, prefer constraint_policy='semantic' plus require_fully_constrained=true so dimensions are named Sketcher drivers instead of static coordinates or Block constraints. Treat helper/profile intent as native geometry plus constraint fingerprint, not as a separate primitive family. FreeCAD PartDesign attachment decision: use a Body Origin plane (XY/XZ/YZ) for base sketches and simple independent offsets; use attachment_object plus attachment_subname such as Face1 for ordinary face-local operations on an existing planar face, like a hole or pocket on a cube top/side face; use datum support for named/reused reference planes, special orientations, loft/sweep sections, or explicit user-visible reference geometry. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -9873,9 +9928,9 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     "lock_mode": {
       "type": "string",
       "enum": [
-        "none",
-        "block"
-      ]
+        "none"
+      ],
+      "description": "Block lock mode is unsupported; use semantic constraints."
     },
     "constraint_policy": {
       "type": "string",
@@ -9979,7 +10034,8 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -10011,13 +10067,13 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -10035,7 +10091,15 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "output_path": {
       "type": "string"
@@ -10076,7 +10140,7 @@ Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline seg
 
 ## `freecad_sketch_profile_validate`
 
-Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set enforce_native_curve_intent=true on low-level mutation or validate/profile-create with native_curve_intent='bspline' so arc/polyline fallback fails.
+Validate whether a Sketcher object is pad-ready and whether its native geometry types match declared curve intent. Use after low-level primitive/constraint work and reject results that are open, under-constrained when full constraint is required, or only appear complex because of overlapping untrimmed profiles. For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has chosen the expected outcome. Call freecad_modeling_strategy_intake when unclear, then pass source_type, modeling_strategy, and strategy_confirmed=true. Use editable_parametric_sketch, dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation.
 
 ```json
 {
@@ -10191,7 +10255,8 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
         "semantic_reconstruction",
         "dimensioned_parametric",
         "organic_silhouette",
-        "manufacturing_profile"
+        "manufacturing_profile",
+        "construction_guides_only"
       ],
       "description": "Declared user intent for image/reference work, such as editable_parametric_sketch or visual_trace."
     },
@@ -10223,13 +10288,13 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
       "type": "string",
       "enum": [
         "none",
-        "bspline",
         "arc",
         "ellipse",
         "mixed",
+        "unsupported_freeform",
         "unknown"
       ],
-      "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown."
+      "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported."
     },
     "curve_intent_confirmed": {
       "type": "boolean",
@@ -10247,7 +10312,15 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
     },
     "enforce_native_curve_intent": {
       "type": "boolean",
-      "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'."
+      "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract."
+    },
+    "forbid_real_line_geometry": {
+      "type": "boolean",
+      "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces."
+    },
+    "max_real_line_segments": {
+      "type": "integer",
+      "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks."
     },
     "executable": {
       "type": "string",
@@ -10280,7 +10353,7 @@ Validate whether a Sketcher object is pad-ready and whether its native geometry 
 
 ## `freecad_curve_fit_analyze`
 
-Compare line and circular-arc fit errors for traced sketch points and recommend line, arc, or B-spline without mutating a document.
+Compare line and circular-arc fit errors for traced sketch points and recommend line/arc when supported; reports unsupported_freeform instead of recommending B-spline or many-line fallback.
 
 ```json
 {
@@ -10654,7 +10727,7 @@ Delete, rename, set datum/driving/active/visibility/virtual-space state, validat
 
 ## `freecad_sketch_transform`
 
-Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, rectangular array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
+Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, and rectangular array. B-spline/NURBS transforms are unsupported. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.
 
 ```json
 {

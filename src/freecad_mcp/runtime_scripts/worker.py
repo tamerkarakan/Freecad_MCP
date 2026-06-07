@@ -491,6 +491,7 @@ MODELING_STRATEGIES = {
     "dimensioned_parametric",
     "organic_silhouette",
     "manufacturing_profile",
+    "construction_guides_only",
 }
 
 STRICT_PARAMETRIC_STRATEGIES = {
@@ -503,7 +504,7 @@ STRICT_PARAMETRIC_STRATEGIES = {
 
 VISUAL_ONLY_STRATEGIES = {"visual_trace", "organic_silhouette", "rough_draft"}
 
-NATIVE_CURVE_INTENTS = {"none", "bspline", "arc", "ellipse", "mixed", "unknown"}
+NATIVE_CURVE_INTENTS = {"none", "arc", "ellipse", "mixed", "unsupported_freeform", "unknown"}
 
 
 def normalized_strategy_value(value):
@@ -544,23 +545,25 @@ def modeling_strategy_preflight(params):
         )
     if curves_visible and (not curve_intent or curve_intent == "unknown" or not curve_intent_confirmed):
         raise ValueError(
-            "missing_native_curve_intent: visible reference curves require asking whether they are B-spline, circular arc, "
-            "ellipse, or mixed before mutating; do not infer arc from silhouette alone"
+            "missing_native_curve_intent: visible reference curves require asking whether they are circular arc, "
+            "ellipse, mixed, or unsupported/freeform before mutating; do not infer arc or line trace from silhouette alone"
         )
-    if visible_bspline_control_points and curve_intent and curve_intent != "bspline":
+    if visible_bspline_control_points and strategy != "construction_guides_only":
         raise ValueError(
-            "bspline_controls_conflict_with_curve_intent: visible B-spline control points/poles require native_curve_intent='bspline' "
-            "unless the user explicitly asks for a different approximation"
+            "unsupported_bspline_curve_family: this MCP profile does not support native B-spline/freeform profile creation. "
+            "Ask the user for an arc/ellipse-supported interpretation or use construction_guides_only for blue guide geometry only."
         )
     warnings = []
     if image_like and strategy and not strategy_confirmed:
         warnings.append("strategy_not_confirmed: confirm the modeling strategy with the user before mutating")
     if visible_sketch_evidence and strategy in VISUAL_ONLY_STRATEGIES:
         warnings.append("visual_strategy_ignores_visible_sketch_constraints: report the loss of dimensions/constraints/construction geometry")
-    if visible_bspline_control_points and curve_intent == "bspline":
-        warnings.append("bspline_controls_detected: use native B-spline tooling and validate B-spline geometry, not arc approximation")
+    if visible_bspline_control_points and strategy == "construction_guides_only":
+        warnings.append("bspline_controls_detected_but_unsupported: construction guides may be recreated, but native B-spline/freeform profile geometry is not supported")
     if curves_visible and curve_intent_source == "visual_guess":
         warnings.append("curve_intent_visual_guess: ask for user/native confirmation before relying on this curve family")
+    if strategy == "construction_guides_only":
+        warnings.append("construction_guides_only: create only construction geometry and do not claim pad-ready or fully-constrained profile output")
     return {
         "source_type": source_type,
         "has_image": has_image,
@@ -593,15 +596,16 @@ def enforce_strategy_lock_mode(params, lock_mode):
 
 def native_curve_intent_validation_issues(params, geometry_counts):
     intent = normalized_strategy_value(params.get("native_curve_intent"))
-    if intent != "bspline":
+    strategy = normalized_strategy_value(params.get("modeling_strategy"))
+    if intent not in {"unsupported_freeform", "bspline"}:
         return []
-    if int(geometry_counts.get("bspline", 0) or 0) > 0:
+    if strategy == "construction_guides_only":
         return []
     return [
         {
-            "code": "native_curve_intent_requires_bspline_geometry",
-            "native_curve_intent": "bspline",
-            "required_types": ["bspline"],
+            "code": "unsupported_freeform_curve_family",
+            "native_curve_intent": intent,
+            "supported_profile_curve_types": ["arc", "circle", "ellipse", "ellipse_arc", "conic_arc"],
             "geometry_type_counts": geometry_counts,
         }
     ]
@@ -612,6 +616,47 @@ def sketch_native_curve_intent_issues(params, sketch):
     return native_curve_intent_validation_issues(params, summary["counts"])
 
 
+def sketch_line_policy_issues(params, geometry_counts):
+    issues = []
+    line_count = int(geometry_counts.get("line", 0) or 0)
+    if bool(params.get("forbid_real_line_geometry", False)) and line_count:
+        issues.append({"code": "real_line_geometry_forbidden", "count": line_count})
+    if params.get("max_real_line_segments") is not None and line_count > int(params.get("max_real_line_segments") or 0):
+        issues.append(
+            {
+                "code": "real_line_segment_count_exceeds_limit",
+                "count": line_count,
+                "maximum": int(params.get("max_real_line_segments") or 0),
+            }
+        )
+    return issues
+
+
+def sketch_geometry_contract_issues(params, sketch):
+    include_construction = bool(params.get("include_construction", False))
+    summary = sketch_geometry_type_summary(sketch, include_construction=include_construction)
+    issues = []
+    issues.extend(native_curve_intent_validation_issues(params, summary["counts"]))
+    issues.extend(sketch_line_policy_issues(params, summary["counts"]))
+    return issues
+
+
+def post_mutation_contract_issues(params, sketch):
+    issues = []
+    if normalized_strategy_value(params.get("modeling_strategy")) == "construction_guides_only":
+        real_summary = sketch_geometry_type_summary(sketch, include_construction=False)
+        if real_summary["total"]:
+            issues.append(
+                {
+                    "code": "construction_guides_only_forbids_real_geometry",
+                    "real_geometry_count": real_summary["total"],
+                    "geometry_type_counts": real_summary["counts"],
+                }
+            )
+    issues.extend(sketch_geometry_contract_issues(params, sketch))
+    return issues
+
+
 def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mode=None, preflight=None):
     preflight = preflight or modeling_strategy_preflight(params)
     strategy = preflight.get("modeling_strategy")
@@ -620,7 +665,8 @@ def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mod
     warnings = list(preflight.get("warnings", []))
     errors = []
     native_curve_intent_issues = sketch_native_curve_intent_issues(params, sketch)
-    errors.extend([issue["code"] for issue in native_curve_intent_issues])
+    contract_issues = sketch_geometry_contract_issues(params, sketch)
+    errors.extend([issue["code"] for issue in contract_issues])
     constraint_counts = semantic_groups.get("constraint_type_counts", {})
     block_count = int(constraint_counts.get("Block", 0) or 0)
     constraint_policy = str(params.get("constraint_policy") or "").lower()
@@ -640,6 +686,8 @@ def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mod
 
     if strategy in {"visual_trace", "organic_silhouette"}:
         warnings.append("visual_strategy_does_not_guarantee_later_dimension_editability")
+    if strategy == "construction_guides_only" and bool(params.get("require_fully_constrained", False)):
+        errors.append("construction_guides_only_cannot_satisfy_full_profile_constraint")
 
     return {
         "status": "fail" if errors else ("warn" if warnings else "pass"),
@@ -647,6 +695,7 @@ def sketch_modeling_strategy_report(params, sketch, *, validation=None, lock_mod
         "warnings": warnings,
         "errors": errors,
         "native_curve_intent_issues": native_curve_intent_issues,
+        "geometry_contract_issues": contract_issues,
         "constraint_type_counts": constraint_counts,
         "native_type_counts": report_layers.get("native_type_counts", {}),
         "helper_intent_inference": report_layers.get("helper_intent_inference", {}),
@@ -3176,22 +3225,10 @@ def make_sketch_geometries(item):
             parabola = Part.Parabola()
         return [Part.ArcOfParabola(parabola, angle_radians(item["start_angle"]), angle_radians(item["end_angle"]))]
     if kind in {"bspline", "b_spline"}:
-        poles = [vector(point) for point in (item.get("poles") or item.get("points") or [])]
-        if len(poles) < 2:
-            raise ValueError("bspline requires at least two poles/points")
-        curve = Part.BSplineCurve()
-        periodic = bool(item.get("periodic", False))
-        if item.get("interpolate", False):
-            if periodic:
-                curve.interpolate(poles, True)
-            else:
-                curve.interpolate(poles)
-        else:
-            if periodic:
-                curve.buildFromPoles(poles, True)
-            else:
-                curve.buildFromPoles(poles)
-        return [curve]
+        raise ValueError(
+            "unsupported sketch geometry: bspline is not supported by this MCP profile; "
+            "ask for an arc/ellipse-supported interpretation or create construction guides only"
+        )
     if kind == "polyline":
         points = [vector(point) for point in item["points"]]
         if len(points) < 2:
@@ -3602,6 +3639,7 @@ def validate_sketch_profile(sketch, params):
     if forbid_polyline_fallback and geometry_counts.get("polyline", 0):
         issues.append({"code": "polyline_fallback_detected", "count": geometry_counts.get("polyline", 0)})
     issues.extend(native_curve_intent_validation_issues(params, geometry_counts))
+    issues.extend(sketch_line_policy_issues(params, geometry_counts))
     failing_intent_mismatches = [item for item in intent_mismatches if item.get("fallback_policy") == "fail" or bool(params.get("forbid_intent_mismatch", False))]
     if failing_intent_mismatches:
         issues.append({"code": "geometry_intent_mismatch", "mismatches": failing_intent_mismatches})
@@ -4273,8 +4311,8 @@ def make_sketch_profile_loop(sketch, loop, params, *, loop_index, endpoint_toler
 def make_constraint(spec):
     import Sketcher
 
-    if spec.get("type") in {"Group", "Text"}:
-        raise ValueError("Sketcher Group/Text constraints are blocked until stable FreeCAD 1.1.1 fixtures exist")
+    if spec.get("type") in {"Block", "Group", "Text"}:
+        raise ValueError("Sketcher Block/Group/Text constraints are not supported by this MCP profile")
     values = spec.get("values")
     if values is None:
         values = []
@@ -4610,10 +4648,9 @@ def action_sketch_add_geometry(params):
             closed_validation = sketch_closed_validation(sketch)
             if closed_validation["open_vertices"]:
                 raise ValueError("sketch geometry sequence is not closed; open vertices: " + str(closed_validation["open_vertices"]))
-        if bool(params.get("enforce_native_curve_intent", False)):
-            intent_issues = sketch_native_curve_intent_issues(params, sketch)
-            if intent_issues:
-                raise ValueError("native curve intent validation failed: " + str(intent_issues))
+        contract_issues = post_mutation_contract_issues(params, sketch)
+        if contract_issues:
+            raise ValueError("sketch geometry contract failed: " + str(contract_issues))
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
@@ -4660,10 +4697,9 @@ def action_sketch_add_profile(params):
     doc.openTransaction("MCP worker add sketch profile")
     try:
         added, constraints = add_profile_geometry(sketch, params["profile"])
-        if bool(params.get("enforce_native_curve_intent", False)):
-            intent_issues = sketch_native_curve_intent_issues(params, sketch)
-            if intent_issues:
-                raise ValueError("native curve intent validation failed: " + str(intent_issues))
+        contract_issues = post_mutation_contract_issues(params, sketch)
+        if contract_issues:
+            raise ValueError("sketch geometry contract failed: " + str(contract_issues))
         doc.commitTransaction()
     except Exception:
         doc.abortTransaction()
@@ -4690,6 +4726,8 @@ def action_sketch_profile_create(params):
     sketch = doc.getObject(sketch_name)
     doc.openTransaction("MCP worker create sketch profile")
     try:
+        if strategy_preflight.get("modeling_strategy") == "construction_guides_only":
+            raise ValueError("construction_guides_only does not create real sketch profiles; use construction geometry only")
         if sketch is None:
             sketch = doc.addObject("Sketcher::SketchObject", sketch_name)
         elif bool(params.get("replace_existing", False)):
@@ -4710,20 +4748,14 @@ def action_sketch_profile_create(params):
             all_added.extend(report["added_indices"])
             all_constraints.extend(report["constraint_indices"])
             all_geometry_reports.extend(report["geometry_reports"])
-        block_indices = []
         lock_mode = str(params.get("lock_mode", "none"))
-        if lock_mode not in {"none", "block"}:
+        if lock_mode != "none":
             raise ValueError("unsupported lock_mode: " + lock_mode)
-        if lock_mode == "block" and strategy_preflight.get("modeling_strategy") in STRICT_PARAMETRIC_STRATEGIES:
-            raise ValueError(
-                "modeling_strategy forbids lock_mode='block': use semantic Sketcher constraints and named dimensions "
-                "for editable/parametric/manufacturing reference work"
-            )
-        if lock_mode == "block":
-            for geometry_index in all_added:
-                block_indices.append(sketch.addConstraint(Sketcher.Constraint("Block", geometry_index)))
         doc.recompute()
         validation = validate_sketch_profile(sketch, params)
+        contract_issues = post_mutation_contract_issues(params, sketch)
+        if contract_issues:
+            raise ValueError("sketch geometry contract failed: " + str(contract_issues))
         if bool(params.get("require_valid", True)) and not validation["ok"]:
             raise ValueError("sketch profile validation failed: " + str(validation["issues"]))
         doc.commitTransaction()
@@ -4739,7 +4771,6 @@ def action_sketch_profile_create(params):
         "added_indices": all_added,
         "constraint_indices": all_constraints,
         "geometry_reports": all_geometry_reports,
-        "block_constraint_indices": block_indices,
         "validation": validation,
         "modeling_strategy": sketch_modeling_strategy_report(params, sketch, validation=validation, lock_mode=lock_mode, preflight=strategy_preflight),
         "attachment": attachment,
@@ -5000,16 +5031,8 @@ def action_sketch_transform(params):
                 sketch.addRectangularArray([int(value) for value in op["geometry_indices"]], vector(op["vector"]), bool(op.get("clone", False)), int(op["rows"]), int(op["cols"]), bool(op.get("constrain_displacement", False)), float(op.get("perpendicular_scale", 1.0)))
             elif kind == "remove_axes_alignment":
                 sketch.removeAxesAlignment([int(value) for value in op["geometry_indices"]])
-            elif kind == "convert_to_nurbs":
-                sketch.convertToNURBS(int(op["geometry_index"]))
-            elif kind == "increase_bspline_degree":
-                sketch.increaseBSplineDegree(int(op["geometry_index"]), int(op.get("increment", 1)))
-            elif kind == "decrease_bspline_degree":
-                report["ok"] = bool(sketch.decreaseBSplineDegree(int(op["geometry_index"]), int(op.get("decrement", 1))))
-            elif kind == "modify_bspline_knot":
-                sketch.modifyBSplineKnotMultiplicity(int(op["geometry_index"]), int(op["knot_index"]), int(op.get("multiplicity", 1)))
-            elif kind == "insert_bspline_knot":
-                sketch.insertBSplineKnot(int(op["geometry_index"]), float(op["parameter"]), int(op.get("multiplicity", 1)))
+            elif kind in {"convert_to_nurbs", "increase_bspline_degree", "decrease_bspline_degree", "modify_bspline_knot", "insert_bspline_knot"}:
+                raise ValueError("B-spline/NURBS sketch transforms are not supported by this MCP profile")
             else:
                 raise ValueError("unsupported sketch transform operation: " + str(kind))
             reports.append(report)

@@ -119,6 +119,8 @@ class ToolSchemaTests(unittest.TestCase):
                 "curve_intent_confirmed",
                 "curve_intent_source",
                 "enforce_native_curve_intent",
+                "forbid_real_line_geometry",
+                "max_real_line_segments",
             ):
                 self.assertIn(prop_name, props)
         sketch_validate_props = tools["freecad_worker_sketch_validate"].to_mcp()["inputSchema"]["properties"]
@@ -388,6 +390,8 @@ class ToolSchemaTests(unittest.TestCase):
                 "curve_intent_confirmed",
                 "curve_intent_source",
                 "enforce_native_curve_intent",
+                "forbid_real_line_geometry",
+                "max_real_line_segments",
             ):
                 self.assertIn(prop_name, props)
         validate_props = tools["freecad_sketch_profile_validate"].to_mcp()["inputSchema"]["properties"]

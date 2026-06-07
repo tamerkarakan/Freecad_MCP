@@ -42,6 +42,7 @@ MODELING_STRATEGY_ENUM = [
     "dimensioned_parametric",
     "organic_silhouette",
     "manufacturing_profile",
+    "construction_guides_only",
 ]
 
 VISUAL_ONLY_STRATEGY_ENUM = ["visual_trace", "organic_silhouette", "rough_draft"]
@@ -62,7 +63,7 @@ SOURCE_TYPE_ENUM = [
     "sketch",
 ]
 
-NATIVE_CURVE_INTENT_ENUM = ["none", "bspline", "arc", "ellipse", "mixed", "unknown"]
+NATIVE_CURVE_INTENT_ENUM = ["none", "arc", "ellipse", "mixed", "unsupported_freeform", "unknown"]
 
 SKETCH_STRATEGY_POLICY = (
     "For image/screenshot/drawing/reference-driven work, do not mutate the sketch until the user has "
@@ -71,10 +72,9 @@ SKETCH_STRATEGY_POLICY = (
     "dimensioned_parametric, manufacturing_profile, or manufacturing_partdesign_model when dimensions "
     "must survive later edits; use visual_trace or organic_silhouette only when visual similarity is the goal. "
     "If the reference shows Sketcher dimensions/constraint glyphs/construction lines, ask before choosing a "
-    "visual-only strategy. If visible curves could be B-spline, arc, or ellipse, ask for native_curve_intent; "
-    "visible B-spline poles/control points mean use B-spline tooling, not arc approximation; set "
-    "enforce_native_curve_intent=true on low-level mutation or validate/profile-create with "
-    "native_curve_intent='bspline' so arc/polyline fallback fails."
+    "visual-only strategy. If visible curves could be freeform/B-spline, arc, or ellipse, ask for native_curve_intent; "
+    "native B-spline/freeform profile creation is not supported, so use construction_guides_only for blue guides "
+    "or ask for an arc/ellipse-supported interpretation instead of line/polyline approximation."
 )
 
 SKETCH_STRATEGY_PROPS = {
@@ -119,7 +119,7 @@ SKETCH_STRATEGY_PROPS = {
     "native_curve_intent": {
         "type": "string",
         "enum": NATIVE_CURVE_INTENT_ENUM,
-        "description": "Native curve family expected from the reference: bspline, arc, ellipse, mixed, none, or unknown.",
+        "description": "Native curve family expected from the reference: arc, ellipse, mixed, unsupported_freeform, none, or unknown. B-spline/freeform profiles are unsupported.",
     },
     "curve_intent_confirmed": {
         "type": "boolean",
@@ -132,7 +132,15 @@ SKETCH_STRATEGY_PROPS = {
     },
     "enforce_native_curve_intent": {
         "type": "boolean",
-        "description": "For low-level mutation tools, abort before saving if the final sketch does not contain the declared native curve family. Profile create/validate always reports this as validation failure for native_curve_intent='bspline'.",
+        "description": "For low-level mutation tools, abort before saving if the final sketch violates the declared native curve family contract.",
+    },
+    "forbid_real_line_geometry": {
+        "type": "boolean",
+        "description": "Reject real LineSegment geometry in the result. Use for screenshots where straight blue lines are construction guides only and the green profile must not be approximated by line traces.",
+    },
+    "max_real_line_segments": {
+        "type": "integer",
+        "description": "Reject results with more real LineSegment items than this limit, preventing many-line trace fallbacks.",
     },
 }
 
@@ -170,7 +178,7 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_add_geometry",
                 "Add Sketch Geometry",
-                "Add point, line, circle, arc, ellipse, conic arc, B-spline, or polyline geometry to a sketch. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + SKETCH_STRATEGY_POLICY,
+                "Add point, line, circle, arc, ellipse, conic arc, or polyline geometry to a sketch. B-spline/freeform profile geometry is intentionally unsupported. Coordinate arrays may be [x,y] or [x,y,z]. Use this low-level primitive path when exact geometry/control is needed; for common closed profiles prefer profile helpers so constraints and pad-readiness are not left for the agent to guess. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + SKETCH_STRATEGY_POLICY,
                 {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "geometry": {"type": "array", "items": {"type": "object"}}, "connect_sequence": {"type": "boolean", "description": "Add Coincident constraints between adjacent endpoint-capable geometry in the submitted order."}, "close_sequence": {"type": "boolean", "description": "Also add a Coincident constraint from the last endpoint-capable geometry back to the first."}, "require_closed": {"type": "boolean", "description": "Fail before saving if the resulting sequence still has open vertices."}, **SKETCH_STRATEGY_PROPS, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "geometry"],
                 "sketch_add_geometry",
@@ -178,7 +186,7 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_add_constraint",
                 "Add Sketch Constraint",
-                "Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked unsafe/crashy types Group and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, Lock, and Block; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.",
+                "Add raw or named Sketcher constraints by passing the provided type string to FreeCAD's Sketcher.Constraint(type, *values) constructor, except blocked types Block, Group, and Text. Common supported type strings include Coincident, Tangent, Equal, Angle, Distance, DistanceX, DistanceY, PointOnObject, Radius, Diameter, Horizontal, Vertical, Parallel, Perpendicular, Symmetric, and Lock; call freecad_sketch_geometry_method_catalog for the machine-readable constraint_methods list and field shapes. Optional metadata includes datum, driving, active, visibility, and label placement. A complex reusable sketch must be primitive geometry plus coincident/tangent/equality/symmetry/dimensional constraints; add named driving dimensions and expressions instead of leaving important distances as raw coordinates.",
                 {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "constraints": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "constraints"],
                 "sketch_add_constraint",
@@ -194,8 +202,8 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_profile_create",
                 "Create Sketch Profile",
-                "Create loop-based pad-ready Sketcher profiles from ordered line/arc/B-spline segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + SKETCH_ATTACHMENT_POLICY + " " + SKETCH_STRATEGY_POLICY,
-                {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "sketch_name": {"type": "string"}, "body_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base profile sketches or simple independent offsets."}, "attachment_object": {"type": "string", "description": "Support object for the profile sketch. Use with attachment_subname='FaceN' for normal planar-face hole/pocket profiles, or with a datum/support object for reusable references."}, "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."}, "attachment_map_mode": {"type": "string"}, "attachment_offset": {"type": "number", "description": "Offset from the selected origin plane, planar face, or datum support."}, "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset from the selected origin plane, planar face, or datum support."}, "create_body_if_missing": {"type": "boolean"}, "loops": {"type": "array", "items": {"type": "object"}}, "replace_existing": {"type": "boolean"}, "lock_mode": {"type": "string", "enum": ["none", "block"]}, "constraint_policy": {"type": "string", "enum": ["none", "shape", "semantic"], "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."}, "semantic_constraints": {"type": "boolean", "description": "Alias for constraint_policy='semantic'."}, "forbid_block_constraints": {"type": "boolean", "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."}, "endpoint_tolerance": {"type": "number"}, "required_segment_types": {"type": "array", "items": {"type": "string"}}, "required_curve_types": {"type": "array", "items": {"type": "string"}}, "allowed_segment_types": {"type": "array", "items": {"type": "string"}}, "minimum_curve_segments": {"type": "integer"}, "forbid_polyline_fallback": {"type": "boolean"}, "forbid_all_line_loops": {"type": "boolean"}, "require_valid": {"type": "boolean"}, "require_pad_ready": {"type": "boolean"}, "require_fully_constrained": {"type": "boolean"}, "forbid_isolated_points": {"type": "boolean"}, "forbid_branch_points": {"type": "boolean"}, "forbid_micro_offsets": {"type": "boolean"}, "micro_offset_tolerance": {"type": "number"}, **SKETCH_STRATEGY_PROPS, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
+                "Create loop-based pad-ready Sketcher profiles from ordered line/arc segments or helper loops: rectangle/polyline, circle, named/arbitrary regular polygons such as hexagon, straight slots, and single-loop keyhole circle+slot profiles. B-spline/freeform profiles are intentionally unsupported. This is the preferred complex-sketch builder when an agent must combine primitives into a real FreeCAD profile: it expands helpers or ordered segments, applies endpoint/shape constraints, validates closed wires, and can enforce pad-ready/full-constraint contracts. With constraint_policy='semantic', supported helper loops emit named driving dimensions such as width/height, polygon radius/center/orientation, circle radius/center, slot radius, or keyhole radii instead of relying on Block constraints. Coordinate arrays may be [x,y] or [x,y,z]. " + SKETCH_COMPLEX_PROFILE_POLICY + " " + SKETCH_ATTACHMENT_POLICY + " " + SKETCH_STRATEGY_POLICY,
+                {"document_path": {"type": "string"}, "document_name": {"type": "string"}, "sketch_name": {"type": "string"}, "body_name": {"type": "string"}, "attachment_plane": {"type": "string", "enum": ["XY", "XZ", "YZ"], "description": "Body Origin plane for base profile sketches or simple independent offsets."}, "attachment_object": {"type": "string", "description": "Support object for the profile sketch. Use with attachment_subname='FaceN' for normal planar-face hole/pocket profiles, or with a datum/support object for reusable references."}, "attachment_subname": {"type": "string", "description": "Support subelement such as Face1, Edge1, or Vertex1. For PartDesign face-local holes/pockets, use a planar FaceN selected from the target Body feature."}, "attachment_map_mode": {"type": "string"}, "attachment_offset": {"type": "number", "description": "Offset from the selected origin plane, planar face, or datum support."}, "attachment_offset_vector": {"type": "array", "items": {"type": "number"}, "description": "XYZ offset from the selected origin plane, planar face, or datum support."}, "create_body_if_missing": {"type": "boolean"}, "loops": {"type": "array", "items": {"type": "object"}}, "replace_existing": {"type": "boolean"}, "lock_mode": {"type": "string", "enum": ["none"], "description": "Block lock mode is unsupported; use semantic constraints."}, "constraint_policy": {"type": "string", "enum": ["none", "shape", "semantic"], "description": "For supported helper loops, add shape-preserving constraints; semantic also adds named driving dimensions and rejects Block-constraint shortcuts during validation."}, "semantic_constraints": {"type": "boolean", "description": "Alias for constraint_policy='semantic'."}, "forbid_block_constraints": {"type": "boolean", "description": "Reject Sketcher Block constraints during validation; implied by semantic constraint policy."}, "endpoint_tolerance": {"type": "number"}, "required_segment_types": {"type": "array", "items": {"type": "string"}}, "required_curve_types": {"type": "array", "items": {"type": "string"}}, "allowed_segment_types": {"type": "array", "items": {"type": "string"}}, "minimum_curve_segments": {"type": "integer"}, "forbid_polyline_fallback": {"type": "boolean"}, "forbid_all_line_loops": {"type": "boolean"}, "require_valid": {"type": "boolean"}, "require_pad_ready": {"type": "boolean"}, "require_fully_constrained": {"type": "boolean"}, "forbid_isolated_points": {"type": "boolean"}, "forbid_branch_points": {"type": "boolean"}, "forbid_micro_offsets": {"type": "boolean"}, "micro_offset_tolerance": {"type": "number"}, **SKETCH_STRATEGY_PROPS, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["loops"],
                 "sketch_profile_create",
             ),
@@ -210,7 +218,7 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_curve_fit_analyze",
                 "Analyze Curve Fit",
-                "Compare line and circular-arc fit errors for traced sketch points and recommend line, arc, or B-spline without mutating a document.",
+                "Compare line and circular-arc fit errors for traced sketch points and recommend line/arc when supported; reports unsupported_freeform instead of recommending B-spline or many-line fallback.",
                 {"points": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}}, "tolerance": {"type": "number"}, "fit_tolerance": {"type": "number"}},
                 ["points"],
                 "curve_fit_analyze",
@@ -258,7 +266,7 @@ class SketchCadToolService(CadDomainToolService):
             CadToolSpec(
                 "freecad_sketch_transform",
                 "Transform Sketch Geometry",
-                "Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, rectangular array, and B-spline edits. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.",
+                "Run headless Sketcher transform operations such as fillet, trim, extend, split, join, copy, move, symmetry, and rectangular array. B-spline/NURBS transforms are unsupported. Trim is an edit/repair operation for existing geometry; for new parametric keyholes, slots, sockets, and reusable closed profiles prefer profile helpers or ordered arc/line loops with semantic constraints and validation.",
                 {"document_path": {"type": "string"}, "sketch_name": {"type": "string"}, "operations": {"type": "array", "items": {"type": "object"}}, "output_path": {"type": "string"}, "overwrite": {"type": "boolean"}, "save": {"type": "boolean"}},
                 ["document_path", "sketch_name", "operations"],
                 "sketch_transform",

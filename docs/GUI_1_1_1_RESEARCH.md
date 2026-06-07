@@ -85,7 +85,7 @@ Command count is not the same as product value. For mechanical 3D engineering, p
 2. Calibrate image scale using known points.
 3. Create/activate a PartDesign Body.
 4. Create a sketch on the correct plane.
-5. Trace with Sketcher using line/arc/B-spline intent checks.
+5. Trace with Sketcher using supported line/arc/ellipse intent checks; if the reference is unsupported freeform/B-spline, ask for reinterpretation or create construction guides only.
 6. Validate a closed profile.
 7. Pad/Pocket/Revolve into a solid.
 8. Inspect dimensions with Measure.

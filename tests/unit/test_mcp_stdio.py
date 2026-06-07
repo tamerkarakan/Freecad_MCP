@@ -297,7 +297,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("freecad_modeling_strategy_intake", text)
         self.assertIn("strategy_confirmed=true", text)
         self.assertIn("native_curve_intent", text)
-        self.assertIn("B-spline", text)
+        self.assertIn("construction_guides_only", text)
+        self.assertIn("many lines", text)
 
     def test_render_image_strategy_intake_includes_strategy_gate(self) -> None:
         rendered = render_prompt(
@@ -315,8 +316,8 @@ class PromptTests(unittest.TestCase):
         self.assertIn("strategy_confirmed=true", text)
         self.assertIn("red dimensions", text)
         self.assertIn("native_curve_intent", text)
-        self.assertIn("curve_intent_confirmed=true", text)
-        self.assertIn("enforce_native_curve_intent=true", text)
+        self.assertIn("unsupported_freeform", text)
+        self.assertIn("forbid_real_line_geometry=true", text)
 
     def test_render_phase_gate_includes_phase(self) -> None:
         rendered = render_prompt("freecad_phase_gate", {"phase": "smoke"})

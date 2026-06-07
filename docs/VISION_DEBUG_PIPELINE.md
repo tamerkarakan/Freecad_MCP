@@ -12,7 +12,7 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 2. For coarse GUI state checks, use the cheapest available vision model that can reliably identify UI state, with low detail.
 3. For minimum reliable FreeCAD GUI debugging, use a small/mini vision-capable model with low detail first.
 4. For sketch/constraint/selection/edge-face inspection, crop the relevant viewport or panel and use high detail only for that crop.
-5. For ambiguous CAD intent such as B-spline vs circular arc vs polyline, do not silently decide from one screenshot. Produce a short uncertainty report and ask the user or request a tighter crop/reference.
+5. For ambiguous CAD intent such as unsupported freeform vs supported circular arc/ellipse vs line/polyline, do not silently decide from one screenshot. Produce a short uncertainty report and ask the user or request a tighter crop/reference.
 6. Use a stronger model only after the mini-model result is uncertain, contradictory, or would drive an irreversible modeling decision.
 
 ## Screenshot Budget Rules
@@ -27,15 +27,15 @@ Do not stream full-screen GUI screenshots by default. Capture screenshots locall
 
 ## FreeCAD-Specific Ambiguity Rules
 
-- For image/reference modeling, first decide the expected output class with `freecad_modeling_strategy_intake` when unclear. The practical choices are visual trace, editable parametric sketch, manufacturing PartDesign model, Sketcher constraint rebuild, or rough draft. Carry the resulting `modeling_strategy` and `strategy_confirmed=true` into Sketcher mutation tools; do not start creating geometry from an ambiguous image just because a silhouette can be traced.
+- For image/reference modeling, first decide the expected output class with `freecad_modeling_strategy_intake` when unclear. The practical choices are visual trace, editable parametric sketch, manufacturing PartDesign model, Sketcher constraint rebuild, construction guides only, or rough draft. Carry the resulting `modeling_strategy` and `strategy_confirmed=true` into Sketcher mutation tools; do not start creating geometry from an ambiguous image just because a silhouette can be traced.
 - If the screenshot visibly contains Sketcher constraint glyphs, dimensions, or blue construction geometry, default to asking for `sketcher_constraint_rebuild` or `editable_parametric_sketch`. A visual-only trace is allowed only after explicit user confirmation that the visible constraints/dimensions/construction geometry can be ignored.
-- If curves are visible and their native family is unclear, ask for `native_curve_intent` before mutation. Blue B-spline poles/control points/handles are a strong cue for native B-spline; do not silently convert those curves into circular arcs. When native B-spline intent is declared, validate/profile-create with `native_curve_intent="bspline"` and use `enforce_native_curve_intent=true` on low-level profile mutation so arc/polyline fallback fails visibly.
+- If curves are visible and their native family is unclear, ask for `native_curve_intent` before mutation. Blue B-spline/freeform poles/control points/handles are a cue for unsupported freeform in this MCP profile; do not silently convert those curves into circular arcs or many lines. Ask whether to reinterpret as supported arcs/ellipses or create only construction guides with `modeling_strategy="construction_guides_only"` and `forbid_real_line_geometry=true`.
 - Before rebuilding from an image, classify the input: prompt-only, FreeCAD 2D Sketcher edit screenshot, FreeCAD 3D viewport, task panel/dialog screenshot, or unknown. If the image may be either a 2D Sketcher screenshot or a 3D model view, ask the user directly before mutating a document.
 - For a 2D Sketcher screenshot, treat visible constraint glyphs, dimensions, axes, construction geometry, and helper fingerprints as modeling obligations, not decoration. A fully constrained visual state means the agent must preserve the visible constraint semantics, not only the outline pixels.
 - Green Sketcher geometry alone is not enough evidence that a traced profile is pad-ready; also require `freecad_sketch_profile_validate` or equivalent structured validation.
-- If a reference image may contain both arcs, B-splines, ellipses, lines, or circles and the native type is not visible from Sketcher controls/metadata, ask for the intended native geometry or use `freecad_curve_fit_analyze` on trace points before creating geometry.
+- If a reference image may contain arcs, unsupported freeform/B-spline curves, ellipses, lines, or circles and the native type is not visible from Sketcher controls/metadata, ask for the intended native geometry or use `freecad_curve_fit_analyze` on trace points before creating geometry.
 - If native Sketcher state is available, prefer `freecad_sketch_validate`/`freecad_worker_sketch_validate` `report_layers` over visual classification: helpers such as rectangle, regular polygon, and slot are native geometry plus constraints, not separate primitive types.
-- If the agent falls back from B-spline/arc to line/polyline, the fallback must be explicit and accepted by the user or by a tool contract that permits it.
+- If the agent falls back from unsupported freeform/arc/ellipse to line/polyline, the fallback must be explicit and accepted by the user or by a tool contract that permits it.
 - For arc creation, prefer intent-specific methods such as `arc_3_point`, `arc_start_end_radius`, or `arc_center_angles`, then inspect `geometry_reports`.
 - For GUI selection debugging, prefer `freecad_gui_selection_get` and `freecad_gui_preselection_get` before visual screenshot interpretation.
 
